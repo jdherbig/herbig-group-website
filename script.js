@@ -79,9 +79,16 @@
   // settles.
   var navbarThemeLocked = false;
 
+  // Compact scroll state: independent of the dark/light theme swap above -
+  // it should reflect literal scroll position, not what section is behind
+  // the navbar, so it never "grows back" while scrolling past a dark
+  // section further down the page. See .navbar.is-compact in styles.css.
+  var COMPACT_THRESHOLD = 24;
+
   var updateNavbar = function () {
     if (!navbar) return;
     tickingNavbar = false;
+    navbar.classList.toggle("is-compact", window.scrollY > COMPACT_THRESHOLD);
     if (navbarThemeLocked) {
       navbar.classList.add("is-scrolled");
       return;
