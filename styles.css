@@ -868,7 +868,12 @@ html.is-fast-scroll .reveal-right {
 /* ============================================
    SUBPAGE: PAGE HEADER
    ============================================ */
-.page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; overflow: hidden; border-bottom: 1px solid var(--glass-border); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06), 0 24px 56px rgba(0, 0, 0, 0.08); color: var(--color-white); background: var(--color-dark); }
+/* No box-shadow here - .page-header sits flush against the white section
+   that follows it on every interior page, not floating above a surface,
+   so a downward-cast shadow just reads as a soft grey gap/seam between
+   the two rather than a real drop shadow. The 1px border-bottom is the
+   only divider. */
+.page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; overflow: hidden; border-bottom: 1px solid var(--glass-border); color: var(--color-white); background: var(--color-dark); }
 .page-header__bg { position: absolute; inset: 0; z-index: 0; }
 /* Premium entrance (not the generic .reveal): initHeroEntrance() in
    script.js adds .is-loaded to .page-header on content init - it does
@@ -1186,7 +1191,9 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .breadcrumbs .sep { color: #cfcfcf; font-weight: 600; }
 .breadcrumbs .current { color: var(--color-green); font-weight: 700; }
 
-.case-hero { position: relative; background: var(--color-dark); padding: 48px var(--container-pad) 56px; display: flex; flex-direction: column; gap: 32px; box-shadow: 0 24px 72px rgba(0, 0, 0, 0.14); overflow: hidden; }
+/* Same reasoning as .page-header above - no downward box-shadow, since
+   this sits flush against the white content that follows, not above it. */
+.case-hero { position: relative; background: var(--color-dark); padding: 48px var(--container-pad) 56px; display: flex; flex-direction: column; gap: 32px; overflow: hidden; }
 @media (min-width: 900px) { .case-hero { padding: 48px 80px 72px; gap: 48px; } }
 .case-hero__intro { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; color: var(--color-white); max-width: 760px; }
 @media (min-width: 900px) { .case-hero__intro { gap: 24px; } }
