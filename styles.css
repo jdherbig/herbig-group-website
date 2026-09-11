@@ -1080,6 +1080,22 @@ html.hg-intro-pending #route-content {
 @media (min-width: 900px) { .page-transition-overlay__logo { width: 448px; } }
 .page-transition-overlay__logo svg { display: block; width: 100%; height: 100%; }
 
+/* Page-to-page navigation only (added via JS as .page-transition-overlay--nav).
+   The first-load intro above is untouched — full white curtain + logo,
+   z-index 110, covers the whole viewport including the navbar. This
+   variant is a quick frosted-glass moment instead: translucent white +
+   backdrop-blur, no logo, and it sits BELOW the navbar (top: var(--nav-height),
+   z-index under the navbar's 100) so the navbar is always visible and never
+   blurred or covered while it plays. */
+.page-transition-overlay--nav {
+  top: var(--nav-height);
+  z-index: 90;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: opacity 0.55s var(--ease), background 0.55s var(--ease), backdrop-filter 0.55s var(--ease);
+}
+
 @media (prefers-reduced-motion: reduce) {
   #route-content,
   #route-content.route-content--enter,

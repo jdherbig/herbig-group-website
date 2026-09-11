@@ -1,14 +1,21 @@
 /*
- * Herbig Group — branded page-transition system.
+ * Herbig Group — page-transition system.
  *
  * Architecture: the global header (#navbar) never moves and is never
  * touched by this file. Route content lives in #route-content; this file
  * swaps its innerHTML on internal navigation (fetch + DOMParser, a small
- * PJAX-style router) and animates it in with a translateY(rise) + fade,
- * using the Herbig Lottie mark as the brand moment between pages.
+ * PJAX-style router) and animates it in with a translateY(rise) + fade.
+ *
+ * Two distinct overlay moments share #page-transition-overlay:
+ *  - First-load intro (once per browser session): the full white curtain
+ *    + animated Lottie logo mark, unchanged from before.
+ *  - Page-to-page navigation (every internal link click after that): a
+ *    quick frosted white blur, no logo, sitting below the navbar
+ *    (.page-transition-overlay--nav) so the navbar is never covered.
  *
  * Depends on:
- *  - lottie-web (window.lottie), loaded before this file
+ *  - lottie-web (window.lottie), loaded before this file — used only for
+ *    the first-load intro, not for page-to-page navigation.
  *  - window.Herbig.initContent(), defined in script.js, which (re)binds
  *    every content-scoped behaviour (scroll reveal, hero zoom, the
  *    cinematic track, disabled asset-card buttons, the contact form,
@@ -27,10 +34,9 @@
   if (!routeContent) return;
 
   var LOTTIE_SRC = "assets/lottie/logo-animation.json";
-  var SEG_FULL = [0, 90];       // icon settle + full "HERBIG GROUP" wordmark cascade
-  var SEG_COMPACT = [0, 32];    // icon mark only, before any letter starts revealing
-  var COMPACT_SPEED = 4;        // internal-nav: play the compact mark at 4x speed
-  var MIN_BRAND_MS = 140;       // internal-nav: keep the brand moment on screen at least this long
+  var SEG_FULL = [0, 90];        // intro only — icon settle + full "HERBIG GROUP" wordmark cascade
+  var NAV_BLUR_IN_MS = 380;      // page-to-page nav: hold the blur before the new page swaps in
+  var NAV_BLUR_OUT_MS = 380;     // page-to-page nav: hold the blur after swap before fading back out
 
   var ACTIVE_NAV_MAP = {
     "our-blueprint.html": "our-blueprint.html",
@@ -165,14 +171,22 @@
   function navigate(url, isPopstate) {
     var token = ++navToken;
 
+    // Lock the navbar to its solid/legible look for the whole transition —
+    // #route-content is fading out (and, shortly, fading back in) under it,
+    // so its usual "transparent over a dark section" theme would otherwise
+    // read as invisible white-on-white text for that stretch. See the
+    // navbarThemeLocked comment in script.js.
+    if (window.Herbig && typeof window.Herbig.lockNavbarTheme === "function") {
+      window.Herbig.lockNavbarTheme();
+    }
+
     if (!prefersReducedMotion) {
-      if (overlay) overlay.classList.add("is-visible");
-      playLogo(SEG_COMPACT, COMPACT_SPEED);
+      if (overlay) overlay.classList.add("is-visible", "page-transition-overlay--nav");
       routeContent.classList.add("route-content--exit");
     }
 
-    var brandDelay = new Promise(function (resolve) {
-      window.setTimeout(resolve, prefersReducedMotion ? 0 : MIN_BRAND_MS);
+    var blurInDelay = new Promise(function (resolve) {
+      window.setTimeout(resolve, prefersReducedMotion ? 0 : NAV_BLUR_IN_MS);
     });
 
     var fetchPromise = fetch(url, { credentials: "same-origin" }).then(function (res) {
@@ -180,7 +194,7 @@
       return res.text();
     });
 
-    Promise.all([fetchPromise, brandDelay])
+    Promise.all([fetchPromise, blurInDelay])
       .then(function (results) {
         if (token !== navToken) return; // a newer navigation has taken over
         applySwap(results[0], url, isPopstate);
@@ -225,9 +239,12 @@
       window.Herbig.initContent();
     }
 
-    if (overlay) {
-      window.setTimeout(function () { overlay.classList.remove("is-visible"); }, prefersReducedMotion ? 0 : 150);
-    }
+    window.setTimeout(function () {
+      if (overlay) overlay.classList.remove("is-visible", "page-transition-overlay--nav");
+      if (window.Herbig && typeof window.Herbig.unlockNavbarTheme === "function") {
+        window.Herbig.unlockNavbarTheme();
+      }
+    }, prefersReducedMotion ? 0 : NAV_BLUR_OUT_MS);
 
     var hash = "";
     try { hash = new URL(url, window.location.href).hash; } catch (e) {}

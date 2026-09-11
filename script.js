@@ -67,9 +67,25 @@
   var navbar = document.getElementById("navbar");
   var darkSections = [];
 
+  // While a page-to-page transition is in flight, #route-content is
+  // mid-fade (exit) or hasn't risen into place yet (enter) — its
+  // data-navbar-theme section is present in the DOM but not yet visibly
+  // painted, so reading "what's behind the navbar" would be correct on
+  // paper but wrong on screen: a transparent/dark-theme navbar over
+  // barely-there content reads as invisible white-on-white text. Locking
+  // to the solid "is-scrolled" look for the duration of the transition
+  // (see transitions.js) keeps the navbar legible throughout; unlocking
+  // re-syncs it to the real scroll position the instant the transition
+  // settles.
+  var navbarThemeLocked = false;
+
   var updateNavbar = function () {
     if (!navbar) return;
     tickingNavbar = false;
+    if (navbarThemeLocked) {
+      navbar.classList.add("is-scrolled");
+      return;
+    }
     // offsetTop/offsetHeight are layout-based and ignore CSS transforms, so this
     // stays correct even while #route-content is mid-rise (translateY animating
     // in) right after the branded transition swaps in a new page — a plain
@@ -352,4 +368,12 @@
   window.Herbig = window.Herbig || {};
   window.Herbig.initContent = initContent;
   window.Herbig.refreshNavbarTheme = refreshDarkSections;
+  window.Herbig.lockNavbarTheme = function () {
+    navbarThemeLocked = true;
+    if (navbar) navbar.classList.add("is-scrolled");
+  };
+  window.Herbig.unlockNavbarTheme = function () {
+    navbarThemeLocked = false;
+    updateNavbar();
+  };
 })();
