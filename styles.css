@@ -269,7 +269,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .brand__name { font-family: var(--font-display); font-weight: 800; font-size: 14px; color: var(--color-white); transition: color 0.3s var(--ease); }
 .brand__tagline { font-weight: 600; font-size: 7px; letter-spacing: 0.7px; opacity: 0.8; color: var(--color-white); transition: color 0.3s var(--ease); }
 @media (min-width: 900px) { .brand__name { font-size: 19px; } .brand__tagline { font-size: 9px; letter-spacing: 1.08px; } }
-.navbar.is-scrolled .brand__name, .navbar.is-scrolled .brand__tagline { color: var(--color-green); }
+.navbar.is-scrolled .brand__name, .navbar.is-scrolled .brand__tagline { color: var(--color-ink); }
 .footer .brand__name, .footer .brand__tagline { color: var(--color-white); }
 
 .nav-links { display: none; align-items: center; gap: 36px; }
