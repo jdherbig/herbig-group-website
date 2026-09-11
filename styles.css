@@ -873,8 +873,26 @@ html.is-fast-scroll .reveal-right {
    so a downward-cast shadow just reads as a soft grey gap/seam between
    the two rather than a real drop shadow. The 1px border-bottom is the
    only divider. */
-.page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; overflow: hidden; border-bottom: 1px solid var(--glass-border); color: var(--color-white); background: var(--color-dark); }
+.page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; margin-bottom: 0; overflow: hidden; border-bottom: 1px solid var(--glass-border); color: var(--color-white); background: var(--color-dark); }
 .page-header__bg { position: absolute; inset: 0; z-index: 0; }
+
+/* ---------- Internal-page hero -> first section handoff ----------
+ * Every interior page's first body section (.holdings-showcase,
+ * .housing-highlights, .operating-pillars, .jv-section, .case-deep-dive)
+ * carries its own generic top padding, meant for the breathing room
+ * BETWEEN sections further down the page - on desktop a couple of those
+ * grow to 80px top padding for that reason. Stacked directly under the
+ * hero, that reads as an excessive, disconnected gap instead. This rule
+ * targets only the section immediately after the hero (main's direct
+ * .page-header/.case-hero sibling) and overrides just its top padding,
+ * not the class's own side/bottom padding or any later section's
+ * spacing - so the first eyebrow/label sits a consistent ~40px below
+ * the hero boundary on every interior page, and the hero visually
+ * connects to the content that follows it. */
+main > .page-header + section,
+main > .case-hero + section {
+  padding-top: 40px;
+}
 /* Premium entrance (not the generic .reveal): initHeroEntrance() in
    script.js adds .is-loaded to .page-header on content init - it does
    NOT wait on this image, or on anything else, to load. The image just
@@ -1193,7 +1211,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 
 /* Same reasoning as .page-header above - no downward box-shadow, since
    this sits flush against the white content that follows, not above it. */
-.case-hero { position: relative; background: var(--color-dark); padding: 48px var(--container-pad) 56px; display: flex; flex-direction: column; gap: 32px; overflow: hidden; }
+.case-hero { position: relative; background: var(--color-dark); padding: 48px var(--container-pad) 56px; margin-bottom: 0; display: flex; flex-direction: column; gap: 32px; overflow: hidden; }
 @media (min-width: 900px) { .case-hero { padding: 48px 80px 72px; gap: 48px; } }
 .case-hero__intro { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; color: var(--color-white); max-width: 760px; }
 @media (min-width: 900px) { .case-hero__intro { gap: 24px; } }
