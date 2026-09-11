@@ -923,7 +923,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 /* ============================================
    SUBPAGE: JOINT VENTURES SPLIT
    ============================================ */
-.jv-section { position: relative; padding: 48px var(--container-pad) 80px; overflow: hidden; }
+.jv-section { position: relative; background: var(--color-white); padding: 48px var(--container-pad) 80px; overflow: hidden; }
 .jv-split { display: flex; flex-direction: column; gap: 48px; position: relative; z-index: 1; }
 @media (min-width: 900px) { .jv-split { flex-direction: row; align-items: flex-start; gap: 32px; } }
 .jv-panel { display: flex; flex-direction: column; gap: 24px; }
@@ -955,7 +955,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 /* ============================================
    SUBPAGE: HOUSING HIGHLIGHTS (housing-projects)
    ============================================ */
-.housing-highlights { position: relative; padding: 48px var(--container-pad) 80px; display: flex; flex-direction: column; gap: 48px; }
+.housing-highlights { position: relative; background: var(--color-white); padding: 48px var(--container-pad) 80px; display: flex; flex-direction: column; gap: 48px; }
 
 .feature-split { display: flex; flex-direction: column; gap: 32px; align-items: center; }
 @media (min-width: 900px) { .feature-split { flex-direction: row; gap: 48px; align-items: center; } }
