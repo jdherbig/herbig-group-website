@@ -585,8 +585,10 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; overflow: hidden; border-bottom: 1px solid var(--glass-border); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06), 0 24px 56px rgba(0, 0, 0, 0.08); color: var(--color-white); background: var(--color-dark); }
 .page-header__bg { position: absolute; inset: 0; z-index: 0; }
 .page-header__bg img { width: 100%; height: 100%; object-fit: cover; }
-.page-header__bg::after { content: ""; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.62); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-.page-header__copy { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 20px; max-width: 760px; }
+.page-header__bg::after { content: ""; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.68); }
+.page-header--blur .page-header__bg::after { background: rgba(15, 23, 42, 0.62); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.page-header--tint-66 .page-header__bg::after { background: rgba(15, 23, 42, 0.66); }
+.page-header__copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; max-width: 760px; }
 .page-header h1 { font-family: var(--font-display); font-weight: 900; font-size: 30px; line-height: 1.15; }
 @media (min-width: 900px) { .page-header h1 { font-size: 48px; } }
 .page-header__sub { font-size: 15px; line-height: 1.65; opacity: 0.75; }
@@ -737,7 +739,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 /* ============================================
    SUBPAGE: FORTITUDE ARIZONA CASE STUDY
    ============================================ */
-.breadcrumbs { background: #30353b; border-bottom: 1px solid rgba(255, 255, 255, 0.4); padding: 24px var(--container-pad) 12px; display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: var(--nav-height); }
+.breadcrumbs { background: #30353b; border-bottom: 1px solid rgba(255, 255, 255, 0.4); padding: calc(var(--nav-height) + 24px) var(--container-pad) 12px; display: flex; gap: 8px; align-items: center; font-size: 13px; }
 .breadcrumbs a { color: #cfcfcf; font-weight: 600; text-decoration: none; transition: color 0.25s var(--ease); }
 .breadcrumbs a:hover { color: var(--color-white); }
 .breadcrumbs .sep { color: #cfcfcf; font-weight: 600; }
@@ -745,7 +747,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .case-hero { position: relative; background: var(--color-dark); padding: 48px var(--container-pad) 56px; display: flex; flex-direction: column; gap: 32px; box-shadow: 0 24px 72px rgba(0, 0, 0, 0.14); overflow: hidden; }
 @media (min-width: 900px) { .case-hero { padding: 48px 80px 72px; gap: 48px; } }
-.case-hero__intro { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 20px; color: var(--color-white); max-width: 760px; }
+.case-hero__intro { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; color: var(--color-white); max-width: 760px; }
 @media (min-width: 900px) { .case-hero__intro { gap: 24px; } }
 .case-hero__intro h1 { font-family: var(--font-display); font-weight: 900; font-size: 32px; line-height: 1.1; }
 @media (min-width: 900px) { .case-hero__intro h1 { font-size: 56px; } }
@@ -790,7 +792,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .gallery-section { position: relative; background: var(--color-dark); padding: 48px var(--container-pad) 64px; display: flex; flex-direction: column; gap: 32px; box-shadow: 0 24px 72px rgba(0, 0, 0, 0.14); overflow: hidden; }
 @media (min-width: 900px) { .gallery-section { padding: 80px; gap: 48px; } }
-.gallery-header { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; color: var(--color-white); max-width: 800px; }
+.gallery-header { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; color: var(--color-white); max-width: 800px; }
 .gallery-header h2 { font-family: var(--font-display); font-weight: 800; font-size: 24px; }
 @media (min-width: 900px) { .gallery-header h2 { font-size: 32px; } }
 .gallery-header p { font-size: 14px; line-height: 1.6; opacity: 0.8; }
