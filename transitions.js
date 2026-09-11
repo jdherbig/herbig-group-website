@@ -13,12 +13,11 @@
  *  - Clicking the logo (.brand, any page -> index.html): replays that
  *    exact same full curtain + logo moment on demand, every time —
  *    see navigateHome().
- *  - Every other internal link click: a fast content-only crossfade —
- *    no overlay, just #route-content fading out, swapping, and fading
- *    back in with a small drift — see navigate(). This is the
- *    "page-to-page" transition; it's deliberately quick and
- *    single-motion so it reads as seamless rather than a multi-step
- *    animation sequence.
+ *  - Every other internal link click: an instant content swap, no
+ *    animation at all — see navigate(). #route-content's innerHTML is
+ *    replaced directly; the only visible motion on a "page-to-page"
+ *    nav is whatever the new page's own content does on load (e.g.
+ *    its scroll-reveal).
  *
  * Depends on:
  *  - lottie-web (window.lottie), loaded before this file — used only for
@@ -44,9 +43,6 @@
   var LOTTIE_SRC = "assets/lottie/logo-animation.json";
   var SEG_FULL = [0, 90];        // full "HERBIG GROUP" wordmark cascade — intro + logo-click replay
   var LOGO_SAFETY_MS = 2200;     // don't wait on lottie forever if it stalls or fails to load
-
-  var NAV_EXIT_MS = 260;         // page-to-page nav: time from click to content swap (matches the CSS .route-content--exit transition duration, so the swap lands right as the old content finishes fading out)
-  var NAV_ENTER_MS = 320;        // page-to-page nav: duration of the new content's crossfade-in (matches the CSS .route-content--nav-enter-active transition)
 
   var ACTIVE_NAV_MAP = {
     "our-blueprint.html": "our-blueprint.html",
@@ -135,10 +131,6 @@
     });
   }
 
-  function forceReflow() {
-    void routeContent.offsetWidth;
-  }
-
   /* ---------- Initial branded reveal (once per browser session) ---------- */
   function runIntro() {
     var html = document.documentElement;
@@ -194,37 +186,27 @@
   function navigate(url, isPopstate) {
     var token = ++navToken;
 
-    // Lock the navbar to its solid/legible look for the whole transition —
-    // #route-content is fading out (and, shortly, fading back in) under it,
-    // so its usual "transparent over a dark section" theme would otherwise
-    // read as invisible white-on-white text for that stretch. See the
-    // navbarThemeLocked comment in script.js.
+    // Lock the navbar to its solid/legible look for the swap -
+    // #route-content is replaced synchronously below, so its usual
+    // "transparent over a dark section" theme could otherwise flash
+    // briefly mid-update. See the navbarThemeLocked comment in script.js.
     if (window.Herbig && typeof window.Herbig.lockNavbarTheme === "function") {
       window.Herbig.lockNavbarTheme();
     }
 
-    if (!prefersReducedMotion) {
-      routeContent.classList.add("route-content--exit");
-    }
-
-    var exitDelay = new Promise(function (resolve) {
-      window.setTimeout(resolve, prefersReducedMotion ? 0 : NAV_EXIT_MS);
-    });
-
-    var fetchPromise = fetch(url, { credentials: "same-origin" }).then(function (res) {
+    fetch(url, { credentials: "same-origin" }).then(function (res) {
       if (!res.ok) throw new Error("Navigation fetch failed: " + res.status);
       return res.text();
+    }).then(function (html) {
+      if (token !== navToken) return; // a newer navigation has taken over
+      applySwap(html, url, isPopstate);
+      if (window.Herbig && typeof window.Herbig.unlockNavbarTheme === "function") {
+        window.Herbig.unlockNavbarTheme();
+      }
+    }).catch(function () {
+      if (token !== navToken) return;
+      window.location.href = url; // never leave the user stuck
     });
-
-    Promise.all([fetchPromise, exitDelay])
-      .then(function (results) {
-        if (token !== navToken) return; // a newer navigation has taken over
-        applySwap(results[0], url, isPopstate, { instant: false });
-      })
-      .catch(function () {
-        if (token !== navToken) return;
-        window.location.href = url; // never leave the user stuck
-      });
   }
 
   // Clicking the logo: replays the exact first-load intro (full white
@@ -240,7 +222,7 @@
         return res.text();
       }).then(function (html) {
         if (token !== navToken) return;
-        applySwap(html, url, isPopstate, { instant: true });
+        applySwap(html, url, isPopstate);
       }).catch(function () {
         if (token !== navToken) return;
         window.location.href = url;
@@ -260,7 +242,7 @@
     Promise.all([fetchPromise, logoPromise])
       .then(function (results) {
         if (token !== navToken) return;
-        applySwap(results[0], url, isPopstate, { instant: true });
+        applySwap(results[0], url, isPopstate);
         window.setTimeout(function () {
           if (token !== navToken) return;
           if (overlay) overlay.classList.remove("is-visible");
@@ -272,9 +254,7 @@
       });
   }
 
-  function applySwap(html, url, isPopstate, opts) {
-    opts = opts || {};
-
+  function applySwap(html, url, isPopstate) {
     var doc = new DOMParser().parseFromString(html, "text/html");
     var newContent = doc.getElementById("route-content");
 
@@ -290,37 +270,13 @@
     var newTitle = doc.querySelector("title");
     if (newTitle) document.title = newTitle.textContent;
 
-    routeContent.classList.remove("route-content--exit");
-
-    if (opts.instant || prefersReducedMotion) {
-      // Either fully hidden behind the opaque logo curtain (instant) or
-      // reduced motion is on — no crossfade choreography needed, just swap.
-      routeContent.classList.remove("route-content--nav-enter", "route-content--nav-enter-active");
-      routeContent.innerHTML = newContent.innerHTML;
-    } else {
-      routeContent.classList.add("route-content--nav-enter");
-      routeContent.innerHTML = newContent.innerHTML;
-      forceReflow();
-      routeContent.classList.remove("route-content--nav-enter");
-      routeContent.classList.add("route-content--nav-enter-active");
-      window.setTimeout(function () {
-        routeContent.classList.remove("route-content--nav-enter-active");
-      }, NAV_ENTER_MS);
-    }
+    routeContent.innerHTML = newContent.innerHTML;
 
     window.scrollTo(0, 0);
     updateActiveNav(pathFilename(url));
 
     if (window.Herbig && typeof window.Herbig.initContent === "function") {
       window.Herbig.initContent();
-    }
-
-    if (!opts.instant) {
-      window.setTimeout(function () {
-        if (window.Herbig && typeof window.Herbig.unlockNavbarTheme === "function") {
-          window.Herbig.unlockNavbarTheme();
-        }
-      }, prefersReducedMotion ? 0 : NAV_ENTER_MS);
     }
 
     var hash = "";
