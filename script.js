@@ -105,8 +105,11 @@
     }
     lastScrollY = currentY;
 
+    // While locked (a PJAX navigation is in flight), leave whatever theme
+    // is currently showing exactly as-is - don't guess. applySwap() in
+    // transitions.js sets the correct theme declaratively the moment the
+    // new content lands; there's nothing useful to compute here until then.
     if (navbarThemeLocked) {
-      navbar.classList.add("is-scrolled");
       return;
     }
     // offsetTop/offsetHeight are layout-based and ignore CSS transforms, so this
@@ -158,6 +161,20 @@
     var hero = document.querySelector(".hero");
     if (hero) {
       requestAnimationFrame(function () { hero.classList.add("is-loaded"); });
+    }
+  }
+
+  // Premium internal-page hero entrance (.page-header / .case-hero). Adds
+  // .is-loaded on the next frame, same as initHeroZoom above - deliberately
+  // NOT tied to the hero image's load event or any network timing, so it
+  // can never be the thing that makes the page feel like it's waiting on
+  // something. The navbar's own theme is set independently and earlier
+  // (see setInitialNavbarTheme in this file / applySwap in transitions.js)
+  // and never depends on this either.
+  function initHeroEntrance() {
+    var el = document.querySelector(".page-header, .case-hero");
+    if (el) {
+      requestAnimationFrame(function () { el.classList.add("is-loaded"); });
     }
   }
 
@@ -643,6 +660,7 @@
   function initContent() {
     refreshDarkSections();
     initHeroZoom();
+    initHeroEntrance();
     initScrollReveal();
     initCinematicTrack();
     initEquationReveal();
@@ -658,10 +676,16 @@
   window.Herbig.refreshNavbarTheme = refreshDarkSections;
   window.Herbig.lockNavbarTheme = function () {
     navbarThemeLocked = true;
-    if (navbar) navbar.classList.add("is-scrolled");
   };
   window.Herbig.unlockNavbarTheme = function () {
     navbarThemeLocked = false;
     updateNavbar();
+  };
+  // Called by transitions.js with the incoming page's theme, read
+  // declaratively from its own markup, in the same synchronous tick as
+  // the content swap - this is the one place that's allowed to set the
+  // theme while locked, since it's not a guess.
+  window.Herbig.setInitialNavbarTheme = function (isDark) {
+    if (navbar) navbar.classList.toggle("is-scrolled", !isDark);
   };
 })();

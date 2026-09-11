@@ -44,6 +44,20 @@
   --ease-smooth: ease-in-out; /* for colour fades — --ease-snap front-loads the change too fast to read as a smooth fade */
   --dur: 0.5s;
 
+  /* Motion system tokens. --ease is already the site's "premium" curve
+     (a slow, confident settle with no overshoot) and --dur its default
+     duration — these aliases exist so new motion work has named, coherent
+     steps to reach for instead of inventing one-off values. Keep reaching
+     for these (or --ease/--dur directly) rather than hand-writing new
+     durations/easings on individual rules. */
+  --motion-ease-premium: var(--ease);
+  --motion-duration-fast: 0.35s;
+  --motion-duration-medium: 0.65s;
+  --motion-duration-slow: 0.9s;
+  --motion-distance-small: 12px;
+  --motion-distance-medium: 20px;
+  --motion-distance-large: 24px;
+
   --container-pad: 20px;
   --nav-height: 76px;
 }
@@ -77,7 +91,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
 }
 
 :focus-visible {
@@ -208,7 +222,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   font-weight: 700;
   font-size: 14px;
   box-shadow: var(--shadow-btn);
-  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease), padding 0.3s var(--ease);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease), padding 0.5s var(--motion-ease-premium);
   will-change: transform;
   width: 100%;
   border: none;
@@ -258,7 +272,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   transition: background 0.35s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease), backdrop-filter 0.35s var(--ease);
 }
 .navbar.is-scrolled { background: var(--color-white); border-bottom: 1px solid var(--color-border); box-shadow: 0 4px 20px rgba(33, 38, 45, 0.06); backdrop-filter: none; -webkit-backdrop-filter: none; }
-.navbar__inner { display: flex; align-items: center; justify-content: space-between; padding: 16px var(--container-pad); max-width: 1600px; margin: 0 auto; transition: padding 0.3s var(--ease); }
+.navbar__inner { display: flex; align-items: center; justify-content: space-between; padding: 16px var(--container-pad); max-width: 1600px; margin: 0 auto; transition: padding 0.5s var(--motion-ease-premium); }
 @media (min-width: 900px) { .navbar__inner { padding: 18px var(--container-pad); } }
 /* Compact scroll state: ~25% off vertical padding on mobile, ~22% on
    desktop - noticeable without feeling squeezed. */
@@ -268,7 +282,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
 .brand__icon { width: 36px; height: 36px; }
 @media (min-width: 900px) { .brand__icon { width: 52px; height: 52px; } }
-.brand__icon-wrap { position: relative; width: 36px; height: 36px; flex-shrink: 0; transition: width 0.3s var(--ease), height 0.3s var(--ease); }
+.brand__icon-wrap { position: relative; width: 36px; height: 36px; flex-shrink: 0; transition: width 0.5s var(--motion-ease-premium), height 0.5s var(--motion-ease-premium); }
 @media (min-width: 900px) { .brand__icon-wrap { width: 52px; height: 52px; } }
 /* Logo shrinks modestly on scroll (~11-13%), not in lockstep with the
    header - it should stay the visually dominant brand mark. */
@@ -477,9 +491,42 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .eq-card h3 { font-weight: 900; font-size: 26px; line-height: 1.15; color: var(--color-ink); }
 .eq-card__formula { font-family: var(--font-display); font-weight: 700; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-green); margin-top: -10px; }
 .eq-card__image { border-radius: var(--radius-lg); overflow: hidden; height: 150px; }
-.eq-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
-.eq-card:hover .eq-card__image img { transform: scale(1.06); }
+.eq-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s var(--motion-ease-premium); }
+.eq-card:hover .eq-card__image img { transform: scale(1.03); }
 .eq-card__body { font-size: 14px; line-height: 1.75; color: var(--color-ink); opacity: 0.7; }
+/* Core Equation cards: coordinated stripe -> number -> heading -> image ->
+   body reveal, same convention as .metric-card above - the card itself
+   doesn't fade as a block (that would fight the hover lift below and the
+   sequence within it); .reveal-stagger only supplies the "has this
+   scrolled into view" trigger via .is-visible. Card-to-card stagger steps
+   0.1s like .metric-card; the internal per-element step is a touch
+   tighter (0.06s) since each card carries five beats instead of three. */
+.eq-card.reveal-stagger, .eq-card.reveal-stagger.is-visible { opacity: 1; transform: none; }
+.eq-card__stripe { transform: scaleX(0); transform-origin: left; transition: transform 0.5s var(--motion-ease-premium); }
+.eq-card.is-visible .eq-card__stripe { transform: scaleX(1); }
+.eq-card__number { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.45s var(--motion-ease-premium), transform 0.45s var(--motion-ease-premium); }
+.eq-card.is-visible .eq-card__number { opacity: 1; transform: translateY(0); }
+.eq-card h3, .eq-card__formula { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.45s var(--motion-ease-premium), transform 0.45s var(--motion-ease-premium); }
+.eq-card.is-visible h3, .eq-card.is-visible .eq-card__formula { opacity: 1; transform: translateY(0); }
+.eq-card__image { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.45s var(--motion-ease-premium), transform 0.45s var(--motion-ease-premium); }
+.eq-card.is-visible .eq-card__image { opacity: 1; transform: translateY(0); }
+.eq-card:nth-child(1) .eq-card__stripe { transition-delay: 0s; }
+.eq-card:nth-child(1) .eq-card__number { transition-delay: 0.06s; }
+.eq-card:nth-child(1) h3, .eq-card:nth-child(1) .eq-card__formula { transition-delay: 0.12s; }
+.eq-card:nth-child(1) .eq-card__image { transition-delay: 0.18s; }
+.eq-card:nth-child(1) .eq-card__body { transition-delay: 0.24s; }
+.eq-card:nth-child(2) .eq-card__stripe { transition-delay: 0.1s; }
+.eq-card:nth-child(2) .eq-card__number { transition-delay: 0.16s; }
+.eq-card:nth-child(2) h3, .eq-card:nth-child(2) .eq-card__formula { transition-delay: 0.22s; }
+.eq-card:nth-child(2) .eq-card__image { transition-delay: 0.28s; }
+.eq-card:nth-child(2) .eq-card__body { transition-delay: 0.34s; }
+.eq-card:nth-child(3) .eq-card__stripe { transition-delay: 0.2s; }
+.eq-card:nth-child(3) .eq-card__number { transition-delay: 0.26s; }
+.eq-card:nth-child(3) h3, .eq-card:nth-child(3) .eq-card__formula { transition-delay: 0.32s; }
+.eq-card:nth-child(3) .eq-card__image { transition-delay: 0.38s; }
+.eq-card:nth-child(3) .eq-card__body { transition-delay: 0.44s; }
+.eq-card__body { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.45s var(--motion-ease-premium), transform 0.45s var(--motion-ease-premium); }
+.eq-card.is-visible .eq-card__body { opacity: 1; transform: translateY(0); }
 
 .eq-card--dark { z-index: 2; background: var(--color-dark); border-color: #e6eaf0; border-radius: 36px; box-shadow: 0 32px 48px rgba(33, 38, 45, 0.15); }
 .eq-card--dark h3, .eq-card--dark .eq-card__body { color: var(--color-white); }
@@ -702,17 +749,23 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 /* ============================================
    SCROLL REVEAL
    ============================================ */
-.reveal, .reveal-stagger { opacity: 0; transform: translateY(28px); transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
+/* Secondary reveal (category B in the motion system): restrained
+   fade-up for paragraphs, cards, metadata - not the hero, which gets its
+   own dedicated entrance (see .page-header / .case-hero below). Distance
+   and duration are intentionally modest so the page doesn't read as
+   "everything is animating in" - premium motion needs contrast, not
+   uniform coverage. */
+.reveal, .reveal-stagger { opacity: 0; transform: translateY(var(--motion-distance-medium)); transition: opacity var(--motion-duration-medium) var(--motion-ease-premium), transform var(--motion-duration-medium) var(--motion-ease-premium); }
 .reveal.is-visible, .reveal-stagger.is-visible { opacity: 1; transform: translateY(0); }
 .reveal-stagger:nth-child(1) { transition-delay: 0s; }
-.reveal-stagger:nth-child(2) { transition-delay: 0.08s; }
-.reveal-stagger:nth-child(3) { transition-delay: 0.16s; }
-.reveal-stagger:nth-child(4) { transition-delay: 0.24s; }
-.reveal-stagger:nth-child(5) { transition-delay: 0.32s; }
+.reveal-stagger:nth-child(2) { transition-delay: 0.07s; }
+.reveal-stagger:nth-child(3) { transition-delay: 0.14s; }
+.reveal-stagger:nth-child(4) { transition-delay: 0.21s; }
+.reveal-stagger:nth-child(5) { transition-delay: 0.28s; }
 
-.reveal-left, .reveal-right { opacity: 0; transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
-.reveal-left { transform: translateX(-32px); }
-.reveal-right { transform: translateX(32px); }
+.reveal-left, .reveal-right { opacity: 0; transition: opacity var(--motion-duration-medium) var(--motion-ease-premium), transform var(--motion-duration-medium) var(--motion-ease-premium); }
+.reveal-left { transform: translateX(calc(-1 * var(--motion-distance-large))); }
+.reveal-right { transform: translateX(var(--motion-distance-large)); }
 .reveal-left.is-visible, .reveal-right.is-visible { opacity: 1; transform: translateX(0); }
 
 /* ============================================
@@ -730,11 +783,28 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    ============================================ */
 .page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; overflow: hidden; border-bottom: 1px solid var(--glass-border); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06), 0 24px 56px rgba(0, 0, 0, 0.08); color: var(--color-white); background: var(--color-dark); }
 .page-header__bg { position: absolute; inset: 0; z-index: 0; }
-.page-header__bg img { width: 100%; height: 100%; object-fit: cover; }
+/* Premium entrance (not the generic .reveal): initHeroEntrance() in
+   script.js adds .is-loaded to .page-header on content init - it does
+   NOT wait on this image, or on anything else, to load. The image just
+   settles from a slight scale while everything else stays visible from
+   frame 0; nothing here can block or depend on network timing. */
+.page-header__bg img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.025); transition: transform 1.15s var(--motion-ease-premium) 0.1s; }
+.page-header.is-loaded .page-header__bg img { transform: scale(1); }
 .page-header__bg::after { content: ""; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.68); }
 .page-header--tint-62 .page-header__bg::after { background: rgba(15, 23, 42, 0.62); }
 .page-header--tint-66 .page-header__bg::after { background: rgba(15, 23, 42, 0.66); }
 .page-header__copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; max-width: 760px; }
+/* Motion hierarchy for the header entrance: eyebrow tag, then the masked
+   headline, then the supporting line - staggered rather than moving
+   together, so it reads as one composed arrival, not three things
+   animating at once. */
+.page-header__copy .tag { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.6s var(--motion-ease-premium) 0.15s, transform 0.6s var(--motion-ease-premium) 0.15s; }
+.page-header.is-loaded .page-header__copy .tag { opacity: 1; transform: translateY(0); }
+.page-header__copy h1 { overflow: hidden; }
+.page-header__copy h1 > span { display: inline-block; transform: translateY(28px); transition: transform 0.8s var(--motion-ease-premium) 0.28s; }
+.page-header.is-loaded .page-header__copy h1 > span { transform: translateY(0); }
+.page-header__sub { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.65s var(--motion-ease-premium) 0.45s, transform 0.65s var(--motion-ease-premium) 0.45s; }
+.page-header.is-loaded .page-header__sub { opacity: 1; transform: translateY(0); }
 .page-header h1 { font-family: var(--font-display); font-weight: 900; font-size: 30px; line-height: 1.15; }
 @media (min-width: 900px) { .page-header h1 { font-size: 48px; } }
 .page-header__sub { font-size: 15px; line-height: 1.65; opacity: 0.75; }
@@ -849,8 +919,8 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 
 /* ---- Image cards ---- */
 .holding-card__media { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
-.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1); transition: transform 0.7s var(--ease); }
-.holding-card:hover .holding-card__media img, .holding-card:focus-visible .holding-card__media img, .holding-card:active .holding-card__media img { transform: scale(1.04); }
+.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1); transition: transform 0.45s var(--motion-ease-premium); }
+.holding-card:hover .holding-card__media img, .holding-card:focus-visible .holding-card__media img, .holding-card:active .holding-card__media img { transform: scale(1.025); }
 
 .holding-card__scrim { position: absolute; inset: 0; background: rgba(33, 38, 45, 0.18); pointer-events: none; }
 .holding-card__gradient { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(22, 25, 30, 0) 0%, rgba(22, 25, 30, 0) 50%, rgba(22, 25, 30, 0.44) 75%, rgba(22, 25, 30, 0.9) 100%); }
@@ -969,9 +1039,28 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 @media (min-width: 900px) { .feature-split__content > p { font-size: 15px; } }
 
 .metrics-row { display: flex; flex-wrap: wrap; gap: 16px; }
-.metric-card { flex: 1; min-width: 140px; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 16px 16px rgba(33, 38, 45, 0.04); }
-.metric-card__value { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--color-green); }
-.metric-card__label { font-size: 12px; font-weight: 600; color: var(--color-ink); opacity: 0.75; }
+.metric-card { flex: 1; min-width: 140px; position: relative; overflow: hidden; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 16px 16px rgba(33, 38, 45, 0.04); }
+/* Coordinated stat reveal: divider, then number, then label - a tight
+   internal sequence per card, plus a slightly longer stagger card-to-card.
+   The card itself doesn't fade as a block (that would fight the sequence
+   below it); .reveal-stagger only supplies the "has this scrolled into
+   view" trigger via .is-visible. */
+.metric-card.reveal-stagger, .metric-card.reveal-stagger.is-visible { opacity: 1; transform: none; transition: none; }
+.metric-card::before { content: ""; position: absolute; top: 0; left: 20px; right: 20px; height: 2px; background: var(--color-green); transform: scaleX(0); transform-origin: left; transition: transform 0.5s var(--motion-ease-premium); }
+.metric-card.is-visible::before { transform: scaleX(1); }
+.metric-card__value { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--color-green); opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.45s var(--motion-ease-premium), transform 0.45s var(--motion-ease-premium); }
+.metric-card.is-visible .metric-card__value { opacity: 1; transform: translateY(0); }
+.metric-card__label { font-size: 12px; font-weight: 600; color: var(--color-ink); opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.45s var(--motion-ease-premium), transform 0.45s var(--motion-ease-premium); }
+.metric-card.is-visible .metric-card__label { opacity: 1; transform: translateY(0); }
+.metric-card:nth-child(1)::before { transition-delay: 0s; }
+.metric-card:nth-child(1) .metric-card__value { transition-delay: 0.08s; }
+.metric-card:nth-child(1) .metric-card__label { transition-delay: 0.16s; }
+.metric-card:nth-child(2)::before { transition-delay: 0.1s; }
+.metric-card:nth-child(2) .metric-card__value { transition-delay: 0.18s; }
+.metric-card:nth-child(2) .metric-card__label { transition-delay: 0.26s; }
+.metric-card:nth-child(3)::before { transition-delay: 0.2s; }
+.metric-card:nth-child(3) .metric-card__value { transition-delay: 0.28s; }
+.metric-card:nth-child(3) .metric-card__label { transition-delay: 0.36s; }
 
 .grant-block { position: relative; overflow: hidden; background: var(--color-dark); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 36px; padding: 32px 24px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.09), 0 28px 60px rgba(0, 0, 0, 0.26); }
 @media (min-width: 900px) { .grant-block { padding: 40px; } }
@@ -999,13 +1088,19 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 @media (min-width: 900px) { .case-hero { padding: 48px 80px 72px; gap: 48px; } }
 .case-hero__intro { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; color: var(--color-white); max-width: 760px; }
 @media (min-width: 900px) { .case-hero__intro { gap: 24px; } }
-.case-hero__intro h1 { font-family: var(--font-display); font-weight: 900; font-size: 32px; line-height: 1.1; }
+.case-hero__intro h1 { font-family: var(--font-display); font-weight: 900; font-size: 32px; line-height: 1.1; overflow: hidden; }
 @media (min-width: 900px) { .case-hero__intro h1 { font-size: 56px; } }
-.case-hero__intro p { font-size: 15px; line-height: 1.65; opacity: 0.75; }
+.case-hero__intro h1 > span { display: inline-block; transform: translateY(28px); transition: transform 0.8s var(--motion-ease-premium) 0.28s; }
+.case-hero.is-loaded .case-hero__intro h1 > span { transform: translateY(0); }
+.case-hero__intro .tag { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.6s var(--motion-ease-premium) 0.15s, transform 0.6s var(--motion-ease-premium) 0.15s; }
+.case-hero.is-loaded .case-hero__intro .tag { opacity: 1; transform: translateY(0); }
+.case-hero__intro p { font-size: 15px; line-height: 1.65; opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.65s var(--motion-ease-premium) 0.45s, transform 0.65s var(--motion-ease-premium) 0.45s; }
+.case-hero.is-loaded .case-hero__intro p { opacity: 0.75; transform: translateY(0); }
 @media (min-width: 900px) { .case-hero__intro p { font-size: 18px; } }
 .case-hero__media { position: relative; z-index: 1; width: 100%; height: 260px; border-radius: var(--radius-2xl); overflow: hidden; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07), 0 24px 56px rgba(0, 0, 0, 0.15); }
 @media (min-width: 900px) { .case-hero__media { height: 640px; } }
-.case-hero__media img { width: 100%; height: 100%; object-fit: cover; }
+.case-hero__media img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.025); transition: transform 1.15s var(--motion-ease-premium) 0.1s; }
+.case-hero.is-loaded .case-hero__media img { transform: scale(1); }
 .case-hero__media::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.28); }
 .case-meta-bar { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 20px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: var(--radius-2xl); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 24px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.15); }
 @media (min-width: 900px) { .case-meta-bar { padding: 32px; gap: 32px; flex-wrap: nowrap; } }
@@ -1131,4 +1226,27 @@ html.hg-intro-pending #route-content {
     transform: none !important;
   }
   .page-transition-overlay { display: none !important; }
+
+  /* Belt-and-suspenders alongside the sitewide transition-duration:0.01ms
+     rule above: the internal-page hero entrance (.page-header/.case-hero)
+     starts several children hidden/offset pending a class the JS always
+     adds regardless of motion preference - this guarantees they render
+     in their final, fully visible position outright rather than relying
+     on a near-zero transition to get there. */
+  .page-header__bg img,
+  .case-hero__media img,
+  .page-header__copy h1 > span,
+  .case-hero__intro h1 > span {
+    transform: none !important;
+  }
+  .page-header__copy .tag,
+  .page-header__sub,
+  .case-hero__intro .tag {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .case-hero__intro p {
+    opacity: 0.75 !important;
+    transform: none !important;
+  }
 }

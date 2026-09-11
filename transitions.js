@@ -181,10 +181,14 @@
   function navigate(url, isPopstate) {
     var token = ++navToken;
 
-    // Lock the navbar to its solid/legible look for the swap -
-    // #route-content is replaced synchronously below, so its usual
-    // "transparent over a dark section" theme could otherwise flash
-    // briefly mid-update. See the navbarThemeLocked comment in script.js.
+    // Freeze the navbar's scroll-driven theme updates for the duration of
+    // the fetch - not to force any particular look, just so a stray
+    // resize/scroll event mid-flight can't recompute it against a section
+    // that's about to be replaced. applySwap() below sets the *correct*
+    // theme declaratively, from the incoming page's own markup, in the
+    // same synchronous tick as the content swap - see setInitialNavbarTheme
+    // in script.js. This is what eliminates the old flash-to-solid-then-
+    // flash-back that used to happen on every internal navigation.
     if (window.Herbig && typeof window.Herbig.lockNavbarTheme === "function") {
       window.Herbig.lockNavbarTheme();
     }
@@ -219,6 +223,19 @@
 
     var newTitle = doc.querySelector("title");
     if (newTitle) document.title = newTitle.textContent;
+
+    // Declarative navbar theme: read it straight from the fetched page's
+    // own markup (the same data-navbar-theme convention every section
+    // already uses - see refreshDarkSections() in script.js) and apply it
+    // to the live navbar BEFORE the content swap below, so the correct
+    // theme and the new content land in the same paint. Every page on the
+    // site opens on a dark-themed section today, but this reads it rather
+    // than assuming it, so it stays correct if that ever changes.
+    var firstThemed = newContent.querySelector("[data-navbar-theme]");
+    var initialDark = !!firstThemed && firstThemed.getAttribute("data-navbar-theme") === "dark";
+    if (window.Herbig && typeof window.Herbig.setInitialNavbarTheme === "function") {
+      window.Herbig.setInitialNavbarTheme(initialDark);
+    }
 
     routeContent.innerHTML = newContent.innerHTML;
 
