@@ -522,3 +522,13 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .reveal-left { transform: translateX(-32px); }
 .reveal-right { transform: translateX(32px); }
 .reveal-left.is-visible, .reveal-right.is-visible { opacity: 1; transform: translateX(0); }
+
+/* ============================================
+   COMING SOON (stub pages)
+   ============================================ */
+.coming-soon { position: relative; min-height: 70vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 20px; background: var(--color-dark); padding: calc(var(--nav-height) + 60px) var(--container-pad) 80px; overflow: hidden; }
+.coming-soon h1 { font-size: 34px; color: var(--color-white); font-weight: 900; max-width: 760px; position: relative; z-index: 1; }
+@media (min-width: 900px) { .coming-soon h1 { font-size: 48px; } }
+.coming-soon p { font-size: 16px; color: var(--color-white); opacity: 0.75; max-width: 560px; line-height: 1.6; position: relative; z-index: 1; }
+.coming-soon .tag { position: relative; z-index: 1; }
+.coming-soon .btn { position: relative; z-index: 1; }
