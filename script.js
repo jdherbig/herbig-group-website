@@ -3,26 +3,33 @@
 
   var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ---------- Mobile menu (full-screen overlay; header is stable — bind once) ----------
+  /* ---------- Mobile menu (grows from under the navbar; header is stable — bind once) ----------
    * #mobile-menu lives outside #route-content next to the navbar, so this
-   * binds once and keeps working across every PJAX page swap. */
+   * binds once and keeps working across every PJAX page swap. The navbar
+   * itself never gets covered — it stays put and eases into the same dark
+   * theme as the panel beneath it (see .navbar.menu-open in styles.css),
+   * so opening reads as one seamless move into dark mode rather than two
+   * separate things happening on top of each other. The hamburger button
+   * (which already animates into an X via the existing aria-expanded
+   * rules) is the only open/close control — no separate close button. */
   var toggle = document.getElementById("menu-toggle");
   var mobileMenu = document.getElementById("mobile-menu");
-  var mobileMenuClose = document.getElementById("mobile-menu-close");
+  var navbar = document.getElementById("navbar");
 
   if (toggle && mobileMenu) {
     var openMobileMenu = function () {
       mobileMenu.classList.add("is-open");
       mobileMenu.setAttribute("aria-hidden", "false");
       toggle.setAttribute("aria-expanded", "true");
+      if (navbar) navbar.classList.add("menu-open");
       document.documentElement.classList.add("no-scroll");
-      if (mobileMenuClose) mobileMenuClose.focus();
     };
 
     var closeMobileMenu = function () {
       mobileMenu.classList.remove("is-open");
       mobileMenu.setAttribute("aria-hidden", "true");
       toggle.setAttribute("aria-expanded", "false");
+      if (navbar) navbar.classList.remove("menu-open");
       document.documentElement.classList.remove("no-scroll");
     };
 
@@ -33,8 +40,6 @@
         openMobileMenu();
       }
     });
-
-    if (mobileMenuClose) mobileMenuClose.addEventListener("click", closeMobileMenu);
 
     mobileMenu.querySelectorAll("a").forEach(function (link) {
       link.addEventListener("click", closeMobileMenu);
