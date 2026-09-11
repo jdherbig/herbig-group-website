@@ -868,8 +868,7 @@ html.hg-intro-pending #route-content {
 
 .page-transition-overlay {
   position: fixed;
-  top: var(--nav-height);
-  left: 0; right: 0; bottom: 0;
+  inset: 0;
   z-index: 110;
   display: flex;
   align-items: center;
