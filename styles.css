@@ -1090,9 +1090,9 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
      rise/reveal, just triggered on demand instead of once per session.
    - Every other internal nav link uses a fast, single-motion crossfade
      instead (.route-content--nav-enter / --nav-enter-active) — a small
-     fade + 10px drift, no big slide, tightly timed to hand off to the
-     blur overlay rather than compete with it. See NAV_* constants in
-     transitions.js for the exact timing this is synced to.
+     fade + 10px drift, no overlay involved, just the content itself.
+     See NAV_* constants in transitions.js for the exact timing this
+     is synced to.
    ============================================================ */
 #route-content {
   opacity: 1;
@@ -1148,22 +1148,6 @@ html.hg-intro-pending #route-content {
 .page-transition-overlay__logo { width: 364px; max-width: 77vw; aspect-ratio: 1280 / 720; }
 @media (min-width: 900px) { .page-transition-overlay__logo { width: 448px; } }
 .page-transition-overlay__logo svg { display: block; width: 100%; height: 100%; }
-
-/* Page-to-page navigation only (added via JS as .page-transition-overlay--nav).
-   The first-load intro above is untouched — full white curtain + logo,
-   z-index 110, covers the whole viewport including the navbar. This
-   variant is a quick frosted-glass moment instead: translucent white +
-   backdrop-blur, no logo, and it sits BELOW the navbar (top: var(--nav-height),
-   z-index under the navbar's 100) so the navbar is always visible and never
-   blurred or covered while it plays. */
-.page-transition-overlay--nav {
-  top: var(--nav-height);
-  z-index: 90;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  transition: opacity 0.4s var(--ease), background 0.4s var(--ease), backdrop-filter 0.4s var(--ease);
-}
 
 @media (prefers-reduced-motion: reduce) {
   #route-content,

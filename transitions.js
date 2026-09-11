@@ -13,12 +13,12 @@
  *  - Clicking the logo (.brand, any page -> index.html): replays that
  *    exact same full curtain + logo moment on demand, every time —
  *    see navigateHome().
- *  - Every other internal link click: a fast frosted-blur crossfade
- *    (.page-transition-overlay--nav) sitting BELOW the navbar, no logo —
- *    see navigate(). This is the "page-to-page" transition; it's
- *    deliberately quick and single-motion (a short opacity+drift
- *    crossfade handing off to the blur, not a big slide) so it reads as
- *    seamless rather than a multi-step animation sequence.
+ *  - Every other internal link click: a fast content-only crossfade —
+ *    no overlay, just #route-content fading out, swapping, and fading
+ *    back in with a small drift — see navigate(). This is the
+ *    "page-to-page" transition; it's deliberately quick and
+ *    single-motion so it reads as seamless rather than a multi-step
+ *    animation sequence.
  *
  * Depends on:
  *  - lottie-web (window.lottie), loaded before this file — used only for
@@ -45,8 +45,7 @@
   var SEG_FULL = [0, 90];        // full "HERBIG GROUP" wordmark cascade — intro + logo-click replay
   var LOGO_SAFETY_MS = 2200;     // don't wait on lottie forever if it stalls or fails to load
 
-  var NAV_BLUR_IN_MS = 320;      // page-to-page nav: time from click to content swap
-  var NAV_BLUR_HOLD_MS = 120;    // page-to-page nav: hold after swap before the blur starts fading out
+  var NAV_EXIT_MS = 260;         // page-to-page nav: time from click to content swap (matches the CSS .route-content--exit transition duration, so the swap lands right as the old content finishes fading out)
   var NAV_ENTER_MS = 320;        // page-to-page nav: duration of the new content's crossfade-in (matches the CSS .route-content--nav-enter-active transition)
 
   var ACTIVE_NAV_MAP = {
@@ -205,12 +204,11 @@
     }
 
     if (!prefersReducedMotion) {
-      if (overlay) overlay.classList.add("is-visible", "page-transition-overlay--nav");
       routeContent.classList.add("route-content--exit");
     }
 
-    var blurInDelay = new Promise(function (resolve) {
-      window.setTimeout(resolve, prefersReducedMotion ? 0 : NAV_BLUR_IN_MS);
+    var exitDelay = new Promise(function (resolve) {
+      window.setTimeout(resolve, prefersReducedMotion ? 0 : NAV_EXIT_MS);
     });
 
     var fetchPromise = fetch(url, { credentials: "same-origin" }).then(function (res) {
@@ -218,7 +216,7 @@
       return res.text();
     });
 
-    Promise.all([fetchPromise, blurInDelay])
+    Promise.all([fetchPromise, exitDelay])
       .then(function (results) {
         if (token !== navToken) return; // a newer navigation has taken over
         applySwap(results[0], url, isPopstate, { instant: false });
@@ -319,11 +317,10 @@
 
     if (!opts.instant) {
       window.setTimeout(function () {
-        if (overlay) overlay.classList.remove("is-visible", "page-transition-overlay--nav");
         if (window.Herbig && typeof window.Herbig.unlockNavbarTheme === "function") {
           window.Herbig.unlockNavbarTheme();
         }
-      }, prefersReducedMotion ? 0 : NAV_BLUR_HOLD_MS);
+      }, prefersReducedMotion ? 0 : NAV_ENTER_MS);
     }
 
     var hash = "";
