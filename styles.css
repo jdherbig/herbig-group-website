@@ -768,29 +768,113 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .page-header__bg[data-placeholder="true"] { position: absolute; inset: 0; z-index: 0; }
 
 /* ============================================
-   SUBPAGE: ASSET LIST (active-holdings)
-   ============================================ */
-.asset-list { position: relative; padding: 48px var(--container-pad) 80px; display: flex; flex-direction: column; gap: 24px; }
-.asset-card { position: relative; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 24px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
-.asset-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card-hover); }
-@media (min-width: 900px) { .asset-card { flex-direction: row; align-items: center; gap: 48px; padding: 32px; } }
-.asset-card__photo { position: relative; width: 100%; height: 220px; border-radius: var(--radius-lg); overflow: hidden; flex-shrink: 0; }
-@media (min-width: 900px) { .asset-card__photo { width: 480px; height: 320px; } }
-.asset-card__photo img { width: 100%; height: 100%; object-fit: cover; }
-.asset-card__photo::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.18); }
-.asset-card__info { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; flex: 1; min-width: 0; }
-@media (min-width: 900px) { .asset-card__info { gap: 24px; } }
-.asset-card__meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.asset-card__meta .pill { padding: 4px 12px; font-size: 10px; }
-.asset-card__location { font-weight: 600; font-size: 13px; color: #656d76; }
-.asset-card__info h3 { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--color-ink); }
-@media (min-width: 900px) { .asset-card__info h3 { font-size: 28px; } }
-.asset-card__sub { font-weight: 600; font-size: 15px; color: var(--color-green); }
-.asset-card__specs { font-size: 14px; line-height: 1.6; color: var(--color-ink); opacity: 0.7; }
-.asset-card__btn { display: inline-flex; align-items: center; padding: 12px 24px; border-radius: 8px; background: var(--color-green); color: var(--color-white); font-weight: 700; font-size: 13px; box-shadow: 0 8px 12px rgba(var(--color-green-rgb), 0.31); transition: transform 0.25s var(--ease), background 0.25s var(--ease); }
-.asset-card__btn:hover { background: #359159; transform: translateY(-2px); }
-.asset-card__btn--disabled { opacity: 0.45; cursor: not-allowed; font-family: inherit; border: none; }
-.asset-card__btn--disabled:hover { background: var(--color-green); transform: none; }
+   SUBPAGE: ACTIVE HOLDINGS GRID
+   ============================================
+   Reusable card-level hover system. Every state change below is
+   transform / opacity / color only (never width, height, margin or
+   position offsets), so the grid tracks never resize and neighbouring
+   cards never move when one card is hovered. scale(1.008) grows a card a
+   fraction of a percent past its own footprint; the 20-28px grid gap
+   absorbs that with room to spare.
+
+   Two card treatments share the same shell (.holding-card):
+   - image cards (1/2/4/5/6): image -> depth (gradient/scrim) -> supporting
+     content, revealed on hover.
+   - the dark card (3, .holding-card--dark): typography -> depth (glow /
+     shadow) -> CTA nudge. No image, no content-reveal panel.
+
+   :hover is gated behind (hover: hover) and (pointer: fine) so touch
+   devices never get a "stuck" hover state; :active covers the tap
+   itself and :focus-visible covers keyboard use, both mirroring the
+   hover treatment so every input method gets the same feedback. */
+.holdings-showcase { position: relative; background: var(--color-bg-soft); padding: 48px var(--container-pad) 80px; }
+.holdings-showcase .section-heading { max-width: 720px; margin-left: auto; margin-right: auto; text-align: center; align-items: center; }
+
+.holdings-grid { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
+@media (min-width: 600px) { .holdings-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; } }
+@media (min-width: 900px) { .holdings-grid { grid-template-columns: repeat(3, 1fr); gap: 28px; } }
+
+.holding-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-dark);
+  color: inherit;
+  text-decoration: none;
+  transform: translateY(0) scale(1);
+  transition: transform 0.6s var(--ease), box-shadow 0.6s var(--ease), border-color 0.5s var(--ease-smooth);
+  box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04);
+}
+a.holding-card, .holding-card[tabindex] { cursor: pointer; }
+
+@media (hover: hover) and (pointer: fine) {
+  .holding-card:hover { transform: translateY(-4px) scale(1.008); box-shadow: 0 26px 44px -14px rgba(33, 38, 45, 0.28), 0 0 0 1px rgba(var(--color-green-rgb), 0.14); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
+}
+.holding-card:focus-visible { outline: none; transform: translateY(-4px) scale(1.008); box-shadow: 0 26px 44px -14px rgba(33, 38, 45, 0.28), 0 0 0 2px var(--color-green); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
+.holding-card:active { transform: translateY(-2px) scale(1.004); box-shadow: 0 20px 34px -14px rgba(33, 38, 45, 0.24), 0 0 0 1px rgba(var(--color-green-rgb), 0.14); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
+
+/* Tablet: same interaction, gentler amplitude. */
+@media (min-width: 600px) and (max-width: 899px) {
+  .holding-card:hover, .holding-card:focus-visible, .holding-card:active { transform: translateY(-2px) scale(1.004); }
+}
+
+/* ---- Image cards ---- */
+.holding-card__media { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1); transition: transform 0.7s var(--ease); }
+.holding-card:hover .holding-card__media img, .holding-card:focus-visible .holding-card__media img, .holding-card:active .holding-card__media img { transform: scale(1.04); }
+
+.holding-card__scrim { position: absolute; inset: 0; background: rgba(33, 38, 45, 0.18); pointer-events: none; }
+.holding-card__gradient { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(22, 25, 30, 0) 0%, rgba(22, 25, 30, 0) 50%, rgba(22, 25, 30, 0.44) 75%, rgba(22, 25, 30, 0.9) 100%); }
+.holding-card__gradient--hover { opacity: 0; pointer-events: none; transition: opacity 0.6s var(--ease); background: linear-gradient(180deg, rgba(22, 25, 30, 0) 0%, rgba(22, 25, 30, 0.18) 42%, rgba(22, 25, 30, 0.72) 74%, rgba(22, 25, 30, 0.96) 100%); }
+.holding-card:hover .holding-card__gradient--hover, .holding-card:focus-visible .holding-card__gradient--hover, .holding-card:active .holding-card__gradient--hover { opacity: 1; }
+
+.holding-card__index { position: absolute; top: 15px; right: 15px; z-index: 2; display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 100px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--color-white); font-weight: 700; font-size: 15px; transition: background 0.4s var(--ease-smooth), border-color 0.4s var(--ease-smooth); }
+.holding-card:hover .holding-card__index, .holding-card:focus-visible .holding-card__index, .holding-card:active .holding-card__index { background: rgba(var(--color-green-rgb), 0.65); border-color: rgba(var(--color-green-rgb), 0.7); }
+
+.holding-card__content { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; opacity: 0; transform: translateY(12px); transition: opacity 0.5s var(--ease), transform 0.5s var(--ease); }
+.holding-card:hover .holding-card__content, .holding-card:focus-visible .holding-card__content, .holding-card:active .holding-card__content { opacity: 1; transform: translateY(0); }
+.holding-card__content .pill { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.22); color: var(--color-white); }
+.holding-card__title { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--color-white); line-height: 1.25; }
+.holding-card__location { font-weight: 600; font-size: 12px; color: rgba(255, 255, 255, 0.75); }
+
+/* ---- Dark / typography card ---- */
+.holding-card--dark {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 28px; text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.031) 0%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%),
+    linear-gradient(90deg, rgba(11, 15, 20, 0.92) 0%, rgba(11, 15, 20, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.holding-card--dark:hover, .holding-card--dark:focus-visible, .holding-card--dark:active { box-shadow: 0 0 26px rgba(var(--color-green-rgb), 0.18), 0 20px 36px -14px rgba(0, 0, 0, 0.4); }
+.holding-card__top-row { position: absolute; top: 22px; left: 22px; right: 22px; display: flex; align-items: center; justify-content: space-between; z-index: 2; }
+.holding-card--dark .holding-card__index { position: static; }
+.holding-card__cta { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 100px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); color: var(--color-white); font-weight: 700; font-size: 12px; opacity: 0.55; transition: transform 0.4s var(--ease), opacity 0.4s var(--ease), background 0.4s var(--ease); }
+.holding-card__cta-arrow { display: inline-block; transition: transform 0.4s var(--ease); }
+.holding-card--dark:hover .holding-card__cta, .holding-card--dark:focus-visible .holding-card__cta, .holding-card--dark:active .holding-card__cta { transform: translateX(4px); background: rgba(var(--color-green-rgb), 0.22); opacity: 0.85; }
+.holding-card--dark:hover .holding-card__cta-arrow, .holding-card--dark:focus-visible .holding-card__cta-arrow, .holding-card--dark:active .holding-card__cta-arrow { transform: translate(2px, -2px); }
+.holding-card__eyebrow { font-family: var(--font-body); font-weight: 700; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--color-green); }
+.holding-card--dark .holding-card__title { font-size: 24px; color: var(--color-white); }
+.holding-card--dark .holding-card__body { font-size: 14px; line-height: 1.7; color: rgba(255, 255, 255, 0.8); }
+
+/* ---- Reduced motion: keep a static hover/focus cue (colour + shadow
+   change only), drop every transform, zoom and content-slide. ---- */
+@media (prefers-reduced-motion: reduce) {
+  .holding-card, .holding-card__media img, .holding-card__gradient--hover, .holding-card__content, .holding-card__index, .holding-card__cta, .holding-card__cta-arrow {
+    transition-duration: 0.01ms !important;
+  }
+  .holding-card:hover, .holding-card:focus-visible, .holding-card:active { transform: none; }
+  .holding-card:hover .holding-card__media img, .holding-card:focus-visible .holding-card__media img, .holding-card:active .holding-card__media img { transform: none; }
+  .holding-card:hover .holding-card__content, .holding-card:focus-visible .holding-card__content, .holding-card:active .holding-card__content { transform: none; }
+  .holding-card--dark:hover .holding-card__cta, .holding-card--dark:focus-visible .holding-card__cta, .holding-card--dark:active .holding-card__cta,
+  .holding-card--dark:hover .holding-card__cta-arrow, .holding-card--dark:focus-visible .holding-card__cta-arrow, .holding-card--dark:active .holding-card__cta-arrow { transform: none; }
+}
 
 /* ============================================
    SUBPAGE: JOINT VENTURES SPLIT
@@ -948,10 +1032,6 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .btn--outline-dark { background: var(--color-white); color: var(--color-ink); border: 1.5px solid var(--color-ink); box-shadow: 0 8px 10px rgba(0, 0, 0, 0.06); }
 .btn--outline-dark:hover { background: var(--color-bg-soft); transform: translateY(-2px); }
-
-.asset-card__info h3 a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.25s var(--ease); }
-.asset-card__info h3 a:hover { border-color: currentColor; }
-
 
 /* ============================================================
    PAGE TRANSITION SYSTEM
