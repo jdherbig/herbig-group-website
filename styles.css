@@ -490,7 +490,8 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   .cinematic-card__role { font-size: 11px; letter-spacing: 1.2px; }
   .cinematic-card__desc { font-size: 13px; line-height: 1.6; }
 }
-.cinematic-track-outer { padding-bottom: 96px; }
+/* .section already supplies the bottom gap before the next section;
+   no extra padding needed here (previously stacked to 216px). */
 
 /* ============================================
    CONTACT

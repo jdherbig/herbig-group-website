@@ -163,6 +163,19 @@
       "wheel",
       function (e) {
         if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          // Scroll-snap + the track’s own horizontal padding mean the
+          // resting min/max scrollLeft isn’t exactly 0 / scrollWidth -
+          // clientWidth — it’s offset by that padding. Read it so the
+          // boundary check matches where the track actually comes to rest,
+          // otherwise wheel scroll gets trapped just short of either end.
+          var trackStyle = getComputedStyle(outer);
+          var padStart = parseFloat(trackStyle.paddingLeft) || 0;
+          var padEnd = parseFloat(trackStyle.paddingRight) || 0;
+          var atStart = outer.scrollLeft <= padStart;
+          var atEnd = outer.scrollLeft >= outer.scrollWidth - outer.clientWidth - padEnd;
+          if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) {
+            return; // already at this end — let the page scroll normally
+          }
           outer.scrollLeft += e.deltaY;
           e.preventDefault();
         }
