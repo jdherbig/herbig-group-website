@@ -272,6 +272,8 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .navbar.is-scrolled .nav-link { color: var(--color-ink); }
 .nav-link::after { content: ""; position: absolute; left: 0; bottom: 0; width: 0; height: 2px; background: var(--color-green); transition: width 0.25s var(--ease); }
 .nav-link:hover::after { width: 100%; }
+.nav-link.is-active { opacity: 1; }
+.nav-link.is-active::after, .nav-link.is-active:hover::after { width: 16px; height: 3px; border-radius: 99px; }
 
 .menu-toggle { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; width: 44px; height: 44px; margin: -10px -10px -10px 0; background: none; border: none; padding: 0; }
 @media (min-width: 900px) { .menu-toggle { display: none; } }
@@ -576,3 +578,67 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .coming-soon p { font-size: 16px; color: var(--color-white); opacity: 0.75; max-width: 560px; line-height: 1.6; position: relative; z-index: 1; }
 .coming-soon .tag { position: relative; z-index: 1; }
 .coming-soon .btn { position: relative; z-index: 1; }
+
+/* ============================================
+   SUBPAGE: PAGE HEADER
+   ============================================ */
+.page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; overflow: hidden; border-bottom: 1px solid var(--glass-border); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06), 0 24px 56px rgba(0, 0, 0, 0.08); color: var(--color-white); background: var(--color-dark); }
+.page-header__bg { position: absolute; inset: 0; z-index: 0; }
+.page-header__bg img { width: 100%; height: 100%; object-fit: cover; }
+.page-header__bg::after { content: ""; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.62); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.page-header__copy { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 20px; max-width: 760px; }
+.page-header h1 { font-family: var(--font-display); font-weight: 900; font-size: 30px; line-height: 1.15; }
+@media (min-width: 900px) { .page-header h1 { font-size: 48px; } }
+.page-header__sub { font-size: 15px; line-height: 1.65; opacity: 0.75; }
+@media (min-width: 900px) { .page-header__sub { font-size: 18px; } }
+@media (min-width: 900px) {
+  .page-header { flex-direction: row; align-items: center; gap: 40px; padding-top: calc(var(--nav-height) + 32px); padding-bottom: 20px; }
+  .page-header__copy { gap: 24px; }
+}
+
+/* ============================================
+   SUBPAGE: GRID TITLE (left-aligned section heading)
+   ============================================ */
+.grid-title { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; text-align: left; }
+.grid-title .section-title { text-align: left; }
+.grid-title .section-sub { text-align: left; max-width: 720px; }
+.title-rule { display: block; width: 40px; height: 4px; background: var(--color-green); }
+
+/* ============================================
+   SUBPAGE: PIPELINE / STAGE GRID
+   ============================================ */
+.operating-pillars { position: relative; background: var(--color-bg-soft); padding: 48px var(--container-pad); display: flex; flex-direction: column; gap: 40px; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.06); overflow: hidden; }
+@media (min-width: 900px) { .operating-pillars { padding: 80px; gap: 56px; } }
+.pipeline-grid { display: flex; flex-direction: column; gap: 24px; }
+@media (min-width: 900px) { .pipeline-grid { flex-direction: row; } }
+.stage-card { position: relative; flex: 1; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 32px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
+.stage-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-card-hover); }
+.stage-card__number { font-family: var(--font-display); font-weight: 900; font-size: 34px; color: var(--color-green); opacity: 0.4; line-height: 1; }
+@media (min-width: 900px) { .stage-card__number { font-size: 40px; } }
+.stage-card h3 { font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--color-ink); }
+.stage-card p { font-size: 14px; line-height: 1.6; color: var(--color-ink); opacity: 0.75; }
+
+/* ============================================
+   SUBPAGE: PHILOSOPHY FOLD
+   ============================================ */
+.philosophy-fold { position: relative; overflow: hidden; background: #2f343a; padding: 48px 20px; display: flex; flex-direction: column; gap: 40px; align-items: center; box-shadow: 0 24px 72px rgba(0, 0, 0, 0.14); }
+@media (min-width: 900px) { .philosophy-fold { flex-direction: row; padding: 80px; gap: 64px; align-items: center; } }
+.philosophy-fold__image { position: relative; width: 100%; max-width: 520px; height: 260px; border-radius: var(--radius-2xl); overflow: hidden; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07), 0 24px 56px rgba(0, 0, 0, 0.15); flex-shrink: 0; z-index: 1; }
+@media (min-width: 900px) { .philosophy-fold__image { height: 400px; width: 520px; } }
+.philosophy-fold__image img { width: 100%; height: 100%; object-fit: cover; }
+.philosophy-fold__image::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.22); }
+.philosophy-fold__content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 24px; color: var(--color-white); }
+@media (min-width: 900px) { .philosophy-fold__content { gap: 32px; flex: 1; } }
+.philosophy-fold__content h2 { font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1.2; }
+@media (min-width: 900px) { .philosophy-fold__content h2 { font-size: 44px; } }
+.philosophy-fold__content p { font-size: 15px; line-height: 1.7; opacity: 0.8; }
+@media (min-width: 900px) { .philosophy-fold__content p { font-size: 16px; } }
+
+.tag--pillars { padding: 8px 16px; }
+
+/* ============================================
+   IMAGE PLACEHOLDER (temporary, pending real asset swap)
+   ============================================ */
+[data-placeholder="true"] { position: relative; background: linear-gradient(135deg, #3ca169 0%, #21262d 65%, #161a1f 100%); }
+[data-placeholder="true"]::before { content: "Photo pending"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.45); text-transform: uppercase; }
+.page-header__bg[data-placeholder="true"] { position: absolute; inset: 0; z-index: 0; }
