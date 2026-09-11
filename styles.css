@@ -789,6 +789,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    hover treatment so every input method gets the same feedback. */
 .holdings-showcase { position: relative; background: var(--color-bg-soft); padding: 48px var(--container-pad) 80px; }
 .holdings-showcase .section-heading { max-width: 720px; margin-left: auto; margin-right: auto; text-align: center; align-items: center; }
+.holdings-showcase__cta { display: flex; justify-content: center; margin-top: 40px; }
 
 .holdings-grid { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
 @media (min-width: 600px) { .holdings-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; } }
