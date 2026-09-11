@@ -870,7 +870,7 @@ html.hg-intro-pending #route-content {
   position: fixed;
   top: var(--nav-height);
   left: 0; right: 0; bottom: 0;
-  z-index: 90;
+  z-index: 110;
   display: flex;
   align-items: center;
   justify-content: center;
