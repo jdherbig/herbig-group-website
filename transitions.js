@@ -6,23 +6,19 @@
  * swaps its innerHTML on internal navigation (fetch + DOMParser, a small
  * PJAX-style router) and animates it in.
  *
- * Three distinct moments share this system:
- *  - First-load intro (once per browser session): the full white curtain
- *    + animated Lottie logo mark, covering the whole viewport including
- *    the navbar.
- *  - Clicking the logo (.brand, any page -> index.html): replays that
- *    exact same full curtain + logo moment on demand, every time —
- *    see navigateHome().
- *  - Every other internal link click: an instant content swap, no
- *    animation at all — see navigate(). #route-content's innerHTML is
- *    replaced directly; the only visible motion on a "page-to-page"
- *    nav is whatever the new page's own content does on load (e.g.
- *    its scroll-reveal).
+ * Two distinct moments share this system:
+ *  - First-load intro (once per browser session, on an actual page
+ *    load/refresh): the full white curtain + animated Lottie logo
+ *    mark, covering the whole viewport including the navbar.
+ *  - Every internal link click, the logo included: an instant content
+ *    swap, no overlay and no animation at all — see navigate().
+ *    #route-content's innerHTML is replaced directly; the only visible
+ *    motion on a "page-to-page" nav is whatever the new page's own
+ *    content does on load (e.g. its scroll-reveal).
  *
  * Depends on:
  *  - lottie-web (window.lottie), loaded before this file — used only for
- *    the first-load intro and the logo-click replay, not for regular
- *    page-to-page navigation.
+ *    the first-load intro, not for any internal navigation.
  *  - window.Herbig.initContent(), defined in script.js, which (re)binds
  *    every content-scoped behaviour (scroll reveal, hero zoom, the
  *    cinematic track, disabled asset-card buttons, the contact form,
@@ -180,9 +176,8 @@
 
   var navToken = 0;
 
-  // Regular page-to-page navigation: a fast frosted-blur crossfade under
-  // the navbar. See the header comment for how this differs from
-  // navigateHome().
+  // All internal navigation, including the logo: instant content swap,
+  // no overlay, no animation. See the header comment.
   function navigate(url, isPopstate) {
     var token = ++navToken;
 
@@ -207,51 +202,6 @@
       if (token !== navToken) return;
       window.location.href = url; // never leave the user stuck
     });
-  }
-
-  // Clicking the logo: replays the exact first-load intro (full white
-  // curtain + full logo animation, covering the navbar too) instead of
-  // the quick blur used for every other link, every time it's clicked —
-  // not just once per session.
-  function navigateHome(url, isPopstate) {
-    var token = ++navToken;
-
-    if (prefersReducedMotion) {
-      fetch(url, { credentials: "same-origin" }).then(function (res) {
-        if (!res.ok) throw new Error("Navigation fetch failed: " + res.status);
-        return res.text();
-      }).then(function (html) {
-        if (token !== navToken) return;
-        applySwap(html, url, isPopstate);
-      }).catch(function () {
-        if (token !== navToken) return;
-        window.location.href = url;
-      });
-      return;
-    }
-
-    if (overlay) overlay.classList.add("is-visible");
-
-    var fetchPromise = fetch(url, { credentials: "same-origin" }).then(function (res) {
-      if (!res.ok) throw new Error("Navigation fetch failed: " + res.status);
-      return res.text();
-    });
-
-    var logoPromise = playLogoAndWait(SEG_FULL, 1, LOGO_SAFETY_MS);
-
-    Promise.all([fetchPromise, logoPromise])
-      .then(function (results) {
-        if (token !== navToken) return;
-        applySwap(results[0], url, isPopstate);
-        window.setTimeout(function () {
-          if (token !== navToken) return;
-          if (overlay) overlay.classList.remove("is-visible");
-        }, 250);
-      })
-      .catch(function () {
-        if (token !== navToken) return;
-        window.location.href = url;
-      });
   }
 
   function applySwap(html, url, isPopstate) {
@@ -296,16 +246,7 @@
     var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
     if (!a || !isEligibleLink(a)) return;
 
-    if (a.classList.contains("brand")) {
-      // The logo always replays the full intro treatment, even when
-      // already on the homepage -- unlike regular links, it deliberately
-      // ignores isSamePage() so every click plays the moment.
-      e.preventDefault();
-      navigateHome(a.href, false);
-      return;
-    }
-
-    if (isSamePage(a)) return; // same-page anchors / "#" placeholders: native behaviour
+    if (isSamePage(a)) return; // same-page anchors / "#" placeholders, including the logo when already home: native behaviour
 
     e.preventDefault();
     navigate(a.href, false);
