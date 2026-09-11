@@ -244,25 +244,38 @@
     }
   }
 
-  /* Trigger point for each of the three entrance families, expressed as
-   * "top of element reaches this % of the viewport height", then
-   * converted to the negative-bottom rootMargin percentage that produces
-   * it: shrinking the effective (root-less) viewport's bottom edge inward
-   * by (100 - target)% moves the trigger line up to target% down the
+  /* Trigger point for each entrance family, expressed as "top of element
+   * reaches this % of the viewport height", then converted to the
+   * negative-bottom rootMargin percentage that produces it: shrinking
+   * the effective (root-less) viewport's bottom edge inward by
+   * (100 - target)% moves the trigger line up to target% down the
    * viewport, so IntersectionObserver only fires once the element's top
    * has actually scrolled that far into view - not the instant it peeks
-   * in at the very bottom edge. Tiered so large grid compositions can
-   * begin a touch later than editorial text/small structured content,
-   * per the site's timing hierarchy (small text/metrics ~68-72vh,
-   * standard surfaces ~74-78vh, large grids ~78-80vh). */
-  var REVEAL_TIERS = [
-    { selector: ".reveal-stagger", targetVh: 70 },           // metrics / small structured content: ~68-72vh
-    { selector: ".reveal, .reveal-surface", targetVh: 76 },  // editorial text + surface panels: ~74-78vh
-    { selector: ".reveal-grid", targetVh: 79 }                // large grid/image compositions: ~78-80vh
+   * in at the very bottom edge. A HIGHER targetVh fires SOONER (the
+   * trigger line sits closer to the bottom edge, so less scrolling is
+   * needed to cross it) - that's what "trigger earlier" means below.
+   *
+   * Two full tables, not one shared with a fudge factor: mobile users
+   * scroll faster and shouldn't be left waiting on a reveal that hasn't
+   * caught up, so every mobile tier fires a bit sooner (higher targetVh)
+   * than its desktop equivalent, per the site's timing hierarchy -
+   * small detail/metrics, then editorial text, then surface panels,
+   * then large grid/photo compositions, each tier later than the last. */
+  var REVEAL_TIERS_DESKTOP = [
+    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 70 }, // small detail / metrics: ~68-71vh
+    { selector: ".reveal", targetVh: 72 },                            // editorial text: ~70-74vh
+    { selector: ".reveal-surface", targetVh: 76 },                    // surface panels/forms: ~74-77vh
+    { selector: ".reveal-grid", targetVh: 79 }                        // large grid/image compositions: ~78-80vh
+  ];
+  var REVEAL_TIERS_MOBILE = [
+    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 74 }, // small detail: ~72-76vh
+    { selector: ".reveal", targetVh: 76 },                            // editorial text: ~74-78vh
+    { selector: ".reveal-surface", targetVh: 80 },                    // surface panels/forms: ~78-82vh
+    { selector: ".reveal-grid", targetVh: 83 }                        // large grid/image compositions: ~82-84vh
   ];
 
   function initScrollReveal() {
-    var anyEls = document.querySelectorAll(".reveal, .reveal-stagger, .reveal-surface, .reveal-grid");
+    var anyEls = document.querySelectorAll(".reveal, .reveal-stagger, .reveal-surface, .reveal-grid, .eq-reveal-mobile");
     if (!anyEls.length) return;
 
     if (!("IntersectionObserver" in window)) {
@@ -270,6 +283,7 @@
       return;
     }
 
+    var REVEAL_TIERS = window.matchMedia("(min-width: 900px)").matches ? REVEAL_TIERS_DESKTOP : REVEAL_TIERS_MOBILE;
     REVEAL_TIERS.forEach(function (tier) {
       var els = document.querySelectorAll(tier.selector);
       if (!els.length) return;
@@ -314,6 +328,13 @@
       return;
     }
 
+    // Large photo grids/image compositions: same "large grid" tier as
+    // .reveal-grid (see REVEAL_TIERS_DESKTOP/MOBILE above), just expressed
+    // locally since photo grids keep their own bespoke observer/logic -
+    // ~79vh desktop, ~83vh mobile (mobile scrolls faster, so it triggers
+    // a bit sooner).
+    var isDesktop = window.matchMedia("(min-width: 900px)").matches;
+    var marginPct = isDesktop ? -21 : -17;
     var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
@@ -323,11 +344,7 @@
           }
         });
       },
-      // Large photo grids/image compositions: trigger around 78-80vh (top
-      // reaching ~79-80% down the viewport) - same "large grid" tier as
-      // .reveal-grid above (see REVEAL_TIERS), just expressed locally
-      // since photo grids keep their own bespoke observer/logic.
-      { threshold: 0.05, rootMargin: "0px 0px -21% 0px" }
+      { threshold: 0.05, rootMargin: "0px 0px " + marginPct + "% 0px" }
     );
     grids.forEach(function (g) { observer.observe(g); });
   }
@@ -498,20 +515,23 @@
   }
 
   /* ---------- "People / Purpose / Profit" scroll-driven pillar reveal ----------
-   * The Purpose card (.eq-card--dark) is the section's anchor: it settles
-   * into place first, and stays visually dominant throughout. People and
-   * Profit start pulled in toward its position — spatially closer, dimmer,
-   * and beneath it in stacking order (see .eq-card z-index in styles.css) —
-   * then spread outward into their resting grid position as the section
-   * scrolls through the viewport. This is continuously tied to scroll
-   * position (not a one-shot trigger): scrolling back up un-reveals it too.
+   * The site's one true signature scroll interaction (kept deliberately
+   * rare - see the "if every section is special, nothing is special"
+   * rule). The Purpose card (.eq-card--dark) is the section's anchor: it
+   * settles into place first, and stays visually dominant throughout.
+   * People and Profit finish their own alignment around it - they should
+   * already feel present, not like they're materializing from nothing,
+   * which is why both the starting opacity and the travel distance are
+   * intentionally modest (fixed values, not a dramatic pull-in). This is
+   * continuously tied to scroll position (not a one-shot trigger):
+   * scrolling back up un-reveals it too.
    *
-   * Each side card's starting offset is measured from its own live
-   * position relative to Purpose's centre (getBoundingClientRect(), not a
-   * hardcoded pixel value), so the same logic naturally reads as a
-   * horizontal reveal on the desktop row layout and a vertical one once
-   * .equation-grid stacks to a single column on narrow viewports — no
-   * separate mobile code path needed.
+   * Desktop only (>=900px) - the row layout is what this choreography is
+   * choreographed for. Below that breakpoint .equation-grid stacks to a
+   * single column and the cards instead get one plain, one-shot CSS
+   * reveal (see .eq-reveal-mobile in styles.css): no horizontal scrub,
+   * no continuous scroll-linking, just a quiet settle-and-stop, per the
+   * "mobile is not a scaled-down desktop system" rule.
    *
    * Only transform/opacity are ever touched (see the Performance note in
    * initPinnedScroll above) — never layout properties — so this can't
@@ -523,43 +543,30 @@
     }
 
     var grid = document.querySelector(".equation-grid");
-    if (!grid || prefersReducedMotion) return;
+    if (!grid || prefersReducedMotion || !window.matchMedia("(min-width: 900px)").matches) return;
 
     var purpose = grid.querySelector(".eq-card--dark");
     var sideCards = Array.prototype.slice.call(grid.querySelectorAll(".eq-card:not(.eq-card--dark)"));
     if (!purpose || !sideCards.length) return;
 
-    var REACH = 0.34;        // how far toward Purpose's centre each side card starts, 0-1 (kept as
-                              // the signature interaction, but with roughly half its old reach)
-    var RISE = 14;            // secondary "rising into place" offset shared by both side cards, px
-    var PURPOSE_SETTLE = 14; // Purpose's own much smaller settle distance, px
+    // Fixed values, not measured relative to Purpose's live position - the
+    // cards are finishing alignment, not travelling any real distance.
+    // DOM order is People, Purpose, Profit, so the first side card is
+    // visually on the left and the second on the right.
+    var SIDE_TRAVEL = 36;    // px, left card starts +36 (right of rest), right card starts -36
+    var SIDE_OPACITY_START = 0.7;
+    var PURPOSE_RISE = 14;   // Purpose's own settle distance, px
+    var PURPOSE_SCALE_START = 0.99;
+    var PURPOSE_OPACITY_START = 0.8;
     var PURPOSE_END = 0.3;   // Purpose finishes settling by this fraction of overall progress
-    var SIDE_START = 0.4;    // side cards begin spreading at this fraction (the gap before it
+    var SIDE_START = 0.4;    // side cards begin resolving at this fraction (the gap before it
                               // is the "brief moment of stability" after Purpose settles)
     var TRIGGER_START_FRAC = 0.78; // grid top at 78% down the viewport -> progress 0
     var TRIGGER_END_FRAC = 0.56;   // grid top at 56% down the viewport -> progress 1
 
-    var offsets = [];
     var ticking = false;
 
     function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-    function measure() {
-      var purposeRect = purpose.getBoundingClientRect();
-      var purposeCenterX = purposeRect.left + purposeRect.width / 2;
-      var purposeCenterY = purposeRect.top + purposeRect.height / 2;
-
-      offsets = sideCards.map(function (el) {
-        var rect = el.getBoundingClientRect();
-        var centerX = rect.left + rect.width / 2;
-        var centerY = rect.top + rect.height / 2;
-        return {
-          el: el,
-          startX: (purposeCenterX - centerX) * REACH,
-          startY: (purposeCenterY - centerY) * REACH + RISE
-        };
-      });
-    }
 
     function apply() {
       ticking = false;
@@ -578,21 +585,24 @@
         // keep working normally) rather than leaving an identity inline
         // transform sitting on top of it forever.
         purpose.style.transform = "";
+        purpose.style.opacity = "";
         purpose.style.transition = "";
       } else {
         purpose.style.transition = "none";
-        purpose.style.transform = "translate3d(0, " + (PURPOSE_SETTLE * (1 - purposeT)) + "px, 0) scale(" + (0.98 + 0.02 * purposeT) + ")";
+        purpose.style.transform = "translate3d(0, " + (PURPOSE_RISE * (1 - purposeT)) + "px, 0) scale(" + (PURPOSE_SCALE_START + (1 - PURPOSE_SCALE_START) * purposeT) + ")";
+        purpose.style.opacity = String(PURPOSE_OPACITY_START + (1 - PURPOSE_OPACITY_START) * purposeT);
       }
 
-      offsets.forEach(function (o) {
+      sideCards.forEach(function (el, i) {
         if (progress >= 1) {
-          o.el.style.transform = "";
-          o.el.style.opacity = "";
-          o.el.style.transition = "";
+          el.style.transform = "";
+          el.style.opacity = "";
+          el.style.transition = "";
         } else {
-          o.el.style.transition = "none";
-          o.el.style.transform = "translate3d(" + (o.startX * (1 - sideT)) + "px, " + (o.startY * (1 - sideT)) + "px, 0) scale(" + (0.97 + 0.03 * sideT) + ")";
-          o.el.style.opacity = String(0.65 + 0.35 * sideT);
+          var startX = i === 0 ? SIDE_TRAVEL : -SIDE_TRAVEL;
+          el.style.transition = "none";
+          el.style.transform = "translate3d(" + (startX * (1 - sideT)) + "px, 0, 0)";
+          el.style.opacity = String(SIDE_OPACITY_START + (1 - SIDE_OPACITY_START) * sideT);
         }
       });
     }
@@ -605,11 +615,9 @@
     }
 
     function onResize() {
-      measure();
       apply();
     }
 
-    measure();
     apply();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
@@ -618,11 +626,12 @@
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       purpose.style.transform = "";
+      purpose.style.opacity = "";
       purpose.style.transition = "";
-      offsets.forEach(function (o) {
-        o.el.style.transform = "";
-        o.el.style.opacity = "";
-        o.el.style.transition = "";
+      sideCards.forEach(function (el) {
+        el.style.transform = "";
+        el.style.opacity = "";
+        el.style.transition = "";
       });
     };
   }

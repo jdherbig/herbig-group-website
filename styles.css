@@ -73,8 +73,7 @@
   --motion-micro: 180ms;
   --motion-interface: 260ms;
   --motion-content: var(--motion-duration-medium);
-  --motion-editorial: 0.85s;
-  --motion-image: 0.9s;
+  --motion-image: 920ms;
   --motion-distance-xs: 6px;
   --motion-distance-sm: var(--motion-distance-small);
   --motion-distance-md: var(--motion-distance-medium);
@@ -85,10 +84,15 @@
    * entrance families (see EDITORIAL/SURFACE/GRID reveal rules below) -
    * deliberately reused everywhere rather than each section inventing
    * its own duration or distance. --motion-fast is UI/interface speed
-   * (hover, focus, small state changes); the other three are entrance
-   * speeds by how much visual weight is moving. */
-  --motion-fast: var(--motion-interface);
+   * for small internal resolves (form fields); the rest are entrance
+   * speeds by how much visual weight is moving: --motion-copy for body/
+   * supporting text, --motion-editorial for headlines, --motion-surface
+   * for panels/forms/split imagery, --motion-image for photography. */
+  --motion-fast: 240ms;
+  --motion-copy: 560ms;
+  --motion-editorial: 640ms;
   --motion-surface: 780ms;
+  --ease-premium: var(--ease);
 
   --container-pad: 20px;
   --nav-height: 76px;
@@ -457,14 +461,15 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .hero__content { display: flex; flex-direction: column; gap: 24px; position: relative; z-index: 1; }
 
 .badge { display: inline-flex; align-self: flex-start; padding: 8px 16px; border-radius: 100px; background: rgba(var(--color-green-rgb), 0.28); border: 1px solid var(--glass-border); color: var(--color-white); font-weight: 700; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
-/* Hero entrance family: three distinct events instead of one generic
-   fade-up on the whole block (see initHeroZoom's .is-loaded, added next
-   frame on load). The eyebrow badge is light/fast and leads; the glass
-   panel below is the section's one PRIMARY event (its own dedicated
-   entrance, not this generic treatment); the action buttons are a small
-   trailing/supporting beat once the panel has mostly landed. The hero
-   photo itself carries the section's ambient movement via its existing
-   slow is-loaded zoom - it doesn't need its own fade-in too. */
+/* Hero entrance: one continuous handoff, not several disconnected pops
+   (see initHeroZoom's .is-loaded, added next frame on load). Sequence -
+   hero image settles (0-1000ms) -> glass panel slides in (80-860ms,
+   overlapping) -> headline starts while the panel is still moving
+   (220-860ms) -> supporting copy follows ~80ms later (300-860ms) ->
+   action buttons trail once the panel has mostly landed (500ms+). The
+   eyebrow badge is light/fast and leads everything. Every stage
+   overlaps the next rather than waiting for it to finish, which is what
+   reads as one handoff instead of a checklist of separate events. */
 .hero .badge { opacity: 0; transform: translateY(var(--motion-distance-xs)); transition: opacity var(--motion-interface) var(--motion-ease-enter), transform var(--motion-interface) var(--motion-ease-enter); }
 .hero.is-loaded .badge { opacity: 1; transform: translateY(0); }
 .hero .hero__actions { opacity: 0; transform: translateY(var(--motion-distance-xs)); transition: opacity var(--motion-interface) var(--motion-ease-interface) 0.5s, transform var(--motion-interface) var(--motion-ease-interface) 0.5s; }
@@ -502,9 +507,9 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
      already ready well inside this 800ms window, so the panel arrives
      already frosted; on a slow one it still arrives on schedule showing
      the solid fallback below, which already reads as intentional. */
-  transition: background var(--motion-content) var(--motion-ease-enter), backdrop-filter var(--motion-content) var(--motion-ease-enter), opacity var(--motion-editorial) var(--motion-ease-enter) 0.08s, transform var(--motion-editorial) var(--motion-ease-enter) 0.08s;
-  opacity: 0.4;
-  transform: translateX(-48px);
+  transition: background var(--motion-content) var(--motion-ease-enter), backdrop-filter var(--motion-content) var(--motion-ease-enter), opacity var(--motion-surface) var(--motion-ease-enter) 0.08s, transform var(--motion-surface) var(--motion-ease-enter) 0.08s;
+  opacity: 0.45;
+  transform: translateX(-28px);
 }
 .hero.is-loaded .headline-card { opacity: 1; transform: translateX(0); }
 .hero.is-photo-ready .headline-card {
@@ -512,7 +517,17 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
 @media (min-width: 900px) { .headline-card { padding: 44px; gap: 24px; } }
-@media (min-width: 900px) { .headline-card { transform: translateX(-80px); } }
+@media (min-width: 900px) { .headline-card { transform: translateX(-64px); } }
+/* Typography begins its own entrance while the panel is still mid-motion
+   (panel: --motion-surface, 780ms) rather than waiting for it to settle
+   or simply riding along with the panel's own opacity - headline leads,
+   supporting copy follows ~80ms later, both handed off before the panel
+   itself has finished so the whole thing reads as one continuous
+   sequence, not three disconnected pops. */
+.hero__headline { opacity: 0; transform: translateY(var(--motion-distance-md)); transition: opacity var(--motion-editorial) var(--motion-ease-enter) 0.22s, transform var(--motion-editorial) var(--motion-ease-enter) 0.22s; }
+.hero.is-loaded .hero__headline { opacity: 1; transform: translateY(0); }
+.hero__sub { opacity: 0; transform: translateY(var(--motion-distance-xs)); transition: opacity var(--motion-copy) var(--motion-ease-enter) 0.3s, transform var(--motion-copy) var(--motion-ease-enter) 0.3s; }
+.hero.is-loaded .hero__sub { opacity: 0.78; transform: translateY(0); }
 
 /* Short floating accent segment (not a full-height card border) — matches
    the Figma headline-card's independent 4x120 accent-bar node. */
@@ -534,14 +549,18 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   .hero__headline { font-size: 54px; line-height: 1.15; }
 }
 
-.hero__sub { font-size: 15px; line-height: 1.65; color: var(--color-white); opacity: 0.78; position: relative; z-index: 1; }
+.hero__sub { font-size: 15px; line-height: 1.65; color: var(--color-white); position: relative; z-index: 1; }
 @media (min-width: 900px) { .hero__sub { font-size: 18px; } }
 
 .hero__actions { display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
 
 .hero__media { position: relative; width: 100%; height: 240px; border-radius: 20px; overflow: hidden; z-index: 1; }
-.hero__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 8s linear; }
-.hero.is-loaded .hero__media img { transform: scale(1.06); }
+/* One-time arrival settle (step 1 of loader -> hero image -> glass panel
+   -> typography), not a continued ambient drift - once the image has
+   settled to scale(1) it is at rest, same as everything else on the
+   site once .is-visible/.is-loaded has landed. */
+.hero__media img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.018); transition: transform 1000ms var(--ease); }
+.hero.is-loaded .hero__media img { transform: scale(1); }
 .hero__media-veil { position: absolute; inset: 0; }
 
 @media (min-width: 900px) {
@@ -576,16 +595,31 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .eq-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s var(--motion-ease-premium); }
 .eq-card:hover .eq-card__image img { transform: scale(1.03); }
 .eq-card__body { font-size: 14px; line-height: 1.75; color: var(--color-ink); opacity: 0.7; }
-/* No .reveal-stagger children-fade here on purpose (an earlier pass added
-   one, layered on top of initEquationReveal() in script.js below) - this
-   section already has its own bespoke, continuous, scroll-position-driven
-   choreography (Purpose settles as the anchor, People/Profit spread out
-   from its centre) that IS this site's signature motion moment. Stacking
-   a second, independent one-shot reveal on the same three cards fought it
-   rather than strengthening it, and being scroll-position-driven rather
-   than delay-driven, initEquationReveal can't lag behind a fast scroll
-   the way a transition-delay-based reveal can. See script.js.
-*/
+/* No .reveal-stagger children-fade here on purpose - at >=900px this
+   section has its own bespoke, continuous, scroll-position-driven
+   choreography (initEquationReveal() in script.js: Purpose settles as
+   the anchor, People/Profit finish aligning around it) that IS this
+   site's signature motion moment. Stacking a second, independent
+   one-shot reveal on top would fight it rather than strengthen it.
+   Below 900px .equation-grid stacks to a single column and
+   initEquationReveal() deliberately does nothing there instead - the
+   full horizontal scrub choreography doesn't belong on mobile (see the
+   "mobile is not a scaled-down desktop system" rule) - so .eq-reveal-mobile
+   below gives it one plain, one-shot settle-and-stop instead. */
+@media (max-width: 899px) {
+  .eq-card.eq-reveal-mobile {
+    transition: transform var(--motion-copy) var(--ease), box-shadow 0.35s var(--ease), opacity var(--motion-copy) var(--ease);
+    opacity: 0.7;
+    transform: translateY(8px);
+  }
+  .eq-card--dark.eq-reveal-mobile { opacity: 0.8; transform: translateY(10px); }
+  .eq-card.eq-reveal-mobile.is-visible { opacity: 1; transform: translateY(0); }
+  /* Purpose (DOM order 2nd) settles first, People/Profit follow by a
+     short, capped beat - never a long incrementing chain. */
+  .eq-reveal-mobile:nth-child(1) { transition-delay: 0.05s; }
+  .eq-reveal-mobile:nth-child(2) { transition-delay: 0s; }
+  .eq-reveal-mobile:nth-child(3) { transition-delay: 0.05s; }
+}
 
 .eq-card--dark { z-index: 2; background: var(--color-dark); border-color: #e6eaf0; border-radius: 36px; box-shadow: 0 32px 48px rgba(33, 38, 45, 0.15); }
 .eq-card--dark h3, .eq-card--dark .eq-card__body { color: var(--color-white); }
@@ -614,14 +648,22 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .pathway-card { position: relative; z-index: 1; display: flex; flex-direction: column; border-radius: var(--radius-2xl); overflow: hidden; background: var(--color-dark); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.09), 0 28px 60px rgba(0, 0, 0, 0.26); }
 .pathway-card__image { height: 220px; overflow: hidden; }
-/* One-time arrival only (see .reveal-surface[data-direction] in the
-   global reveal rules) - no continued viewport-edge breakout and no
+/* One-time arrival only - no continued viewport-edge breakout and no
    large scroll-linked scaling. Once .is-visible lands, the image is at
-   rest; only the existing hover zoom (below) still moves it. */
-.pathway-card__image.reveal-surface { opacity: 0; transform: translateY(20px) scale(1.02); }
-.pathway-card__image.reveal-surface.is-visible { opacity: 1; transform: translateY(0) scale(1); }
+   rest; only the existing hover zoom (below) still moves it. Direction
+   follows which side the image sits on: default card = image left
+   (arrives from the left), --reverse card = image right (arrives from
+   the right) - complementary to the panel/text below, not opposing. */
+.pathway-card__image.reveal-surface { opacity: 0.6; transform: translateX(-24px) scale(1.015); }
+.pathway-card--reverse .pathway-card__image.reveal-surface { transform: translateX(24px) scale(1.015); }
+.pathway-card__image.reveal-surface.is-visible { opacity: 1; transform: translateX(0) scale(1); }
 .pathway-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
 .pathway-card:hover .pathway-card__image img { transform: scale(1.04); }
+/* Text panel: plain EDITORIAL reveal (.reveal, in the markup), trailing
+   the image by a small fixed beat so it reads as image-leads/text-
+   follows rather than two things arriving at once. Primary = image
+   surface entrance, supporting = this. */
+.pathway-card__panel.reveal { transition-delay: 0.08s; }
 .pathway-card__panel { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px 24px 32px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 18px 48px rgba(0, 0, 0, 0.12); overflow: hidden; }
 .pathway-card__panel h3 { font-weight: 800; font-size: 24px; line-height: 1.2; color: var(--color-white); position: relative; z-index: 1; }
 .pathway-card__panel p { font-size: 15px; line-height: 1.65; color: var(--color-white); opacity: 0.75; position: relative; z-index: 1; }
@@ -650,16 +692,23 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .roots { background: var(--color-bg-soft); }
 .timeline-row { display: flex; flex-direction: column; gap: 16px; position: relative; z-index: 1; }
 /* GRID composition reveal (same family/treatment as .holdings-grid) -
-   the row establishes as one unit, then its cards get a small capped
-   stagger, not three independently-directional entrances. */
-.timeline-row.reveal-grid .timeline-item { opacity: 0; }
-.timeline-row.reveal-grid.is-visible .timeline-item { opacity: 1; }
-.timeline-row.reveal-grid.is-visible .timeline-item:nth-child(1) { transition-delay: 0s; }
-.timeline-row.reveal-grid.is-visible .timeline-item:nth-child(2) { transition-delay: 0.05s; }
-.timeline-row.reveal-grid.is-visible .timeline-item:nth-child(3) { transition-delay: 0.1s; }
+   the row establishes as one unit; its cards then settle by ROLE, not
+   position: the centre/anchor card (.timeline-item--dark, "Transition")
+   settles first and travels a touch further (it's the visual anchor),
+   the flanking cards follow it by one small fixed beat and travel less
+   - calm, structural grouping, not three cards spreading dramatically
+   outward. transition-duration is overridden per role below rather than
+   the whole `transition` shorthand, so the card's own hover lift
+   (transform, 0.3s) is untouched - only opacity keeps its longer,
+   role-specific entrance speed. */
+.timeline-row.reveal-grid .timeline-item { opacity: 0.55; transform: translateY(10px); transition-delay: 0.07s; }
+.timeline-row.reveal-grid .timeline-item--dark { opacity: 0.75; transform: translateY(16px); transition-delay: 0s; }
+.timeline-row.reveal-grid.is-visible .timeline-item { opacity: 1; transform: translateY(0); }
+.timeline-row.reveal-grid.is-visible .timeline-item:not(.timeline-item--dark) { transition-duration: 0.3s, 0.3s, 620ms; }
+.timeline-row.reveal-grid.is-visible .timeline-item--dark { transition-duration: 0.3s, 0.3s, 700ms; }
 @media (min-width: 900px) { .timeline-row { flex-direction: row; align-items: stretch; gap: 16px; } }
 
-.timeline-item { position: relative; background: var(--color-bg-soft); border: 1px solid var(--color-border-soft); border-radius: var(--radius-xl); box-shadow: 0 2px 4px rgba(33, 38, 45, 0.03), 0 8px 12px rgba(33, 38, 45, 0.05); padding: 24px; display: flex; flex-direction: column; gap: 14px; transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), opacity var(--motion-content) var(--ease); overflow: hidden; }
+.timeline-item { position: relative; background: var(--color-bg-soft); border: 1px solid var(--color-border-soft); border-radius: var(--radius-xl); box-shadow: 0 2px 4px rgba(33, 38, 45, 0.03), 0 8px 12px rgba(33, 38, 45, 0.05); padding: 24px; display: flex; flex-direction: column; gap: 14px; transition-property: transform, box-shadow, opacity; transition-duration: 0.3s, 0.3s, var(--motion-content); transition-timing-function: var(--ease), var(--ease), var(--ease); overflow: hidden; }
 .timeline-item::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--color-green); }
 .timeline-item:hover { transform: translateY(-4px); box-shadow: 0 16px 20px rgba(33, 38, 45, 0.08); }
 .timeline-item--dark { background: var(--color-dark); border-radius: 28px; box-shadow: 0 6px 8px rgba(33, 38, 45, 0.06), 0 16px 16px rgba(33, 38, 45, 0.12); }
@@ -763,12 +812,22 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 @media (min-width: 900px) { .contact-context > p { font-size: 16px; } }
 
 .contact-links { display: flex; flex-direction: column; gap: 12px; }
-.contact-link { display: flex; align-items: center; gap: 12px; padding: 18px; background: var(--color-white); border: 1px solid var(--color-border); border-radius: 10px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 6px 16px rgba(33, 38, 45, 0.06); transition: transform 0.25s var(--ease), border-color 0.25s var(--ease); }
+/* Tight 60ms relationship between the two link cards - a small
+   supporting beat riding on .contact-context's own reveal (both start
+   at the same instant .is-visible lands), not an independent entrance. */
+.contact-link { display: flex; align-items: center; gap: 12px; padding: 18px; background: var(--color-white); border: 1px solid var(--color-border); border-radius: 10px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 6px 16px rgba(33, 38, 45, 0.06); opacity: 0; transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), opacity var(--motion-fast) var(--ease); }
+.contact-context.reveal.is-visible .contact-link { opacity: 1; }
+.contact-context.reveal.is-visible .contact-link:nth-child(2) { transition-delay: 0.06s; }
 .contact-link:hover { transform: translateY(-2px); border-color: var(--color-green); }
 
 .inquiry-form { position: relative; flex: 1; min-width: 0; width: 100%; display: flex; flex-direction: column; gap: 16px; background: var(--color-dark); border: 1px solid var(--glass-border-soft); border-radius: var(--radius-xl); padding: 28px 24px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 6px 16px rgba(33, 38, 45, 0.08), 0 28px 60px rgba(33, 38, 45, 0.21); overflow: hidden; }
 .inquiry-form__stripe { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--color-green); }
-.inquiry-form h3 { font-weight: 800; font-size: 24px; line-height: 1.25; color: var(--color-white); position: relative; z-index: 1; }
+/* Heading gets one small resolve of its own (translateY 8px, opacity),
+   a beat after the panel starts settling - everything else inside the
+   panel (sub-copy, fields) simply rides along with it rather than each
+   getting an independent entrance. */
+.inquiry-form h3 { font-weight: 800; font-size: 24px; line-height: 1.25; color: var(--color-white); position: relative; z-index: 1; opacity: 0; transform: translateY(8px); transition: opacity var(--motion-fast) var(--ease) 0.1s, transform var(--motion-fast) var(--ease) 0.1s; }
+.inquiry-form.is-visible h3 { opacity: 1; transform: translateY(0); }
 .inquiry-form__sub { font-size: 14px; line-height: 1.6; color: var(--color-white); opacity: 0.65; margin-top: -8px; margin-bottom: 8px; position: relative; z-index: 1; }
 @media (min-width: 900px) {
   .inquiry-form { padding: 40px; gap: 24px; }
@@ -778,20 +837,16 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   .inquiry-form .btn--full { padding-block: 18px; }
 }
 
-/* Very subtle internal field motion - the panel itself is the primary
-   (surface) entrance; this is a small supporting settle, not a second
-   independent animation. */
+/* Fields resolve together as one small supporting group - opacity only,
+   no independent per-field travel or incrementing stagger chain. The
+   panel itself is the primary (surface) entrance; this is one quiet
+   beat once it's mostly settled, not N separate animations. */
 .form-field {
   display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;
   opacity: 0;
-  transform: translateY(7px);
-  transition: opacity var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+  transition: opacity var(--motion-fast) var(--ease) 0.14s;
 }
-.inquiry-form.is-visible .form-field { opacity: 1; transform: translateY(0); }
-.inquiry-form.is-visible .form-field:nth-of-type(1) { transition-delay: 0.1s; }
-.inquiry-form.is-visible .form-field:nth-of-type(2) { transition-delay: 0.15s; }
-.inquiry-form.is-visible .form-field:nth-of-type(3) { transition-delay: 0.2s; }
-.inquiry-form.is-visible .form-field:nth-of-type(n+4) { transition-delay: 0.2s; }
+.inquiry-form.is-visible .form-field { opacity: 1; }
 .form-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
 .form-field input, .form-field textarea { width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--glass-border-soft); border-radius: 10px; padding: 16px 18px; color: var(--color-white); font-family: var(--font-body); font-size: 15px; resize: vertical; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
 .form-field textarea { min-height: 140px; }
@@ -845,8 +900,10 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
       translateY for centered surfaces via [data-direction="up"]),
       opacity .5 -> 1, scale .99 -> 1, ~780ms.
    3. GRID       (.reveal-grid) - card grids and photo compositions.
-      The grid container settles as ONE unit (translateY(14px) + opacity);
-      children get a small capped stagger, never independent directional
+      The grid container settles as ONE unit (translateY(14px) + opacity
+      .4 -> 1, already partly present rather than starting from nothing -
+      a composition "resolves into focus" rather than pops in); children
+      get a small capped stagger, never independent directional
       entrances. See .photo-grid further below for the photography
       variant of this same family. */
 .reveal, .reveal-stagger {
@@ -878,7 +935,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .reveal-surface--delayed { transition-delay: 0.08s; }
 
 .reveal-grid {
-  opacity: 0;
+  opacity: 0.4;
   transform: translateY(var(--motion-distance-medium));
   transition: opacity var(--motion-content) var(--ease), transform var(--motion-content) var(--ease);
 }
@@ -925,6 +982,52 @@ html.is-fast-scroll .form-field,
 html.is-fast-scroll .jv-field {
   transition-duration: 0.22s;
   transition-delay: 0s !important;
+}
+
+/* ============================================
+   MOBILE MOTION OVERRIDES
+   Mobile is not a scaled-down desktop system. Two changes below 900px:
+   (1) every image/text split and both forms that slide in from the side
+   on desktop settle vertically instead - a horizontal slide reads as
+   sideways drift once the layout is a single stacked column, so the
+   "direction" half of the surface family is dropped and only the
+   opacity+scale settle remains, travelling a shorter vertical distance;
+   (2) the hero's typography handoff delays are compressed, since a
+   narrower viewport is scrolled through faster and a long staggered
+   chain reads as lag rather than choreography on a phone.
+   ============================================ */
+@media (max-width: 899px) {
+  .reveal-surface[data-direction="left"],
+  .reveal-surface[data-direction="right"] {
+    transform: translateY(16px) scale(0.99);
+  }
+
+  .about-stage__image.reveal-surface { transform: translateY(16px); }
+  .about-stage__image.reveal-surface.is-visible { transform: translateY(0); }
+
+  .pathway-card__image.reveal-surface,
+  .pathway-card--reverse .pathway-card__image.reveal-surface {
+    transform: translateY(16px) scale(1.015);
+  }
+  .pathway-card__image.reveal-surface.is-visible { transform: translateY(0) scale(1); }
+
+  /* Forms: vertical-only settle, no horizontal slide, at every width. */
+  .inquiry-form.reveal-surface,
+  .jv-form-card.reveal-surface {
+    transform: translateY(16px) scale(0.99);
+  }
+
+  /* Hero handoff: same five-stage sequence, compressed delays so the
+     headline/sub/actions land sooner relative to the image+panel. */
+  .hero__headline { transition-delay: 0.14s; }
+  .hero__sub { transition-delay: 0.2s; }
+  .hero .hero__actions { transition-delay: 0.34s; }
+
+  /* Grid/composition stagger tightened - a phone-width column reads a
+     4-item cascade as slower than the same stagger does in a wide grid. */
+  .reveal-stagger:nth-child(2) { transition-delay: 0.04s; }
+  .reveal-stagger:nth-child(3) { transition-delay: 0.07s; }
+  .reveal-stagger:nth-child(n+4) { transition-delay: 0.1s; }
 }
 
 /* ============================================
@@ -1071,16 +1174,22 @@ main > .case-hero + section {
 .holdings-grid { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
 @media (min-width: 600px) { .holdings-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; } }
 @media (min-width: 900px) { .holdings-grid { grid-template-columns: repeat(3, 1fr); gap: 28px; } }
-/* GRID composition reveal: the grid establishes as one unit (this
-   container-level translateY+opacity), then its cards get a small
-   capped stagger of their own - never independent per-card directional
-   entrances. See .reveal-grid above for the shared token values. */
+/* GRID composition reveal: the whole holdings area is treated as one
+   curated editorial composition, not a card-by-card cascade - the grid
+   establishes as one unit (container-level translateY(16px)+opacity,
+   ~700ms, own values rather than the shared .reveal-grid defaults),
+   then its cards get a small capped stagger by group (0/70/120ms max) -
+   never independent per-card directional entrances. */
+.holdings-grid.reveal-grid {
+  opacity: 0.35;
+  transform: translateY(16px);
+  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+}
 .holdings-grid.reveal-grid .holding-card { opacity: 0; }
 .holdings-grid.reveal-grid.is-visible .holding-card { opacity: 1; }
 .holdings-grid.reveal-grid.is-visible .holding-card:nth-child(1) { transition-delay: 0s; }
-.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(2) { transition-delay: 0.05s; }
-.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(3) { transition-delay: 0.1s; }
-.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(n+4) { transition-delay: 0.15s; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(2) { transition-delay: 0.07s; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(n+3) { transition-delay: 0.12s; }
 
 .holding-card {
   position: relative;
@@ -1099,16 +1208,15 @@ main > .case-hero + section {
 }
 a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 
+/* Restrained hover: no card lift, no dramatic shadow bump - the image's
+   own scale(1.02) zoom (below) and the content panel's reveal already
+   carry the interaction, so the card itself only needs a quiet
+   border/shadow acknowledgement. */
 @media (hover: hover) and (pointer: fine) {
-  .holding-card:hover { transform: translateY(-4px) scale(1.008); box-shadow: 0 26px 44px -14px rgba(33, 38, 45, 0.28), 0 0 0 1px rgba(var(--color-green-rgb), 0.14); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
+  .holding-card:hover { box-shadow: 0 20px 34px -14px rgba(33, 38, 45, 0.18), 0 0 0 1px rgba(var(--color-green-rgb), 0.14); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
 }
-.holding-card:focus-visible { outline: none; transform: translateY(-4px) scale(1.008); box-shadow: 0 26px 44px -14px rgba(33, 38, 45, 0.28), 0 0 0 2px var(--color-green); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
-.holding-card:active { transform: translateY(-2px) scale(1.004); box-shadow: 0 20px 34px -14px rgba(33, 38, 45, 0.24), 0 0 0 1px rgba(var(--color-green-rgb), 0.14); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
-
-/* Tablet: same interaction, gentler amplitude. */
-@media (min-width: 600px) and (max-width: 899px) {
-  .holding-card:hover, .holding-card:focus-visible, .holding-card:active { transform: translateY(-2px) scale(1.004); }
-}
+.holding-card:focus-visible { outline: none; box-shadow: 0 20px 34px -14px rgba(33, 38, 45, 0.18), 0 0 0 2px var(--color-green); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
+.holding-card:active { box-shadow: 0 16px 26px -14px rgba(33, 38, 45, 0.16), 0 0 0 1px rgba(var(--color-green-rgb), 0.14); border-color: rgba(var(--color-green-rgb), 0.35); z-index: 2; }
 
 /* ---- Image cards ---- */
 .holding-card__media { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
@@ -1121,7 +1229,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
    needs no separate trigger. Hover afterward gets its own much faster
    interface-speed override so it doesn't inherit the slow entrance
    transition. */
-.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.015); transition: transform var(--motion-image) var(--motion-ease-enter); }
+.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.018); transition: transform var(--motion-image) var(--motion-ease-enter); }
 .holdings-grid.reveal-grid.is-visible .holding-card__media img { transform: scale(1); }
 .holdings-grid.reveal-grid.is-visible .holding-card:hover .holding-card__media img,
 .holdings-grid.reveal-grid.is-visible .holding-card:focus-visible .holding-card__media img,
@@ -1189,18 +1297,43 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 
 .about-stage__image { position: relative; border-radius: var(--radius-xl); overflow: hidden; aspect-ratio: 520 / 480; box-shadow: var(--shadow-card); }
 @media (min-width: 900px) { .about-stage__image { flex: 0 0 44%; max-width: 520px; aspect-ratio: 520 / 620; } }
-/* Image+text split: image gets a small SURFACE entrance (the container
-   moves, per .reveal-surface above), its own <img> settles with a
-   restrained scale independently - text gets a plain EDITORIAL reveal
-   (.reveal, in the markup) so the two read as complementary, not
-   opposing dramatic directions. */
+/* Image+text split: image gets a small SURFACE entrance (own values,
+   scoped here rather than the shared .reveal-surface defaults), its own
+   <img> settles with a restrained scale independently - text gets its
+   own two-stage EDITORIAL reveal (headline, then body a beat later)
+   instead of one plain fade on the whole card, so the sequence reads as
+   image leads -> headline follows -> body settles, not three things
+   arriving at once. Complementary motion, not opposing directions. */
+.about-stage__image.reveal-surface {
+  opacity: 0.6;
+  transform: translateX(-28px);
+  transition: opacity 760ms var(--ease), transform 760ms var(--ease);
+}
+.about-stage__image.reveal-surface.is-visible { opacity: 1; transform: translateX(0); }
 .about-stage__image img { width: 100%; height: 100%; object-fit: cover; object-position: 55% 45%; display: block; transform: scale(1.015); transition: transform var(--motion-image) var(--motion-ease-enter); }
 .about-stage__image.is-visible img { transform: scale(1); }
+/* .about-stage__card keeps the shared .reveal class only so it still
+   gets observed on the standard editorial trigger tier - the wrapper
+   itself never visibly moves; h3/p below carry the actual sequenced
+   motion once .is-visible lands on it. */
+.about-stage__card.reveal { opacity: 1; transform: none; }
 .about-stage__card { display: flex; flex-direction: column; gap: 16px; }
 @media (min-width: 900px) { .about-stage__card { flex: 1; padding: 40px; } }
-.about-stage__card h3 { font-family: var(--font-display); font-weight: 900; font-size: 24px; line-height: 1.15; color: var(--color-ink); }
+.about-stage__card h3 {
+  font-family: var(--font-display); font-weight: 900; font-size: 24px; line-height: 1.15; color: var(--color-ink);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity var(--motion-editorial) var(--ease) 0.09s, transform var(--motion-editorial) var(--ease) 0.09s;
+}
+.about-stage__card.reveal.is-visible h3 { opacity: 1; transform: translateY(0); }
 @media (min-width: 900px) { .about-stage__card h3 { font-size: 32px; } }
-.about-stage__card p { font-size: 15px; line-height: 1.75; color: var(--color-ink); opacity: 0.7; }
+.about-stage__card p {
+  font-size: 15px; line-height: 1.75; color: var(--color-ink);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--motion-copy) var(--ease) 0.15s, transform var(--motion-copy) var(--ease) 0.15s;
+}
+.about-stage__card.reveal.is-visible p { opacity: 0.7; transform: translateY(0); }
 
 /* ============================================
    SUBPAGE: JOINT VENTURES SPLIT
@@ -1224,23 +1357,21 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 @media (min-width: 900px) { .jv-form-card { padding: 40px; gap: 24px; } }
 .jv-form-card .accent-bar { box-shadow: 0 0 10px rgba(60, 161, 105, 0.4); }
 .jv-form-card__heading { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
-.jv-form-card__heading h3 { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: #f8fafc; }
+/* Small resolve once the panel (the primary surface entrance) has mostly
+   settled - mirrors .inquiry-form h3 exactly. */
+.jv-form-card__heading h3 { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: #f8fafc; opacity: 0; transform: translateY(8px); transition: opacity var(--motion-fast) var(--ease) 0.1s, transform var(--motion-fast) var(--ease) 0.1s; }
+.jv-form-card.is-visible .jv-form-card__heading h3 { opacity: 1; transform: translateY(0); }
 @media (min-width: 900px) { .jv-form-card__heading h3 { font-size: 24px; } }
 .jv-form-card__heading p { font-size: 14px; color: #cbd5e1; opacity: 0.9; }
 /* Very subtle internal field motion - the panel itself is the primary
-   (surface) entrance; this is a small supporting settle, not a second
-   independent animation. */
+   (surface) entrance; fields get one quiet opacity resolve riding along
+   with it, not N independently-staggered entrances. Mirrors .form-field. */
 .jv-field {
   display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;
   opacity: 0;
-  transform: translateY(7px);
-  transition: opacity var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+  transition: opacity var(--motion-fast) var(--ease) 0.14s;
 }
-.jv-form-card.is-visible .jv-field { opacity: 1; transform: translateY(0); }
-.jv-form-card.is-visible .jv-field:nth-of-type(1) { transition-delay: 0.1s; }
-.jv-form-card.is-visible .jv-field:nth-of-type(2) { transition-delay: 0.15s; }
-.jv-form-card.is-visible .jv-field:nth-of-type(3) { transition-delay: 0.2s; }
-.jv-form-card.is-visible .jv-field:nth-of-type(n+4) { transition-delay: 0.2s; }
+.jv-form-card.is-visible .jv-field { opacity: 1; }
 .jv-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
 .jv-field input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
 .jv-field input::placeholder { color: #cbd5e1; opacity: 0.65; }
@@ -1414,7 +1545,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .gallery-rule { position: relative; z-index: 1; height: 1px; background: var(--glass-border); transform: scaleX(0); transform-origin: left; transition: transform var(--motion-interface) var(--motion-ease-enter); }
 .gallery-rule.is-visible { transform: scaleX(1); }
 
-.photo-grid { opacity: 0; transform: translateY(var(--motion-distance-medium)); transition: opacity var(--motion-content) var(--ease), transform var(--motion-content) var(--ease); }
+.photo-grid { opacity: 0.4; transform: translateY(var(--motion-distance-medium)); transition: opacity var(--motion-content) var(--ease), transform var(--motion-content) var(--ease); }
 .photo-grid.is-visible { opacity: 1; transform: translateY(0); }
 
 .photo-grid .gallery-main img,
@@ -1590,8 +1721,14 @@ html.hg-intro-pending #route-content {
      photo-grid + holding-card entrances below. */
   .hero .badge,
   .hero .hero__actions,
-  .headline-card {
+  .headline-card,
+  .hero__headline,
+  .hero__media img {
     opacity: 1 !important;
+    transform: none !important;
+  }
+  .hero__sub {
+    opacity: 0.78 !important;
     transform: none !important;
   }
   .photo-grid .gallery-main img,
