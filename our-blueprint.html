@@ -12,6 +12,24 @@
 </head>
 <body>
 
+  <!-- ============ PAGE TRANSITION OVERLAY ============
+       Sits above #route-content only (top: var(--nav-height)) — the
+       navbar itself is never covered, animated, or otherwise touched. -->
+  <div id="page-transition-overlay" class="page-transition-overlay" hidden aria-hidden="true">
+    <div id="page-transition-logo" class="page-transition-overlay__logo"></div>
+  </div>
+  <script>
+    (function () {
+      try {
+        if (!sessionStorage.getItem("hgIntroSeen")) {
+          var overlay = document.getElementById("page-transition-overlay");
+          if (overlay) overlay.hidden = false;
+          document.documentElement.classList.add("hg-intro-pending");
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- ============ NAVBAR ============ -->
   <header class="navbar" id="navbar">
     <div class="navbar__inner">
@@ -42,6 +60,8 @@
       </button>
     </div>
   </header>
+
+  <div id="route-content">
 
   <main>
     <!-- ============ PAGE HEADER ============ -->
@@ -141,6 +161,10 @@
     </div>
   </footer>
 
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie_light.min.js"></script>
   <script src="script.js"></script>
+  <script src="transitions.js"></script>
 </body>
 </html>

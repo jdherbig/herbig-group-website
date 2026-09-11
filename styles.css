@@ -835,3 +835,62 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .asset-card__info h3 a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.25s var(--ease); }
 .asset-card__info h3 a:hover { border-color: currentColor; }
+
+
+/* ============================================================
+   PAGE TRANSITION SYSTEM
+   Header (#navbar) is never touched by this — it stays a stable,
+   persistent frame. #route-content is the region that moves: it
+   rises into place on load and on every internal navigation, with
+   the Herbig Lottie mark as the brand moment in between.
+   ============================================================ */
+#route-content {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#route-content.route-content--exit { transition: opacity 0.25s ease; opacity: 0; }
+
+#route-content.route-content--enter,
+html.hg-intro-pending #route-content {
+  transition: none;
+  opacity: 0;
+  transform: translate3d(0, 100px, 0);
+}
+@media (min-width: 600px) {
+  #route-content.route-content--enter,
+  html.hg-intro-pending #route-content { transform: translate3d(0, 150px, 0); }
+}
+@media (min-width: 900px) {
+  #route-content.route-content--enter,
+  html.hg-intro-pending #route-content { transform: translate3d(0, 200px, 0); }
+}
+
+.page-transition-overlay {
+  position: fixed;
+  top: var(--nav-height);
+  left: 0; right: 0; bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F4F5F2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.page-transition-overlay.is-visible { opacity: 1; pointer-events: all; }
+.page-transition-overlay__logo { width: 260px; max-width: 55vw; aspect-ratio: 1280 / 720; }
+@media (min-width: 900px) { .page-transition-overlay__logo { width: 320px; } }
+.page-transition-overlay__logo svg { display: block; width: 100%; height: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  #route-content,
+  #route-content.route-content--enter,
+  #route-content.route-content--exit,
+  html.hg-intro-pending #route-content {
+    transition: opacity 0.2s ease !important;
+    transform: none !important;
+  }
+  .page-transition-overlay { display: none !important; }
+}
