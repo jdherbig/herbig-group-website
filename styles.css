@@ -292,24 +292,25 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
 /* When the mobile menu is open, the navbar itself eases into the same
-   dark theme as the panel beneath it. Colour uses --ease-smooth (a plain
-   ease-in-out, slower than the panel) so black reads as a gradual fade
-   rather than snapping early the way --ease-snap's fast ramp-up would.
-   It wins over .is-scrolled (white header) since these rules come after
-   it, so the header always settles to dark for the menu, even starting
-   from white. */
+   dark theme as the panel beneath it, on the SAME 0.5s duration as the
+   panel's own height transition below so both finish together. Colour
+   still uses --ease-smooth (plain ease-in-out) rather than the panel's
+   bouncy --ease-snap, so it reads as a gradual fade instead of snapping
+   early — just synced to end at the same moment. It wins over
+   .is-scrolled (white header) since these rules come after it, so the
+   header always settles to dark for the menu, even starting from white. */
 .navbar.menu-open {
   background: var(--color-dark);
   border-bottom-color: rgba(255, 255, 255, 0.1);
   box-shadow: none;
   backdrop-filter: none; -webkit-backdrop-filter: none;
-  transition: background 0.65s var(--ease-smooth), border-color 0.65s var(--ease-smooth), box-shadow 0.65s var(--ease-smooth), backdrop-filter 0.65s var(--ease-smooth);
+  transition: background 0.5s var(--ease-smooth), border-color 0.5s var(--ease-smooth), box-shadow 0.5s var(--ease-smooth), backdrop-filter 0.5s var(--ease-smooth);
 }
-.navbar.menu-open .brand__icon-wrap .brand__icon { transition: opacity 0.65s var(--ease-smooth); }
+.navbar.menu-open .brand__icon-wrap .brand__icon { transition: opacity 0.5s var(--ease-smooth); }
 .navbar.menu-open .brand__icon-wrap .brand__icon--color { opacity: 0; }
 .navbar.menu-open .brand__icon-wrap .brand__icon--white { opacity: 1; }
-.navbar.menu-open .brand__name, .navbar.menu-open .brand__tagline { color: var(--color-white); transition: color 0.65s var(--ease-smooth); }
-.navbar.menu-open .menu-toggle span { background: var(--color-white); transition: transform 0.3s var(--ease), opacity 0.3s var(--ease), background 0.65s var(--ease-smooth); }
+.navbar.menu-open .brand__name, .navbar.menu-open .brand__tagline { color: var(--color-white); transition: color 0.5s var(--ease-smooth); }
+.navbar.menu-open .menu-toggle span { background: var(--color-white); transition: transform 0.3s var(--ease), opacity 0.3s var(--ease), background 0.5s var(--ease-smooth); }
 
 /* ============================================
    MOBILE MENU
