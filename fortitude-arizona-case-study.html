@@ -4,56 +4,166 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fortitude Arizona Case Study — Herbig Group</title>
-  <meta name="description" content="A case study on Herbig Group's Phoenix Valley partnership with Fortitude Gym.">
+  <meta name="description" content="A flagship wellness campus designed to bridge high-performance diagnostics, clinical physical therapy, and preventative conditioning under one cohesive operational model.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&family=Ramsina&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
+  <!-- ============ NAVBAR ============ -->
   <header class="navbar" id="navbar">
     <div class="navbar__inner">
       <a href="index.html" class="brand" aria-label="Herbig Group home">
-        <img src="assets/images/8b91147c-2d74-42da-a31e-de2ee8f0a72a%20(2).svg" alt="" class="brand__icon" width="62" height="62">
+        <img src="assets/icons/nav-logo.svg" alt="" class="brand__icon" width="62" height="62">
         <span class="brand__text">
           <span class="brand__name">Herbig Group</span>
           <span class="brand__tagline">Building up Others</span>
         </span>
       </a>
+
       <nav class="nav-links" id="nav-links" aria-label="Primary">
-        <a href="index.html#core" class="nav-link">The Core</a>
-        <a href="index.html#pillars" class="nav-link">Our Pillars</a>
-        <a href="index.html#roots" class="nav-link">Origins</a>
-        <a href="index.html#team" class="nav-link">The Team</a>
+        <a href="our-blueprint.html" class="nav-link">Our Blueprint</a>
+        <a href="active-holdings.html" class="nav-link is-active">Active Holdings</a>
+        <a href="joint-ventures.html" class="nav-link">Joint Ventures</a>
+        <a href="housing-projects.html" class="nav-link">Housing Projects</a>
         <a href="index.html#contact" class="btn btn--primary btn--nav">
           <span>Partner With Us</span>
-          <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.33 8h9.34M8.67 3.33 13.33 8 8.67 12.67" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.3328 8H12.6672M8 12.6672L12.6672 8L8 3.3328" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </a>
       </nav>
+
       <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
         <span></span><span></span><span></span>
       </button>
     </div>
   </header>
 
+  <!-- ============ BREADCRUMBS ============ -->
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="active-holdings.html">Active Holdings</a>
+    <span class="sep">/</span>
+    <span class="current">Fortitude Arizona Case Study</span>
+  </nav>
+
   <main>
-    <section class="coming-soon">
+    <!-- ============ CASE HERO ============ -->
+    <section class="case-hero">
       <div class="canvas-glow">
-        <div class="blob blob--left"></div>
-        <div class="blob blob--right"></div>
-        <div class="specular specular--tr"></div>
+        <div class="blob blob--left blob--soft"></div>
+        <div class="blob blob--right blob--soft"></div>
       </div>
-      <div class="tag tag--pillars">Case Study</div>
-      <h1>The Fortitude Arizona case study is on its way.</h1>
-      <p>This page will walk through our Phoenix Valley partnership with Fortitude Gym in depth. In the meantime, head back to the homepage for the overview, or reach out directly.</p>
-      <a href="index.html" class="btn btn--primary">
-        <span>Back to Home</span>
-        <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.33 8h9.34M8.67 3.33 13.33 8 8.67 12.67" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
+      <div class="case-hero__intro reveal">
+        <div class="tag tag--pillars">Operational Asset</div>
+        <h1>Fortitude Arizona Headquarters</h1>
+        <p>A flagship wellness campus designed to bridge high-performance diagnostics, clinical physical therapy, and preventative conditioning under one cohesive operational model.</p>
+      </div>
+
+      <div class="case-hero__media reveal">
+        <img src="assets/images/case-hero-primary.jpg" alt="">
+        <span class="notch notch--tl"></span>
+        <span class="notch notch--br"></span>
+        <span class="accent-bar"></span>
+      </div>
+
+      <div class="case-meta-bar reveal">
+        <div class="case-meta-col">
+          <span class="case-meta-col__label">Location</span>
+          <span class="case-meta-col__value">Phoenix Valley, Arizona</span>
+        </div>
+        <div class="case-meta-col">
+          <span class="case-meta-col__label">Total Footprint</span>
+          <span class="case-meta-col__value">34,000 sq ft</span>
+        </div>
+        <div class="case-meta-col">
+          <span class="case-meta-col__label">Focus Areas</span>
+          <span class="case-meta-col__value">Preventative Medicine &amp; Physical Recovery</span>
+        </div>
+        <div class="case-meta-col">
+          <span class="case-meta-col__label">Current Status</span>
+          <span class="status-badge">Being Built</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CASE STUDY DEEP DIVE ============ -->
+    <section class="case-deep-dive">
+      <div class="case-narrative reveal-left">
+        <div class="case-narrative__eyebrow">
+          <span>Project Overview</span>
+          <h2>A wellness campus built to bridge rehabilitation and high-performance care.</h2>
+        </div>
+        <p>The Fortitude Arizona Headquarters is a purpose-built wellness campus designed to integrate clinical diagnostics, physical therapy, and high-performance conditioning into a single operational environment. By organizing advanced recovery labs, coaching spaces, and multi-tenant diagnostic programs around a central anchor building, the project creates a clear patient journey from rehabilitation to preventative care.</p>
+        <p>The flagship Fortitude Arizona Headquarters was conceived to bridge the gap between high-performance athletic diagnostics and accessible clinical physical therapy. By integrating advanced technology into a single, cohesive facility, patients transition seamlessly from injury rehabilitation to active preventative conditioning.</p>
+        <p>Herbig Group spearheaded the strategic property acquisition and custom interior architecture to maximize multi-tenant diagnostic and recovery programs.</p>
+      </div>
+
+      <div class="feature-cards reveal-right">
+        <article class="feature-card">
+          <span class="feature-card__index">01</span>
+          <h3>Advanced Cryotherapy</h3>
+          <span class="feature-card__category">Recovery Lab</span>
+          <div class="feature-card__image"><img src="assets/images/case-feature-cryotherapy.jpg" alt=""></div>
+          <p class="feature-card__desc">Equipped with whole-body cryochambers operating at optimal cold levels to trigger deep tissue anti-inflammatory responses and accelerate neuromuscular recovery.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-card__index">02</span>
+          <h3>Physical Rehab Labs</h3>
+          <span class="feature-card__category">Diagnostic Suite</span>
+          <div class="feature-card__image"><img src="assets/images/case-feature-rehab-labs.jpg" alt=""></div>
+          <p class="feature-card__desc">Advanced assessment rooms utilizing high-speed motion capture cameras, force plate diagnostics, and real-time biomechanical data feedback loops.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ PROJECT IMAGERY GALLERY ============ -->
+    <section class="gallery-section">
+      <div class="canvas-glow">
+        <div class="blob blob--left blob--soft"></div>
+        <div class="blob blob--right blob--soft"></div>
+      </div>
+      <div class="gallery-header reveal">
+        <div class="tag tag--pillars">Project Imagery</div>
+        <h2>A broader view of the complete development</h2>
+        <p>The existing image assets have been reworked into a larger gallery so the full project footprint, building scale, and campus relationship can be understood without aggressive cropping.</p>
+      </div>
+
+      <div class="gallery-row reveal-stagger">
+        <div class="gallery-main">
+          <img src="assets/images/case-gallery-main.jpg" alt="">
+          <span class="notch notch--tl"></span>
+          <span class="notch notch--br"></span>
+        </div>
+        <div class="gallery-col">
+          <div class="gallery-card"><img src="assets/images/case-gallery-card1.jpg" alt=""></div>
+          <div class="gallery-card"><img src="assets/images/case-gallery-main.jpg" alt=""></div>
+        </div>
+      </div>
+
+      <div class="gallery-row gallery-row--triple reveal-stagger">
+        <div class="gallery-card"><img src="assets/images/case-gallery-card1.jpg" alt=""></div>
+        <div class="gallery-card"><img src="assets/images/case-gallery-main.jpg" alt=""></div>
+        <div class="gallery-card"><img src="assets/images/case-gallery-card5.jpg" alt=""></div>
+      </div>
+    </section>
+
+    <!-- ============ CLOSING CTA ============ -->
+    <section class="case-cta reveal">
+      <h2>Interested in similar development opportunities?</h2>
+      <p>We construct functional infrastructure designed for healthcare clinics, sports performance centers, and vital civic housing. Let's build up others together.</p>
+      <div class="case-cta__actions">
+        <a href="index.html#contact" class="btn btn--primary">
+          <span>Partner With Us</span>
+        </a>
+        <a href="active-holdings.html" class="btn btn--outline-dark">
+          <span>Return to Holdings Directory</span>
+        </a>
+      </div>
     </section>
   </main>
 
+  <!-- ============ FOOTER ============ -->
   <footer class="footer">
     <div class="canvas-glow">
       <div class="blob blob--left blob--soft"></div>
@@ -61,19 +171,19 @@
     </div>
     <div class="footer__header">
       <a href="index.html" class="brand brand--light" aria-label="Herbig Group home">
-        <img src="assets/images/bd8e29bf-ddbe-45ba-a368-8e958e703eba%20(1).svg" alt="" class="brand__icon" width="62" height="62">
+        <img src="assets/icons/footer-logo.svg" alt="" class="brand__icon" width="62" height="62">
         <span class="brand__text">
           <span class="brand__name">Herbig Group</span>
           <span class="brand__tagline">Building up Others</span>
         </span>
       </a>
       <div class="footer__meta">
-        <p class="footer__meta-title">Investment &amp; Development</p>
-        <p class="footer__meta-desc">Bridging community impact and institutional scale.</p>
+        <p class="footer__meta-title">Venture Development &amp; Institutional Infrastructure</p>
+        <p class="footer__meta-desc">Bridging intentional community impact and institutional scale.</p>
       </div>
     </div>
     <div class="footer__bottom">
-      <p>Copyright &copy; 2025 Herbig Group. All rights reserved.</p>
+      <p>Copyright &copy; 2026 Herbig Group. All rights reserved.</p>
       <div class="footer__links">
         <a href="#">Privacy Policy</a>
         <a href="#">Terms of Engagement</a>
