@@ -80,15 +80,31 @@
   var navbarThemeLocked = false;
 
   // Compact scroll state: independent of the dark/light theme swap above -
-  // it should reflect literal scroll position, not what section is behind
-  // the navbar, so it never "grows back" while scrolling past a dark
-  // section further down the page. See .navbar.is-compact in styles.css.
+  // it should reflect scroll behaviour, not what section is behind the
+  // navbar, so it never "grows back" purely because a dark section
+  // appears further down the page. Direction-aware, not just
+  // position-aware: scrolling DOWN past the threshold compacts it, but
+  // ANY upward scroll expands it back to full size immediately, even
+  // deep in the page - the user shouldn't have to scroll all the way
+  // back to the top to get the full header back. See .navbar.is-compact
+  // in styles.css.
   var COMPACT_THRESHOLD = 24;
+  var DIRECTION_DEADZONE = 2; // px of scroll noise to ignore before treating it as a real up/down move
+  var lastScrollY = Math.max(0, window.scrollY || 0);
 
   var updateNavbar = function () {
     if (!navbar) return;
     tickingNavbar = false;
-    navbar.classList.toggle("is-compact", window.scrollY > COMPACT_THRESHOLD);
+
+    var currentY = Math.max(0, window.scrollY);
+    var delta = currentY - lastScrollY;
+    if (currentY <= COMPACT_THRESHOLD || delta < -DIRECTION_DEADZONE) {
+      navbar.classList.remove("is-compact");
+    } else if (delta > DIRECTION_DEADZONE) {
+      navbar.classList.add("is-compact");
+    }
+    lastScrollY = currentY;
+
     if (navbarThemeLocked) {
       navbar.classList.add("is-scrolled");
       return;
