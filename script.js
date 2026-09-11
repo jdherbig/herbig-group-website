@@ -810,6 +810,163 @@
     };
   }
 
+  /* ---------- Directional scroll-surface entrances ----------
+   * A distinct entrance family from the generic .reveal/.reveal-stagger
+   * fade-up above: selected panels, card rows and split layouts are
+   * treated as physical surfaces that move into their final composition
+   * as the user scrolls them into a short trigger window just below the
+   * fold, then hold there - continuously scroll-linked and reversible
+   * (same idea as initEquationReveal/initPathwayBreakout above - not a
+   * one-shot IntersectionObserver trigger, and not scrubbed for as long
+   * as the section is on screen, just across that one short approach).
+   *
+   * Every [data-surface-group] container is measured from its own
+   * getBoundingClientRect().top against the SAME viewport window
+   * (SURFACE_START_FRAC down the viewport -> progress 0, SURFACE_END_FRAC
+   * -> progress 1); its members move as a function of that one shared
+   * progress, each with its own role (direction/distance) and an
+   * optional phase offset so, e.g., an anchor card settles first and the
+   * two flanking it visibly catch up a beat later, rather than all three
+   * landing in lockstep. There's no default CSS hidden state for any of
+   * this - members only ever get an inline transform while a group's
+   * progress is <1, and it's cleared (handing back to plain CSS) once
+   * that group is fully settled - so content already renders correctly
+   * in its resting layout with no JS at all, just without the entrance. */
+  var activeSurfaceCleanup = null;
+  var SURFACE_START_FRAC = 0.92; // a group's own top at 92% down the viewport -> progress 0
+  var SURFACE_END_FRAC = 0.72;   // -> progress 1, then it holds
+
+  function surfaceEaseOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  // role(t): t is 0 (just entering) -> 1 (at rest), already eased. Values
+  // are per the motion spec for each family - kept here as one lookup
+  // table rather than scattered across each group's own code below.
+  var SURFACE_ROLES = {
+    "col-left": function (t) { return { transform: "translate3d(" + (-70 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
+    "col-center": function (t) { return { transform: "translate3d(0, " + (30 * (1 - t)).toFixed(2) + "px, 0) scale(" + (0.985 + 0.015 * t).toFixed(4) + ")" }; },
+    "col-right": function (t) { return { transform: "translate3d(" + (70 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
+
+    "triad-left": function (t) { return { transform: "translate3d(" + (95 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
+    "triad-anchor": function (t) { return { transform: "translate3d(0, " + (30 * (1 - t)).toFixed(2) + "px, 0) scale(" + (0.985 + 0.015 * t).toFixed(4) + ")" }; },
+    "triad-right": function (t) { return { transform: "translate3d(" + (-95 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
+
+    "split-image": function (t) { return { transform: "translate3d(" + (-60 * (1 - t)).toFixed(2) + "px, 0, 0) scale(" + (1.02 - 0.02 * t).toFixed(4) + ")" }; },
+    "split-text": function (t) { return { transform: "translate3d(" + (40 * (1 - t)).toFixed(2) + "px, 0, 0)", opacity: t.toFixed(3) }; },
+
+    "panel": function (t) { return { transform: "translate3d(" + (-80 * (1 - t)).toFixed(2) + "px, 0, 0) scale(" + (0.99 + 0.01 * t).toFixed(4) + ")", opacity: (0.5 + 0.5 * t).toFixed(3) }; },
+    "panel-copy": function (t) { return { transform: "translate3d(" + (-16 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
+    "panel-cta": function (t) { return { transform: "translate3d(" + (16 * (1 - t)).toFixed(2) + "px, 0, 0)" }; }
+  };
+
+  function initSurfaceEntrances() {
+    if (activeSurfaceCleanup) {
+      activeSurfaceCleanup();
+      activeSurfaceCleanup = null;
+    }
+
+    var groups = Array.prototype.slice.call(document.querySelectorAll("[data-surface-group]"));
+    if (!groups.length || prefersReducedMotion) return;
+
+    var entries = groups.map(function (group) {
+      var kind = group.getAttribute("data-surface-group");
+      var members = [];
+
+      if (kind === "portfolio") {
+        // Column-based, not row-based, so a second row of cards repeats
+        // the same left/centre/right bias instead of needing its own rule.
+        Array.prototype.slice.call(group.querySelectorAll(".holding-card")).forEach(function (card, i) {
+          var col = i % 3;
+          members.push({
+            el: card,
+            role: col === 0 ? "col-left" : col === 1 ? "col-center" : "col-right",
+            phase: col === 1 ? 0 : 0.12 // centre leads; the row "assembles toward" it
+          });
+        });
+      } else if (kind === "triad") {
+        // Foundation / Transition (anchor, .timeline-item--dark) / Validation.
+        Array.prototype.slice.call(group.querySelectorAll(".timeline-item")).forEach(function (item, i) {
+          members.push({
+            el: item,
+            role: i === 0 ? "triad-left" : i === 1 ? "triad-anchor" : "triad-right",
+            phase: i === 1 ? 0 : 0.15 // anchor establishes first, sides follow
+          });
+        });
+      } else if (kind === "split") {
+        var img = group.querySelector(".about-stage__image");
+        var card = group.querySelector(".about-stage__card");
+        if (img) members.push({ el: img, role: "split-image", phase: 0 });
+        if (card) members.push({ el: card, role: "split-text", phase: 0.12 });
+      } else if (kind === "panel") {
+        // The panel itself is a member (not just the measured container) -
+        // translateX/scale don't move its own top edge enough to skew the
+        // very next tick's progress read in any way that matters here.
+        members.push({ el: group, role: "panel", phase: 0 });
+        var copy = group.querySelector(".grant-block__copy");
+        var cta = group.querySelector(".grant-block__cta");
+        if (copy) members.push({ el: copy, role: "panel-copy", phase: 0.35 });
+        if (cta) members.push({ el: cta, role: "panel-cta", phase: 0.55 });
+      }
+
+      return members.length ? { el: group, members: members } : null;
+    }).filter(Boolean);
+
+    if (!entries.length) return;
+
+    var ticking = false;
+
+    function apply() {
+      ticking = false;
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var startY = vh * SURFACE_START_FRAC;
+      var endY = vh * SURFACE_END_FRAC;
+
+      entries.forEach(function (entry) {
+        var rect = entry.el.getBoundingClientRect();
+        var raw = Math.min(1, Math.max(0, (startY - rect.top) / (startY - endY)));
+
+        entry.members.forEach(function (m) {
+          if (raw >= 1) {
+            // Fully settled: hand back to plain CSS so hover/etc keep
+            // working normally, same convention as the other continuous
+            // scroll systems above.
+            m.el.style.transform = "";
+            m.el.style.opacity = "";
+            m.el.style.transition = "";
+            return;
+          }
+          var t = m.phase > 0 ? Math.min(1, Math.max(0, (raw - m.phase) / (1 - m.phase))) : raw;
+          var state = SURFACE_ROLES[m.role](surfaceEaseOutCubic(t));
+          m.el.style.transition = "none";
+          m.el.style.transform = state.transform || "";
+          if (state.opacity !== undefined) m.el.style.opacity = state.opacity;
+        });
+      });
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    }
+
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+
+    activeSurfaceCleanup = function () {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      entries.forEach(function (entry) {
+        entry.members.forEach(function (m) {
+          m.el.style.transform = "";
+          m.el.style.opacity = "";
+          m.el.style.transition = "";
+        });
+      });
+    };
+  }
+
   function initAssetCardButtons() {
     document.querySelectorAll(".asset-card__btn--disabled").forEach(function (btn) {
       var resetTimer = null;
@@ -852,6 +1009,7 @@
     initEquationReveal();
     initPathwayBreakout();
     initPhotographyDepth();
+    initSurfaceEntrances();
     initAssetCardButtons();
     initContactForm();
   }
