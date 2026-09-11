@@ -491,6 +491,7 @@
     var EDGE_GAP = 32;        // desktop: breathing room kept between the image and the true viewport edge, px
     var SCALE_MAX = 1.06;
     var SATURATE_MAX = 1.1;
+    var BASE_FILTER = "brightness(1.4) contrast(1.06) saturate(1.15)"; // color-corrects the source photos to match the design's brighter exposure - always present, mirrors the CSS default on .pathway-card__image img
     var MOBILE_RISE = 10;     // mobile: secondary translateY in place of the horizontal breakout, px
     var BREAKOUT_START = 0.3; // fraction of a card's own scroll-through progress before breakout begins (0-30% = still contained)
     var TRIGGER_START_FRAC = 0.85; // a card's top at 85% down the viewport -> that card's progress 0
@@ -547,7 +548,7 @@
 
         if (t <= 0) {
           entry.img.style.transform = "";
-          entry.img.style.filter = "";
+          entry.img.style.filter = BASE_FILTER;
           entry.img.style.transition = "";
           return;
         }
@@ -557,7 +558,7 @@
         entry.img.style.transform = entry.isDesktop
           ? "translate3d(" + (entry.targetX * t) + "px, 0, 0) scale(" + scale + ")"
           : "translate3d(0, " + (-MOBILE_RISE * t) + "px, 0) scale(" + scale + ")";
-        entry.img.style.filter = "saturate(" + (1 + (SATURATE_MAX - 1) * t) + ")";
+        entry.img.style.filter = BASE_FILTER + " saturate(" + (1 + (SATURATE_MAX - 1) * t) + ")";
       });
     }
 

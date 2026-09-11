@@ -501,7 +501,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .pathway-card { position: relative; z-index: 1; display: flex; flex-direction: column; border-radius: var(--radius-2xl); overflow: hidden; background: var(--color-dark); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.09), 0 28px 60px rgba(0, 0, 0, 0.26); }
 .pathway-card__image { height: 220px; overflow: hidden; will-change: transform; }
-.pathway-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
+.pathway-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); filter: brightness(1.4) contrast(1.06) saturate(1.15); }
 .pathway-card:hover .pathway-card__image img { transform: scale(1.04); }
 .pathway-card__panel { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px 24px 32px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 18px 48px rgba(0, 0, 0, 0.12); overflow: hidden; }
 .pathway-card__panel h3 { font-weight: 800; font-size: 24px; line-height: 1.2; color: var(--color-white); position: relative; z-index: 1; }
@@ -526,8 +526,8 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   .pathway-card--reverse .pathway-card__panel { margin-left: 0; border-radius: var(--radius-2xl) 0 0 var(--radius-2xl); }
   .pathway-card__panel h3 { font-size: 36px; }
   .pathway-card__panel p { font-size: 16px; }
-  .pathway-card__image::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, transparent 55%, rgba(33, 38, 45, 0.55) 100%); }
-  .pathway-card--reverse .pathway-card__image::after { background: linear-gradient(to left, transparent 55%, rgba(33, 38, 45, 0.55) 100%); }
+  .pathway-card__image::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, transparent 55%, rgba(33, 38, 45, 0.1) 100%); }
+  .pathway-card--reverse .pathway-card__image::after { background: linear-gradient(to left, transparent 55%, rgba(33, 38, 45, 0.1) 100%); }
 }
 
 /* ============================================
