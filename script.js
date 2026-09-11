@@ -114,10 +114,7 @@
     revealEls.forEach(function (el) { observer.observe(el); });
   }
 
-  function initCinematicTrack() {
-    var track = document.getElementById("cinematic-track");
-    if (!track) return;
-    var outer = track.parentElement;
+  function initDragScroll(outer) {
     var isDown = false;
     var startX = 0;
     var startScroll = 0;
@@ -182,6 +179,100 @@
       },
       { passive: false }
     );
+  }
+
+  /* Pins the card row in the viewport (below the fixed navbar) and
+   * translates it horizontally in lockstep with vertical scroll, so
+   * scrolling the page IS how you move through the team carousel.
+   * scrollWrap is given extra height (its sticky child’s own height
+   * plus however far the track needs to travel) so there’s exactly
+   * enough scroll distance to reach the end before the section unpins
+   * and normal page scroll continues. */
+  // initContent() (and so initCinematicTrack()) re-runs on every client-side
+  // navigation, but #cinematic-track/#cinematic-scroll only exist on
+  // index.html, so a round trip away and back to the homepage would
+  // otherwise leave the previous visit’s window-level scroll/resize
+  // listeners (closed over now-detached DOM nodes) permanently attached.
+  // Track and tear down the previous instance before starting a new one.
+  var activePinnedScrollCleanup = null;
+
+  function initPinnedScroll(scrollWrap, sticky, outer, track) {
+    scrollWrap.classList.add("is-pinned");
+
+    var maxTranslate = 0;
+    var navHeight = 0;
+    var ticking = false;
+
+    function measure() {
+      navHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-height")) || 0;
+      // outer is overflow:visible in pinned mode, so its scrollWidth/clientWidth
+      // no longer reflect the overflowing content (browsers only report a real
+      // scrollWidth when the element is an actual scroll container). Measure the
+      // track’s rendered width directly instead, and add back outer’s own
+      // horizontal padding to get the same “total content width” figure
+      // scrollWidth used to give us.
+      var outerStyle = getComputedStyle(outer);
+      var padStart = parseFloat(outerStyle.paddingLeft) || 0;
+      var padEnd = parseFloat(outerStyle.paddingRight) || 0;
+      var contentWidth = padStart + track.getBoundingClientRect().width + padEnd;
+      var viewportWidth = outer.getBoundingClientRect().width;
+      maxTranslate = Math.max(0, contentWidth - viewportWidth);
+      scrollWrap.style.height = (sticky.getBoundingClientRect().height + maxTranslate) + "px";
+    }
+
+    function apply() {
+      ticking = false;
+      if (maxTranslate <= 0) {
+        track.style.transform = "";
+        return;
+      }
+      var wrapTop = scrollWrap.getBoundingClientRect().top;
+      var scrolledIntoPin = navHeight - wrapTop;
+      var progress = Math.min(1, Math.max(0, scrolledIntoPin / maxTranslate));
+      track.style.transform = "translate3d(" + (-progress * maxTranslate) + "px, 0, 0)";
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    }
+
+    function onResize() {
+      measure();
+      apply();
+    }
+
+    measure();
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+
+    activePinnedScrollCleanup = function () {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
+  }
+
+  function initCinematicTrack() {
+    if (activePinnedScrollCleanup) {
+      activePinnedScrollCleanup();
+      activePinnedScrollCleanup = null;
+    }
+
+    var track = document.getElementById("cinematic-track");
+    if (!track) return;
+    var outer = track.parentElement;
+    var scrollWrap = document.getElementById("cinematic-scroll");
+    var sticky = scrollWrap ? scrollWrap.querySelector(".cinematic-scroll__sticky") : null;
+    var canPin = scrollWrap && sticky && window.matchMedia("(min-width: 900px)").matches && !prefersReducedMotion;
+
+    if (canPin) {
+      initPinnedScroll(scrollWrap, sticky, outer, track);
+    } else {
+      initDragScroll(outer);
+    }
   }
 
   function initAssetCardButtons() {

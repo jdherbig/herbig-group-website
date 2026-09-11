@@ -460,8 +460,19 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 /* ============================================
    TEAM
    ============================================ */
-.team { background: var(--color-bg-soft); padding-left: 0; padding-right: 0; }
+.team { background: var(--color-bg-soft); padding-left: 0; padding-right: 0; overflow: visible; }
+/* overflow:hidden on .section breaks position:sticky for descendants
+   (it becomes the sticky containing block instead of the viewport) —
+   .canvas-glow already clips the decorative blobs on its own, so this
+   section doesn’t need the section-level clip. */
 .team .section-heading { padding: 0 var(--container-pad); }
+
+/* Default (mobile / reduced-motion) layout: the existing drag + wheel +
+   scroll-snap horizontal strip. On wide viewports with motion allowed,
+   script.js adds .is-pinned to .cinematic-scroll and instead pins the
+   track in the viewport while translating it horizontally as the page
+   scrolls vertically — see the rules below. */
+.cinematic-scroll { position: relative; }
 
 .cinematic-track-outer { overflow-x: auto; overflow-y: hidden; padding: 4px var(--container-pad) 20px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; cursor: grab; }
 .cinematic-track-outer:active { cursor: grabbing; }
@@ -470,7 +481,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .cinematic-track { display: flex; gap: 20px; width: max-content; }
 
-.cinematic-card { position: relative; width: 250px; height: 420px; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); background: var(--color-dark); scroll-snap-align: start; flex-shrink: 0; }
+.cinematic-card { position: relative; width: 280px; height: 420px; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); background: var(--color-dark); scroll-snap-align: start; flex-shrink: 0; }
 .cinematic-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
 .cinematic-card:hover img { transform: scale(1.05); }
 .cinematic-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(22, 25, 30, 0) 0%, rgba(22, 25, 30, 0) 50%, rgba(22, 25, 30, 0.439) 75%, rgba(22, 25, 30, 0.902) 100%), rgba(33, 38, 45, 0.2); }
@@ -484,14 +495,35 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .cinematic-card__avatar-fallback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%); width: 84px; height: 84px; border-radius: 50%; background: var(--color-green); color: var(--color-white); font-family: var(--font-display); font-weight: 800; font-size: 26px; display: flex; align-items: center; justify-content: center; z-index: 1; }
 
 @media (min-width: 900px) {
-  .cinematic-card { width: 340px; height: 620px; }
-  .cinematic-card__bio { left: 23px; right: auto; bottom: 15px; width: 292px; padding: 24px; }
+  .cinematic-card { width: 380px; height: 620px; }
+  .cinematic-card__bio { left: 23px; right: auto; bottom: 15px; width: 332px; padding: 24px; }
   .cinematic-card__bio h3 { font-size: 22px; }
   .cinematic-card__role { font-size: 11px; letter-spacing: 1.2px; }
   .cinematic-card__desc { font-size: 13px; line-height: 1.6; }
 }
 /* .section already supplies the bottom gap before the next section;
    no extra padding needed here (previously stacked to 216px). */
+
+/* Pinned scroll animation (desktop, motion allowed — script.js decides
+   eligibility and toggles this class; everything above is the fallback). */
+.cinematic-scroll.is-pinned .cinematic-scroll__sticky {
+  position: sticky;
+  top: var(--nav-height);
+  height: calc(100vh - var(--nav-height));
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.cinematic-scroll.is-pinned .cinematic-track-outer {
+  overflow: visible;
+  cursor: default;
+  padding-top: 0;
+  padding-bottom: 0;
+  width: 100%;
+}
+.cinematic-scroll.is-pinned .cinematic-track {
+  will-change: transform;
+}
 
 /* ============================================
    CONTACT
