@@ -656,7 +656,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 @media (min-width: 900px) { .asset-card__photo { width: 480px; height: 320px; } }
 .asset-card__photo img { width: 100%; height: 100%; object-fit: cover; }
 .asset-card__photo::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.18); }
-.asset-card__info { display: flex; flex-direction: column; gap: 16px; flex: 1; min-width: 0; }
+.asset-card__info { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; flex: 1; min-width: 0; }
 @media (min-width: 900px) { .asset-card__info { gap: 24px; } }
 .asset-card__meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .asset-card__meta .pill { padding: 4px 12px; font-size: 10px; }
