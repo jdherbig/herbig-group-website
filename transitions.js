@@ -38,7 +38,36 @@
 
   var LOTTIE_SRC = "assets/lottie/logo-animation.json";
   var SEG_FULL = [0, 90];        // full "HERBIG GROUP" wordmark cascade — intro + logo-click replay
-  var LOGO_SAFETY_MS = 2200;     // don't wait on lottie forever if it stalls or fails to load
+  var LOGO_SAFETY_MS = 1300;     // don't wait on lottie forever if it stalls or fails to load
+
+  // Internal navigation: a brief, deliberately restrained exit conceal
+  // (see .is-leaving in styles.css) plays while the fetch is in flight,
+  // just long enough to hide the DOM swap - never long enough to feel
+  // like a wait. Reduced motion skips it (0ms) entirely.
+  var EXIT_MS = prefersReducedMotion ? 0 : 180;
+
+  // Manual scroll restoration (history.scrollRestoration = "manual" below):
+  // remembers each page's own scroll position, keyed by URL, so Back/
+  // Forward can restore it instead of every navigation - forward or
+  // backward - dropping the user at the top. Kept continuously up to
+  // date by a passive scroll listener (rather than only captured at the
+  // moment of leaving) because by the time a popstate fires, the
+  // browser has already updated window.location to the destination -
+  // there is no reliable "still on the old page" moment left to hook for
+  // a Back/Forward-triggered leave, only for an ordinary link click.
+  // Session-lifetime only, an in-memory map is enough (a fresh session
+  // has nothing to restore).
+  var scrollPositions = {};
+  var scrollSaveTicking = false;
+  function saveScrollPosition() {
+    scrollSaveTicking = false;
+    scrollPositions[window.location.href] = window.scrollY;
+  }
+  window.addEventListener("scroll", function () {
+    if (scrollSaveTicking) return;
+    scrollSaveTicking = true;
+    window.requestAnimationFrame(saveScrollPosition);
+  }, { passive: true });
 
   var ACTIVE_NAV_MAP = {
     "our-blueprint.html": "our-blueprint.html",
@@ -110,6 +139,23 @@
   }
 
   /* ---------- Small helpers ---------- */
+
+  // Resets scroll position without ever animating - regardless of any
+  // scroll-behavior:smooth an in-page anchor link elsewhere on the site
+  // might set for itself. This runs while #route-content is still
+  // concealed (see navigate()/applySwap()), so the reset itself is never
+  // seen; the only visible motion afterward is the new page's own hero
+  // entrance settling in from its already-correct position.
+  function resetScrollInstant(y) {
+    var root = document.documentElement;
+    var prevBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+    window.scrollTo(0, y || 0);
+    window.requestAnimationFrame(function () {
+      root.style.scrollBehavior = prevBehavior;
+    });
+  }
+
   function pathFilename(href) {
     try {
       var u = new URL(href, window.location.href);
@@ -128,6 +174,12 @@
   }
 
   /* ---------- Initial branded reveal (once per browser session) ---------- */
+  // Played at 1.8x: the full wordmark cascade is ~1.5s at native speed,
+  // which reads as a long static pause on the logo (see the Loader
+  // section of the motion spec) - at 1.8x it lands at ~830ms, inside the
+  // ~600-900ms target for the whole perceived loader moment.
+  var LOGO_SPEED = 1.8;
+
   function runIntro() {
     var html = document.documentElement;
 
@@ -139,11 +191,14 @@
 
     if (overlay) overlay.classList.add("is-visible");
 
-    playLogoAndWait(SEG_FULL, 1, LOGO_SAFETY_MS).then(function () {
+    playLogoAndWait(SEG_FULL, LOGO_SPEED, LOGO_SAFETY_MS).then(function () {
+      // Both happen in the same tick, no gap between them: the overlay
+      // starts clearing the instant the content underneath is ready to
+      // be seen, so this reads as one continuous arrival (brand mark →
+      // surface clears → hero already there) rather than a loader
+      // finishing and then a second, separate reveal beginning.
       html.classList.remove("hg-intro-pending");
-      if (overlay) {
-        window.setTimeout(function () { overlay.classList.remove("is-visible"); }, 250);
-      }
+      if (overlay) overlay.classList.remove("is-visible");
       try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
     });
   }
@@ -176,8 +231,11 @@
 
   var navToken = 0;
 
-  // All internal navigation, including the logo: instant content swap,
-  // no overlay, no animation. See the header comment.
+  // All internal navigation, including the logo: a brief, subtle exit
+  // conceal (never a wait), then an instant content swap - see the
+  // header comment and .is-leaving in styles.css. The only visible
+  // "arrival" motion is whatever the new page's own hero entrance does
+  // once it's already sitting in its correct, final position.
   function navigate(url, isPopstate) {
     var token = ++navToken;
 
@@ -193,12 +251,25 @@
       window.Herbig.lockNavbarTheme();
     }
 
-    fetch(url, { credentials: "same-origin" }).then(function (res) {
+    if (!prefersReducedMotion) {
+      routeContent.classList.add("is-leaving");
+    }
+
+    var fetchDone = fetch(url, { credentials: "same-origin" }).then(function (res) {
       if (!res.ok) throw new Error("Navigation fetch failed: " + res.status);
       return res.text();
-    }).then(function (html) {
+    });
+
+    // The exit conceal and the fetch run concurrently - whichever takes
+    // longer sets the pace, so a fast (cached) fetch never lets the swap
+    // happen before the conceal has actually had a moment to register,
+    // and a slow fetch never gets an extra artificial delay stacked on
+    // top of it.
+    var minWait = new Promise(function (resolve) { window.setTimeout(resolve, EXIT_MS); });
+
+    Promise.all([fetchDone, minWait]).then(function (results) {
       if (token !== navToken) return; // a newer navigation has taken over
-      applySwap(html, url, isPopstate);
+      applySwap(results[0], url, isPopstate);
       if (window.Herbig && typeof window.Herbig.unlockNavbarTheme === "function") {
         window.Herbig.unlockNavbarTheme();
       }
@@ -239,12 +310,26 @@
 
     routeContent.innerHTML = newContent.innerHTML;
 
-    window.scrollTo(0, 0);
+    // Instant, while still concealed by .is-leaving (or, under reduced
+    // motion, simply before anything has been painted at the wrong spot).
+    // Browser Back/Forward restores that page's own remembered position;
+    // ordinary link navigation always resets to the top. Never a smooth
+    // scroll here - see resetScrollInstant() and the removed global
+    // scroll-behavior:smooth in styles.css.
+    var targetScroll = isPopstate ? (scrollPositions[url] || 0) : 0;
+    resetScrollInstant(targetScroll);
+
     updateActiveNav(pathFilename(url));
 
     if (window.Herbig && typeof window.Herbig.initContent === "function") {
       window.Herbig.initContent();
     }
+
+    // Un-conceal instantly (no transition on the way back in - only the
+    // exit itself animates; see .is-leaving in styles.css). Whatever
+    // motion the user perceives from here is the new page's own hero
+    // entrance, already reading from its correct, final position.
+    routeContent.classList.remove("is-leaving");
 
     var hash = "";
     try { hash = new URL(url, window.location.href).hash; } catch (e) {}
@@ -263,7 +348,24 @@
     var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
     if (!a || !isEligibleLink(a)) return;
 
-    if (isSamePage(a)) return; // same-page anchors / "#" placeholders, including the logo when already home: native behaviour
+    if (isSamePage(a)) {
+      // Same-page anchor (e.g. the homepage navbar linking to its own
+      // #core/#team/#contact) or the logo when already home. This used
+      // to lean on a sitewide scroll-behavior:smooth for its smooth
+      // scroll, but that same CSS property was also silently hijacking
+      // the PJAX router's own top-of-page reset (see the removed rule in
+      // styles.css) - so it's handled explicitly here instead, scoped to
+      // just this one interaction. A bare "#" (no id) has nothing to
+      // scroll to; leave that to native behaviour.
+      if (a.hash && a.hash.length > 1) {
+        var target = document.getElementById(a.hash.slice(1));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
+        }
+      }
+      return;
+    }
 
     e.preventDefault();
     navigate(a.href, false);

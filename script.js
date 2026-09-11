@@ -89,8 +89,43 @@
   // back to the top to get the full header back. See .navbar.is-compact
   // in styles.css.
   var COMPACT_THRESHOLD = 24;
+  var THEME_ANTICIPATE = 32; // px of lead on the navbar dark/light theme switch — see updateNavbar()
   var DIRECTION_DEADZONE = 2; // px of scroll noise to ignore before treating it as a real up/down move
   var lastScrollY = Math.max(0, window.scrollY || 0);
+
+  /* ---------- Scroll velocity awareness ----------
+   * A fast trackpad/wheel scroll shouldn't leave a trail of staggered
+   * content slowly fading in behind the user - the transition-delay-based
+   * reveal systems below (.reveal-stagger, .metric-card, .eq-card's own
+   * divider) all read this one shared "html.is-fast-scroll" class and
+   * zero their own delays while it's present (see styles.css), so
+   * everything still appears, just without the choreographed stagger
+   * that only reads well at a normal pace. Piggybacks on updateNavbar's
+   * existing rAF-throttled scroll tick rather than adding a second
+   * listener - lightweight by construction, not by extra effort to keep
+   * it so. Distances/opacity/etc never change with speed, only timing. */
+  var FAST_SCROLL_PX_MS = 1.4;
+  var fastScrollTimer = null;
+  var lastVelocityY = lastScrollY;
+  var lastVelocityTime = (window.performance && performance.now) ? performance.now() : Date.now();
+
+  function markScrollVelocity(delta, currentY) {
+    var now = (window.performance && performance.now) ? performance.now() : Date.now();
+    var dt = now - lastVelocityTime;
+    lastVelocityTime = now;
+    if (dt <= 0) return;
+
+    var speed = Math.abs(currentY - lastVelocityY) / dt;
+    lastVelocityY = currentY;
+
+    if (speed > FAST_SCROLL_PX_MS) {
+      document.documentElement.classList.add("is-fast-scroll");
+      window.clearTimeout(fastScrollTimer);
+      fastScrollTimer = window.setTimeout(function () {
+        document.documentElement.classList.remove("is-fast-scroll");
+      }, 160);
+    }
+  }
 
   var updateNavbar = function () {
     if (!navbar) return;
@@ -103,6 +138,8 @@
     } else if (delta > DIRECTION_DEADZONE) {
       navbar.classList.add("is-compact");
     }
+
+    markScrollVelocity(delta, currentY);
     lastScrollY = currentY;
 
     // While locked (a PJAX navigation is in flight), leave whatever theme
@@ -117,7 +154,15 @@
     // in) right after the branded transition swaps in a new page — a plain
     // getBoundingClientRect() read here would pick up that in-flight offset and
     // misjudge what's behind the navbar until the animation settles.
-    var testY = window.scrollY + navbar.offsetHeight + 1;
+    //
+    // THEME_ANTICIPATE nudges the test point a little further down the page
+    // than the navbar's own bottom edge, so the surface starts switching
+    // slightly before a dark/light boundary actually reaches the navbar
+    // rather than exactly as it does - the same geometry-based detection,
+    // just sampled a beat early so the transition (see .navbar's sequenced
+    // surface change above) never looks like it's catching up to what's
+    // already visibly wrong underneath it.
+    var testY = window.scrollY + navbar.offsetHeight + THEME_ANTICIPATE;
     var overDark = darkSections.some(function (el) {
       var top = el.offsetTop;
       var bottom = top + el.offsetHeight;
@@ -187,6 +232,12 @@
       return;
     }
 
+    // Positive bottom margin grows the effective viewport downward, so an
+    // element is marked visible while it's still below the fold - it
+    // arrives already in motion by the time the user actually reaches
+    // it, rather than being waited on. threshold stays near-zero to match
+    // (a 0.15 threshold combined with a large rootMargin would just delay
+    // the same intent back out again).
     var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
@@ -196,7 +247,7 @@
           }
         });
       },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.01, rootMargin: "0px 0px 180px 0px" }
     );
     revealEls.forEach(function (el) { observer.observe(el); });
   }
@@ -530,6 +581,7 @@
 
     var EDGE_GAP = 32;        // desktop: breathing room kept between the image and the true viewport edge, px
     var SCALE_MAX = 1.06;
+    var SCALE_MAX_MOBILE = 1.03; // mobile gets a lighter version of every dimension of this effect - see PAGE_RHYTHM/MOBILE in the motion spec
     var MOBILE_RISE = 10;     // mobile: secondary translateY in place of the horizontal breakout, px
     var BREAKOUT_START = 0.3; // fraction of a card's own scroll-through progress before breakout begins (0-30% = still contained)
     var TRIGGER_START_FRAC = 0.85; // a card's top at 85% down the viewport -> that card's progress 0
@@ -590,7 +642,8 @@
           return;
         }
 
-        var scale = 1 + (SCALE_MAX - 1) * t;
+        var scaleMax = entry.isDesktop ? SCALE_MAX : SCALE_MAX_MOBILE;
+        var scale = 1 + (scaleMax - 1) * t;
         entry.img.style.transition = "none";
         entry.img.style.transform = entry.isDesktop
           ? "translate3d(" + (entry.targetX * t) + "px, 0, 0) scale(" + scale + ")"
@@ -622,6 +675,79 @@
         entry.img.style.transform = "";
         entry.img.style.transition = "";
       });
+    };
+  }
+
+  /* ---------- Photography depth (very subtle parallax) ----------
+   * Scoped deliberately narrow: only the two full-bleed internal-page
+   * hero images (.page-header__bg / .case-hero__media) - the largest,
+   * most "architectural" photography on the site and the ones the user
+   * actually scrolls past. NOT the homepage hero (too short a box for
+   * this to read as anything but a wobble) and NOT every image - the
+   * brief was "almost disappear when consciously observed", not a
+   * effect applied everywhere. Moves the CONTAINER, never the <img>
+   * itself, because the image already carries its own one-time
+   * scale-settle transition (see .page-header__bg img/.case-hero__media
+   * img) - two different transforms on two different elements, so
+   * neither has to fight or override the other. Desktop-only and
+   * disabled under reduced motion; ~14px of total travel each way is a
+   * couple of percent of a typical hero's own height, same spirit as
+   * the spec's 2-4% figure. */
+  var activeDepthCleanup = null;
+
+  function initPhotographyDepth() {
+    if (activeDepthCleanup) {
+      activeDepthCleanup();
+      activeDepthCleanup = null;
+    }
+
+    if (prefersReducedMotion || !window.matchMedia("(min-width: 900px)").matches) return;
+
+    var targets = Array.prototype.slice.call(document.querySelectorAll(".page-header__bg, .case-hero__media"));
+    if (!targets.length) return;
+
+    var RANGE = 14; // px, each direction
+    var ticking = false;
+
+    function apply() {
+      ticking = false;
+
+      if (!window.matchMedia("(min-width: 900px)").matches) {
+        // Resized down past the breakpoint mid-session (a real navigation
+        // re-runs initPhotographyDepth from scratch and would already
+        // catch this, but a plain window resize doesn't) - drop back to
+        // the untouched resting position rather than keep computing an
+        // effect the current viewport shouldn't have.
+        targets.forEach(function (el) { el.style.transform = ""; });
+        return;
+      }
+
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      targets.forEach(function (el) {
+        var rect = el.getBoundingClientRect();
+        var center = rect.top + rect.height / 2;
+        var span = vh / 2 + rect.height / 2;
+        var progress = span > 0 ? (center - vh / 2) / span : 0;
+        progress = Math.max(-1, Math.min(1, progress));
+        el.style.transform = "translate3d(0, " + (progress * RANGE) + "px, 0)";
+      });
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    }
+
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+
+    activeDepthCleanup = function () {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      targets.forEach(function (el) { el.style.transform = ""; });
     };
   }
 
@@ -665,6 +791,7 @@
     initCinematicTrack();
     initEquationReveal();
     initPathwayBreakout();
+    initPhotographyDepth();
     initAssetCardButtons();
     initContactForm();
   }
