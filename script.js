@@ -3,28 +3,54 @@
 
   var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ---------- Mobile menu toggle (header is stable — bind once) ---------- */
+  /* ---------- Mobile menu (full-screen overlay; header is stable — bind once) ----------
+   * #mobile-menu lives outside #route-content next to the navbar, so this
+   * binds once and keeps working across every PJAX page swap. */
   var toggle = document.getElementById("menu-toggle");
-  var navLinks = document.getElementById("nav-links");
+  var mobileMenu = document.getElementById("mobile-menu");
+  var mobileMenuClose = document.getElementById("mobile-menu-close");
 
-  if (toggle && navLinks) {
-    toggle.addEventListener("click", function () {
-      var isOpen = navLinks.classList.toggle("is-open");
-      toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
-    });
+  if (toggle && mobileMenu) {
+    var openMobileMenu = function () {
+      mobileMenu.classList.add("is-open");
+      mobileMenu.setAttribute("aria-hidden", "false");
+      toggle.setAttribute("aria-expanded", "true");
+      document.documentElement.classList.add("no-scroll");
+      if (mobileMenuClose) mobileMenuClose.focus();
+    };
 
-    navLinks.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        navLinks.classList.remove("is-open");
-        toggle.setAttribute("aria-expanded", "false");
-      });
-    });
-
-    document.addEventListener("click", function (e) {
-      if (!navLinks.classList.contains("is-open")) return;
-      if (navLinks.contains(e.target) || toggle.contains(e.target)) return;
-      navLinks.classList.remove("is-open");
+    var closeMobileMenu = function () {
+      mobileMenu.classList.remove("is-open");
+      mobileMenu.setAttribute("aria-hidden", "true");
       toggle.setAttribute("aria-expanded", "false");
+      document.documentElement.classList.remove("no-scroll");
+    };
+
+    toggle.addEventListener("click", function () {
+      if (mobileMenu.classList.contains("is-open")) {
+        closeMobileMenu();
+      } else {
+        openMobileMenu();
+      }
+    });
+
+    if (mobileMenuClose) mobileMenuClose.addEventListener("click", closeMobileMenu);
+
+    mobileMenu.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", closeMobileMenu);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && mobileMenu.classList.contains("is-open")) closeMobileMenu();
+    });
+
+    // Never leave the overlay stuck open (e.g. a resize past the 900px
+    // breakpoint, where .mobile-menu is force-hidden by CSS but would
+    // otherwise still hold the scroll lock and aria-expanded state).
+    window.addEventListener("resize", function () {
+      if (window.matchMedia("(min-width: 900px)").matches && mobileMenu.classList.contains("is-open")) {
+        closeMobileMenu();
+      }
     });
   }
 

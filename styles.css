@@ -289,18 +289,53 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
 .menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
-@media (max-width: 899px) {
-  .nav-links {
-    position: absolute; top: 100%; left: 0; right: 0;
-    background: var(--color-dark); border-bottom: 1px solid var(--glass-border);
-    flex-direction: column; align-items: stretch; gap: 0; padding: 8px 20px 20px;
-    transform-origin: top; transform: scaleY(0); opacity: 0; max-height: 0; overflow: hidden;
-    transition: transform 0.3s var(--ease), opacity 0.3s var(--ease), max-height 0.3s var(--ease);
-  }
-  .nav-links.is-open { display: flex; transform: scaleY(1); opacity: 1; max-height: 400px; }
-  .nav-link { padding: 14px 0; border-bottom: 1px solid var(--glass-border); color: var(--color-white); }
-  .nav-links .btn--nav { display: inline-flex; margin-top: 16px; }
+/* ============================================
+   MOBILE MENU
+   Full-screen overlay (< 900px) opened by .menu-toggle.
+   Lives outside #route-content alongside the navbar, so it
+   persists untouched across PJAX page swaps (see transitions.js).
+   ============================================ */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 105;
+  flex-direction: column;
+  background: var(--color-dark);
 }
+.mobile-menu.is-open { display: flex; }
+@media (min-width: 900px) { .mobile-menu { display: none !important; } }
+.no-scroll { overflow: hidden; }
+
+.mobile-menu__glow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.mobile-menu__blob { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(24px); background: rgba(var(--color-green-rgb), 0.08); }
+.mobile-menu__blob--left { left: -60px; top: 80px; width: 220px; height: 220px; }
+.mobile-menu__blob--right { right: -40px; top: 46%; width: 200px; height: 200px; background: rgba(var(--color-green-rgb), 0.04); filter: blur(20px); }
+.mobile-menu__specular { position: absolute; right: -30px; top: -30px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.35), rgba(var(--color-green-rgb), 0.12) 45%, transparent 72%); filter: blur(1px); opacity: 0.5; }
+
+.mobile-menu__topbar { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; }
+.mobile-menu__close { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 6px; background: rgba(255, 255, 255, 0.12); border: 1px solid var(--glass-border); }
+
+.mobile-menu__content { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 16px; padding: 24px; }
+
+.mobile-menu__list { display: flex; flex-direction: column; gap: 8px; }
+.mobile-menu__link { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--radius-lg); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); transition: background 0.2s var(--ease), border-color 0.2s var(--ease); }
+.mobile-menu__link:active { background: rgba(255, 255, 255, 0.06); }
+.mobile-menu__index { flex-shrink: 0; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); color: var(--color-green); font-family: var(--font-body); font-weight: 700; font-size: 10px; letter-spacing: 1px; }
+.mobile-menu__label { flex: 1 1 auto; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--color-white); }
+.mobile-menu__chevron { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; }
+.mobile-menu__link.is-active { border-color: rgba(var(--color-green-rgb), 0.3); background: rgba(var(--color-green-rgb), 0.08); }
+.mobile-menu__link.is-active .mobile-menu__index { background: var(--color-green); color: var(--color-white); }
+.mobile-menu__link.is-active .mobile-menu__label { color: var(--color-green); }
+
+.mobile-menu__card { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius-xl); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.mobile-menu__card-title { font-family: var(--font-display); font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
+.mobile-menu__card-sub { font-size: 12px; line-height: 1.5; color: var(--color-white); opacity: 0.65; margin-top: 2px; }
+.mobile-menu__card-contacts { display: flex; flex-direction: column; gap: 8px; }
+.mobile-menu__contact { display: flex; align-items: center; gap: 10px; font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--color-white); }
+.mobile-menu__contact-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--radius-lg); background: rgba(var(--color-green-rgb), 0.12); }
+.mobile-menu__contact-icon img { width: 16px; height: 16px; }
+.mobile-menu__cta.btn.btn--primary { padding: 10px 16px; font-size: 12px; border-radius: var(--radius-md); box-shadow: 0 4px 6px rgba(var(--color-green-rgb), 0.19); }
 
 /* ============================================
    HERO

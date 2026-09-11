@@ -91,7 +91,7 @@
 
   function updateActiveNav(filename) {
     var target = ACTIVE_NAV_MAP[filename] || null;
-    document.querySelectorAll("#nav-links .nav-link").forEach(function (link) {
+    document.querySelectorAll("#nav-links .nav-link, #mobile-menu-list .mobile-menu__link").forEach(function (link) {
       var isActive = !!target && pathFilename(link.getAttribute("href")) === target;
       link.classList.toggle("is-active", isActive);
     });
