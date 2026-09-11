@@ -243,6 +243,10 @@
   // Track and tear down the previous instance before starting a new one.
   var activePinnedScrollCleanup = null;
 
+  // Same story as activePinnedScrollCleanup above, for the People/Purpose/
+  // Profit scroll-reveal below (#core only exists on index.html).
+  var activeEquationScrollCleanup = null;
+
   function initPinnedScroll(scrollWrap, sticky, outer, track) {
     scrollWrap.classList.add("is-pinned");
 
@@ -322,6 +326,135 @@
     }
   }
 
+  /* ---------- "People / Purpose / Profit" scroll-driven pillar reveal ----------
+   * The Purpose card (.eq-card--dark) is the section's anchor: it settles
+   * into place first, and stays visually dominant throughout. People and
+   * Profit start pulled in toward its position — spatially closer, dimmer,
+   * and beneath it in stacking order (see .eq-card z-index in styles.css) —
+   * then spread outward into their resting grid position as the section
+   * scrolls through the viewport. This is continuously tied to scroll
+   * position (not a one-shot trigger): scrolling back up un-reveals it too.
+   *
+   * Each side card's starting offset is measured from its own live
+   * position relative to Purpose's centre (getBoundingClientRect(), not a
+   * hardcoded pixel value), so the same logic naturally reads as a
+   * horizontal reveal on the desktop row layout and a vertical one once
+   * .equation-grid stacks to a single column on narrow viewports — no
+   * separate mobile code path needed.
+   *
+   * Only transform/opacity are ever touched (see the Performance note in
+   * initPinnedScroll above) — never layout properties — so this can't
+   * shift the page while scrolling. */
+  function initEquationReveal() {
+    if (activeEquationScrollCleanup) {
+      activeEquationScrollCleanup();
+      activeEquationScrollCleanup = null;
+    }
+
+    var grid = document.querySelector(".equation-grid");
+    if (!grid || prefersReducedMotion) return;
+
+    var purpose = grid.querySelector(".eq-card--dark");
+    var sideCards = Array.prototype.slice.call(grid.querySelectorAll(".eq-card:not(.eq-card--dark)"));
+    if (!purpose || !sideCards.length) return;
+
+    var REACH = 0.68;       // how far toward Purpose's centre each side card starts, 0-1
+    var RISE = 28;           // secondary "rising into place" offset shared by both side cards, px
+    var PURPOSE_SETTLE = 16; // Purpose's own much smaller settle distance, px
+    var PURPOSE_END = 0.3;   // Purpose finishes settling by this fraction of overall progress
+    var SIDE_START = 0.4;    // side cards begin spreading at this fraction (the gap before it
+                              // is the "brief moment of stability" after Purpose settles)
+    var TRIGGER_START_FRAC = 0.85; // grid top at 85% down the viewport -> progress 0
+    var TRIGGER_END_FRAC = 0.3;    // grid top at 30% down the viewport -> progress 1
+
+    var offsets = [];
+    var ticking = false;
+
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+    function measure() {
+      var purposeRect = purpose.getBoundingClientRect();
+      var purposeCenterX = purposeRect.left + purposeRect.width / 2;
+      var purposeCenterY = purposeRect.top + purposeRect.height / 2;
+
+      offsets = sideCards.map(function (el) {
+        var rect = el.getBoundingClientRect();
+        var centerX = rect.left + rect.width / 2;
+        var centerY = rect.top + rect.height / 2;
+        return {
+          el: el,
+          startX: (purposeCenterX - centerX) * REACH,
+          startY: (purposeCenterY - centerY) * REACH + RISE
+        };
+      });
+    }
+
+    function apply() {
+      ticking = false;
+
+      var rect = grid.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var startY = vh * TRIGGER_START_FRAC;
+      var endY = vh * TRIGGER_END_FRAC;
+      var progress = Math.min(1, Math.max(0, (startY - rect.top) / (startY - endY)));
+
+      var purposeT = easeOutCubic(Math.min(1, progress / PURPOSE_END));
+      var sideT = easeOutCubic(Math.min(1, Math.max(0, (progress - SIDE_START) / (1 - SIDE_START))));
+
+      if (progress >= 1) {
+        // Fully settled: hand control back to plain CSS (so :hover etc.
+        // keep working normally) rather than leaving an identity inline
+        // transform sitting on top of it forever.
+        purpose.style.transform = "";
+        purpose.style.transition = "";
+      } else {
+        purpose.style.transition = "none";
+        purpose.style.transform = "translate3d(0, " + (PURPOSE_SETTLE * (1 - purposeT)) + "px, 0) scale(" + (0.98 + 0.02 * purposeT) + ")";
+      }
+
+      offsets.forEach(function (o) {
+        if (progress >= 1) {
+          o.el.style.transform = "";
+          o.el.style.opacity = "";
+          o.el.style.transition = "";
+        } else {
+          o.el.style.transition = "none";
+          o.el.style.transform = "translate3d(" + (o.startX * (1 - sideT)) + "px, " + (o.startY * (1 - sideT)) + "px, 0) scale(" + (0.97 + 0.03 * sideT) + ")";
+          o.el.style.opacity = String(0.15 + 0.85 * sideT);
+        }
+      });
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    }
+
+    function onResize() {
+      measure();
+      apply();
+    }
+
+    measure();
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+
+    activeEquationScrollCleanup = function () {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      purpose.style.transform = "";
+      purpose.style.transition = "";
+      offsets.forEach(function (o) {
+        o.el.style.transform = "";
+        o.el.style.opacity = "";
+        o.el.style.transition = "";
+      });
+    };
+  }
+
   function initAssetCardButtons() {
     document.querySelectorAll(".asset-card__btn--disabled").forEach(function (btn) {
       var resetTimer = null;
@@ -359,6 +492,7 @@
     initHeroZoom();
     initScrollReveal();
     initCinematicTrack();
+    initEquationReveal();
     initAssetCardButtons();
     initContactForm();
   }

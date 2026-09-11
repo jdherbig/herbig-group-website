@@ -461,7 +461,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .equation-grid { display: flex; flex-direction: column; gap: 20px; width: 100%; position: relative; z-index: 1; }
 @media (min-width: 900px) { .equation-grid { flex-direction: row; align-items: center; gap: 24px; } }
 
-.eq-card { position: relative; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
+.eq-card { position: relative; z-index: 1; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); will-change: transform; }
 .eq-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-card-hover); }
 .eq-card__stripe { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--color-green); }
 .eq-card__number { display: inline-flex; align-self: flex-start; padding: 4px 12px; border-radius: 6px; background: var(--color-green-tint); color: var(--color-green); font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: 1.5px; }
@@ -473,7 +473,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .eq-card:hover .eq-card__image img { transform: scale(1.06); }
 .eq-card__body { font-size: 14px; line-height: 1.75; color: var(--color-ink); opacity: 0.7; }
 
-.eq-card--dark { background: var(--color-dark); border-color: #e6eaf0; border-radius: 36px; box-shadow: 0 32px 48px rgba(33, 38, 45, 0.15); }
+.eq-card--dark { z-index: 2; background: var(--color-dark); border-color: #e6eaf0; border-radius: 36px; box-shadow: 0 32px 48px rgba(33, 38, 45, 0.15); }
 .eq-card--dark h3, .eq-card--dark .eq-card__body { color: var(--color-white); }
 .eq-card--dark .eq-card__body { opacity: 0.75; }
 .eq-card--dark .eq-card__image { height: 190px; }
