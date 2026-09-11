@@ -448,16 +448,33 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .badge { display: inline-flex; align-self: flex-start; padding: 8px 16px; border-radius: 100px; background: rgba(var(--color-green-rgb), 0.28); border: 1px solid var(--glass-border); color: var(--color-white); font-weight: 700; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
 
+/* backdrop-filter blurs whatever is actually painted behind an element -
+   on a slow connection the hero photo hadn't decoded yet by the time
+   this first painted, so the "frosted glass" had nothing to frost and
+   read as a flat, cheap-looking translucent panel until the photo
+   caught up (a visible pop once it did). Fixed at the source too - the
+   hero photo is now preloaded with fetchpriority="high" (see index.html)
+   - but this fallback covers it either way: a solid, deliberately-tinted
+   panel with NO blur is the resting state, and only once the photo is
+   actually decoded (hero.is-photo-ready - see initHeroZoom in script.js,
+   which checks img.complete / listens for load) does it frost. That way
+   there's never a moment of "glass with nothing behind it" to notice -
+   the panel looks intentional either way, just upgrades once it can. */
 .headline-card {
   position: relative;
   display: flex; flex-direction: column; gap: 20px;
-  background: var(--glass-fill-soft);
+  background: rgba(22, 26, 31, 0.82);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
   border-radius: var(--radius-2xl);
   padding: 28px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.15);
   overflow: hidden;
+  transition: background var(--motion-content) var(--motion-ease-enter), backdrop-filter var(--motion-content) var(--motion-ease-enter);
+}
+.hero.is-photo-ready .headline-card {
+  background: var(--glass-fill-soft);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
 @media (min-width: 900px) { .headline-card { padding: 44px; gap: 24px; } }
 

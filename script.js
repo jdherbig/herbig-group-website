@@ -204,8 +204,29 @@
 
   function initHeroZoom() {
     var hero = document.querySelector(".hero");
-    if (hero) {
-      requestAnimationFrame(function () { hero.classList.add("is-loaded"); });
+    if (!hero) return;
+
+    requestAnimationFrame(function () { hero.classList.add("is-loaded"); });
+
+    // The headline-card's frosted-glass look (see .headline-card in
+    // styles.css) needs the hero photo to have actually decoded and
+    // painted before backdrop-filter has anything real to blur -
+    // otherwise it briefly shows a flat, cheap-looking panel and then
+    // visibly "pops" once the photo catches up. This is the one place
+    // on the site that's deliberately gated on image load rather than
+    // just revealed unconditionally (see initHeroEntrance below for the
+    // opposite, and more usual, choice) - the fallback state (a solid
+    // tinted panel, no blur) already looks intentional on its own, so
+    // there's nothing to wait on visually, just an upgrade once ready.
+    var img = hero.querySelector(".hero__media img");
+    if (img) {
+      if (img.complete && img.naturalWidth > 0) {
+        hero.classList.add("is-photo-ready");
+      } else {
+        var markPhotoReady = function () { hero.classList.add("is-photo-ready"); };
+        img.addEventListener("load", markPhotoReady, { once: true });
+        img.addEventListener("error", markPhotoReady, { once: true });
+      }
     }
   }
 
