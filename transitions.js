@@ -4,18 +4,26 @@
  * Architecture: the global header (#navbar) never moves and is never
  * touched by this file. Route content lives in #route-content; this file
  * swaps its innerHTML on internal navigation (fetch + DOMParser, a small
- * PJAX-style router) and animates it in with a translateY(rise) + fade.
+ * PJAX-style router) and animates it in.
  *
- * Two distinct overlay moments share #page-transition-overlay:
+ * Three distinct moments share this system:
  *  - First-load intro (once per browser session): the full white curtain
- *    + animated Lottie logo mark, unchanged from before.
- *  - Page-to-page navigation (every internal link click after that): a
- *    quick frosted white blur, no logo, sitting below the navbar
- *    (.page-transition-overlay--nav) so the navbar is never covered.
+ *    + animated Lottie logo mark, covering the whole viewport including
+ *    the navbar.
+ *  - Clicking the logo (.brand, any page -> index.html): replays that
+ *    exact same full curtain + logo moment on demand, every time —
+ *    see navigateHome().
+ *  - Every other internal link click: a fast frosted-blur crossfade
+ *    (.page-transition-overlay--nav) sitting BELOW the navbar, no logo —
+ *    see navigate(). This is the "page-to-page" transition; it's
+ *    deliberately quick and single-motion (a short opacity+drift
+ *    crossfade handing off to the blur, not a big slide) so it reads as
+ *    seamless rather than a multi-step animation sequence.
  *
  * Depends on:
  *  - lottie-web (window.lottie), loaded before this file — used only for
- *    the first-load intro, not for page-to-page navigation.
+ *    the first-load intro and the logo-click replay, not for regular
+ *    page-to-page navigation.
  *  - window.Herbig.initContent(), defined in script.js, which (re)binds
  *    every content-scoped behaviour (scroll reveal, hero zoom, the
  *    cinematic track, disabled asset-card buttons, the contact form,
@@ -34,9 +42,12 @@
   if (!routeContent) return;
 
   var LOTTIE_SRC = "assets/lottie/logo-animation.json";
-  var SEG_FULL = [0, 90];        // intro only — icon settle + full "HERBIG GROUP" wordmark cascade
-  var NAV_BLUR_IN_MS = 380;      // page-to-page nav: hold the blur before the new page swaps in
-  var NAV_BLUR_OUT_MS = 380;     // page-to-page nav: hold the blur after swap before fading back out
+  var SEG_FULL = [0, 90];        // full "HERBIG GROUP" wordmark cascade — intro + logo-click replay
+  var LOGO_SAFETY_MS = 2200;     // don't wait on lottie forever if it stalls or fails to load
+
+  var NAV_BLUR_IN_MS = 320;      // page-to-page nav: time from click to content swap
+  var NAV_BLUR_HOLD_MS = 120;    // page-to-page nav: hold after swap before the blur starts fading out
+  var NAV_ENTER_MS = 320;        // page-to-page nav: duration of the new content's crossfade-in (matches the CSS .route-content--nav-enter-active transition)
 
   var ACTIVE_NAV_MAP = {
     "our-blueprint.html": "our-blueprint.html",
@@ -85,6 +96,28 @@
     });
   }
 
+  // Plays a logo segment and resolves once it completes OR safetyMs
+  // elapses, whichever comes first — shared by the first-load intro and
+  // the logo-click replay so neither can hang forever if lottie fails.
+  function playLogoAndWait(segment, speed, safetyMs) {
+    return playLogo(segment, speed).then(function (inst) {
+      return new Promise(function (resolve) {
+        var finished = false;
+        var finish = function () {
+          if (finished) return;
+          finished = true;
+          resolve(inst);
+        };
+        if (inst) {
+          inst.addEventListener("complete", finish);
+          window.setTimeout(finish, safetyMs);
+        } else {
+          finish();
+        }
+      });
+    });
+  }
+
   /* ---------- Small helpers ---------- */
   function pathFilename(href) {
     try {
@@ -119,24 +152,12 @@
 
     if (overlay) overlay.classList.add("is-visible");
 
-    playLogo(SEG_FULL).then(function (inst) {
-      var finished = false;
-      var finish = function () {
-        if (finished) return;
-        finished = true;
-        html.classList.remove("hg-intro-pending");
-        if (overlay) {
-          window.setTimeout(function () { overlay.classList.remove("is-visible"); }, 250);
-        }
-        try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
-      };
-
-      if (inst) {
-        inst.addEventListener("complete", finish);
-        window.setTimeout(finish, 2200); // safety net
-      } else {
-        finish();
+    playLogoAndWait(SEG_FULL, 1, LOGO_SAFETY_MS).then(function () {
+      html.classList.remove("hg-intro-pending");
+      if (overlay) {
+        window.setTimeout(function () { overlay.classList.remove("is-visible"); }, 250);
       }
+      try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
     });
   }
 
@@ -168,6 +189,9 @@
 
   var navToken = 0;
 
+  // Regular page-to-page navigation: a fast frosted-blur crossfade under
+  // the navbar. See the header comment for how this differs from
+  // navigateHome().
   function navigate(url, isPopstate) {
     var token = ++navToken;
 
@@ -197,7 +221,7 @@
     Promise.all([fetchPromise, blurInDelay])
       .then(function (results) {
         if (token !== navToken) return; // a newer navigation has taken over
-        applySwap(results[0], url, isPopstate);
+        applySwap(results[0], url, isPopstate, { instant: false });
       })
       .catch(function () {
         if (token !== navToken) return;
@@ -205,7 +229,54 @@
       });
   }
 
-  function applySwap(html, url, isPopstate) {
+  // Clicking the logo: replays the exact first-load intro (full white
+  // curtain + full logo animation, covering the navbar too) instead of
+  // the quick blur used for every other link, every time it's clicked —
+  // not just once per session.
+  function navigateHome(url, isPopstate) {
+    var token = ++navToken;
+
+    if (prefersReducedMotion) {
+      fetch(url, { credentials: "same-origin" }).then(function (res) {
+        if (!res.ok) throw new Error("Navigation fetch failed: " + res.status);
+        return res.text();
+      }).then(function (html) {
+        if (token !== navToken) return;
+        applySwap(html, url, isPopstate, { instant: true });
+      }).catch(function () {
+        if (token !== navToken) return;
+        window.location.href = url;
+      });
+      return;
+    }
+
+    if (overlay) overlay.classList.add("is-visible");
+
+    var fetchPromise = fetch(url, { credentials: "same-origin" }).then(function (res) {
+      if (!res.ok) throw new Error("Navigation fetch failed: " + res.status);
+      return res.text();
+    });
+
+    var logoPromise = playLogoAndWait(SEG_FULL, 1, LOGO_SAFETY_MS);
+
+    Promise.all([fetchPromise, logoPromise])
+      .then(function (results) {
+        if (token !== navToken) return;
+        applySwap(results[0], url, isPopstate, { instant: true });
+        window.setTimeout(function () {
+          if (token !== navToken) return;
+          if (overlay) overlay.classList.remove("is-visible");
+        }, 250);
+      })
+      .catch(function () {
+        if (token !== navToken) return;
+        window.location.href = url;
+      });
+  }
+
+  function applySwap(html, url, isPopstate, opts) {
+    opts = opts || {};
+
     var doc = new DOMParser().parseFromString(html, "text/html");
     var newContent = doc.getElementById("route-content");
 
@@ -223,13 +294,20 @@
 
     routeContent.classList.remove("route-content--exit");
 
-    if (!prefersReducedMotion) {
-      routeContent.classList.add("route-content--enter");
+    if (opts.instant || prefersReducedMotion) {
+      // Either fully hidden behind the opaque logo curtain (instant) or
+      // reduced motion is on — no crossfade choreography needed, just swap.
+      routeContent.classList.remove("route-content--nav-enter", "route-content--nav-enter-active");
+      routeContent.innerHTML = newContent.innerHTML;
+    } else {
+      routeContent.classList.add("route-content--nav-enter");
       routeContent.innerHTML = newContent.innerHTML;
       forceReflow();
-      routeContent.classList.remove("route-content--enter");
-    } else {
-      routeContent.innerHTML = newContent.innerHTML;
+      routeContent.classList.remove("route-content--nav-enter");
+      routeContent.classList.add("route-content--nav-enter-active");
+      window.setTimeout(function () {
+        routeContent.classList.remove("route-content--nav-enter-active");
+      }, NAV_ENTER_MS);
     }
 
     window.scrollTo(0, 0);
@@ -239,12 +317,14 @@
       window.Herbig.initContent();
     }
 
-    window.setTimeout(function () {
-      if (overlay) overlay.classList.remove("is-visible", "page-transition-overlay--nav");
-      if (window.Herbig && typeof window.Herbig.unlockNavbarTheme === "function") {
-        window.Herbig.unlockNavbarTheme();
-      }
-    }, prefersReducedMotion ? 0 : NAV_BLUR_OUT_MS);
+    if (!opts.instant) {
+      window.setTimeout(function () {
+        if (overlay) overlay.classList.remove("is-visible", "page-transition-overlay--nav");
+        if (window.Herbig && typeof window.Herbig.unlockNavbarTheme === "function") {
+          window.Herbig.unlockNavbarTheme();
+        }
+      }, prefersReducedMotion ? 0 : NAV_BLUR_HOLD_MS);
+    }
 
     var hash = "";
     try { hash = new URL(url, window.location.href).hash; } catch (e) {}
@@ -262,6 +342,16 @@
 
     var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
     if (!a || !isEligibleLink(a)) return;
+
+    if (a.classList.contains("brand")) {
+      // The logo always replays the full intro treatment, even when
+      // already on the homepage -- unlike regular links, it deliberately
+      // ignores isSamePage() so every click plays the moment.
+      e.preventDefault();
+      navigateHome(a.href, false);
+      return;
+    }
+
     if (isSamePage(a)) return; // same-page anchors / "#" placeholders: native behaviour
 
     e.preventDefault();

@@ -1042,30 +1042,56 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 /* ============================================================
    PAGE TRANSITION SYSTEM
    Header (#navbar) is never touched by this — it stays a stable,
-   persistent frame. #route-content is the region that moves: it
-   rises into place on load and on every internal navigation, with
-   the Herbig Lottie mark as the brand moment in between.
+   persistent frame. #route-content is the region that moves.
+
+   Two distinct choreographies:
+   - First-load intro AND clicking the logo (.brand — see transitions.js)
+     both replay the full branded moment: the dramatic 100-200px rise,
+     driven by html.hg-intro-pending, at the slower 0.8s pace on the base
+     #route-content rule below. The logo click reuses this exact same
+     rise/reveal, just triggered on demand instead of once per session.
+   - Every other internal nav link uses a fast, single-motion crossfade
+     instead (.route-content--nav-enter / --nav-enter-active) — a small
+     fade + 10px drift, no big slide, tightly timed to hand off to the
+     blur overlay rather than compete with it. See NAV_* constants in
+     transitions.js for the exact timing this is synced to.
    ============================================================ */
 #route-content {
   opacity: 1;
   transform: translate3d(0, 0, 0);
   transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
-#route-content.route-content--exit { transition: opacity 0.25s ease; opacity: 0; }
+#route-content.route-content--exit { transition: opacity 0.26s var(--ease); opacity: 0; }
 
-#route-content.route-content--enter,
 html.hg-intro-pending #route-content {
   transition: none;
   opacity: 0;
   transform: translate3d(0, 100px, 0);
 }
 @media (min-width: 600px) {
-  #route-content.route-content--enter,
   html.hg-intro-pending #route-content { transform: translate3d(0, 150px, 0); }
 }
 @media (min-width: 900px) {
-  #route-content.route-content--enter,
   html.hg-intro-pending #route-content { transform: translate3d(0, 200px, 0); }
+}
+
+/* Fast crossfade for regular page-to-page nav (see transitions.js).
+   Applied as a pair: --nav-enter sets the hidden starting point with no
+   transition (so the swap itself is invisible), then --nav-enter-active
+   is added a frame later to animate to the resting state — this needs
+   its own short duration independent of the base rule's 0.8s so it
+   never gets entangled with the intro/logo-click rise above. Both
+   classes are removed once the fade completes, leaving the element on
+   the plain base rule. */
+#route-content.route-content--nav-enter {
+  transition: none;
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+}
+#route-content.route-content--nav-enter-active {
+  transition: opacity 0.32s var(--ease), transform 0.32s var(--ease);
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .page-transition-overlay {
@@ -1098,7 +1124,7 @@ html.hg-intro-pending #route-content {
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  transition: opacity 0.55s var(--ease), background 0.55s var(--ease), backdrop-filter 0.55s var(--ease);
+  transition: opacity 0.4s var(--ease), background 0.4s var(--ease), backdrop-filter 0.4s var(--ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
