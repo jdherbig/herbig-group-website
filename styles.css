@@ -413,11 +413,13 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .hero__headline { font-family: var(--font-display); font-weight: 900; font-size: 30px; line-height: 1.2; color: var(--color-white); position: relative; z-index: 1; }
 .hero__headline em { font-family: var(--font-display); font-weight: 300; font-style: italic; color: var(--color-green); }
 .accent { color: var(--color-green); font-weight: 900; }
-/* "Institutional-Grade" uses the Ramsina display face at the same size
-   as the rest of the headline (1em) rather than the larger, independently
-   scaled treatment it used to have — kept consistent with the other
-   headline text at every width instead of jumping up on desktop. */
-.accent--display { font-family: var(--font-accent); font-weight: 400; font-style: normal; line-height: 0.72; display: inline-block; font-size: 1em; }
+/* "Institutional-Grade" uses the Ramsina display face, which renders
+   noticeably smaller than the bold Raleway around it at the same
+   declared font-size (different type has different cap-height/x-height
+   for the same size), so it needs its own larger size to actually look
+   consistent rather than smaller — on both mobile and desktop now, not
+   just desktop. */
+.accent--display { font-family: var(--font-accent); font-weight: 400; font-style: normal; line-height: 0.72; display: inline-block; font-size: 1.63em; }
 @media (min-width: 900px) {
   .hero__headline { font-size: 54px; line-height: 1.15; }
 }
