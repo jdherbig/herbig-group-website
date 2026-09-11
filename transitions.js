@@ -29,7 +29,8 @@
   var LOTTIE_SRC = "assets/lottie/logo-animation.json";
   var SEG_FULL = [0, 90];       // icon settle + full "HERBIG GROUP" wordmark cascade
   var SEG_COMPACT = [0, 32];    // icon mark only, before any letter starts revealing
-  var MIN_BRAND_MS = 550;       // internal-nav: keep the brand moment on screen at least this long
+  var COMPACT_SPEED = 2;        // internal-nav: play the compact mark at 2x speed
+  var MIN_BRAND_MS = 275;       // internal-nav: keep the brand moment on screen at least this long
 
   var ACTIVE_NAV_MAP = {
     "our-blueprint.html": "our-blueprint.html",
@@ -69,10 +70,10 @@
     return lottieReady;
   }
 
-  function playLogo(segment) {
+  function playLogo(segment, speed) {
     return ensureLottie().then(function (inst) {
       if (!inst) return null;
-      inst.setSpeed(1);
+      inst.setSpeed(speed || 1);
       inst.playSegments(segment, true);
       return inst;
     });
@@ -166,7 +167,7 @@
 
     if (!prefersReducedMotion) {
       if (overlay) overlay.classList.add("is-visible");
-      playLogo(SEG_COMPACT);
+      playLogo(SEG_COMPACT, COMPACT_SPEED);
       routeContent.classList.add("route-content--exit");
     }
 
