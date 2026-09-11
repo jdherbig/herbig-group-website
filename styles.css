@@ -665,3 +665,35 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .asset-card__specs { font-size: 14px; line-height: 1.6; color: var(--color-ink); opacity: 0.7; }
 .asset-card__btn { display: inline-flex; align-items: center; padding: 12px 24px; border-radius: 8px; background: var(--color-dark); color: var(--color-white); font-weight: 700; font-size: 13px; transition: transform 0.25s var(--ease), background 0.25s var(--ease); }
 .asset-card__btn:hover { background: #2c333c; transform: translateY(-2px); }
+
+/* ============================================
+   SUBPAGE: JOINT VENTURES SPLIT
+   ============================================ */
+.jv-section { position: relative; padding: 48px var(--container-pad) 80px; overflow: hidden; }
+.jv-split { display: flex; flex-direction: column; gap: 48px; position: relative; z-index: 1; }
+@media (min-width: 900px) { .jv-split { flex-direction: row; align-items: flex-start; gap: 32px; } }
+.jv-panel { display: flex; flex-direction: column; gap: 24px; }
+@media (min-width: 900px) { .jv-panel { gap: 32px; width: 560px; flex-shrink: 0; } }
+.jv-panel h2 { font-family: var(--font-display); font-weight: 800; font-size: 26px; color: var(--color-ink); }
+@media (min-width: 900px) { .jv-panel h2 { font-size: 32px; } }
+.jv-panel > p { font-size: 14px; line-height: 1.65; color: var(--color-ink); opacity: 0.75; }
+@media (min-width: 900px) { .jv-panel > p { font-size: 15px; } }
+.jv-criteria { display: flex; flex-direction: column; gap: 16px; }
+.jv-criteria__title { font-weight: 700; font-size: 14px; color: var(--color-green); }
+.jv-criteria__item { display: flex; align-items: center; gap: 12px; }
+.jv-criteria__item svg { flex-shrink: 0; color: var(--color-green); }
+.jv-criteria__item span { font-size: 14px; color: var(--color-ink); opacity: 0.8; }
+
+.jv-form-card { position: relative; flex: 1; min-width: 0; background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-2xl); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 28px 24px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 18px 48px rgba(0, 0, 0, 0.4); }
+@media (min-width: 900px) { .jv-form-card { padding: 40px; gap: 24px; } }
+.jv-form-card .accent-bar { box-shadow: 0 0 10px rgba(60, 161, 105, 0.4); }
+.jv-form-card__heading { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+.jv-form-card__heading h3 { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: #f8fafc; }
+@media (min-width: 900px) { .jv-form-card__heading h3 { font-size: 24px; } }
+.jv-form-card__heading p { font-size: 14px; color: #cbd5e1; opacity: 0.9; }
+.jv-field { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+.jv-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
+.jv-field input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
+.jv-field input::placeholder { color: #cbd5e1; opacity: 0.65; }
+.jv-field input:focus { outline: none; border-color: var(--color-green); background: rgba(255, 255, 255, 0.08); }
+.jv-form-card .btn--primary { width: 100%; justify-content: center; position: relative; z-index: 1; box-shadow: 0 10px 14px rgba(60, 161, 105, 0.31); }
