@@ -780,7 +780,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .feature-cards { display: flex; flex-direction: column; gap: 24px; }
 @media (min-width: 900px) { .feature-cards { gap: 36px; } }
 .feature-card { position: relative; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); }
-.feature-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--color-green); }
+.feature-card::before { content: ""; position: absolute; left: 0; top: 0; width: 6px; height: 140px; background: var(--color-green); }
 .feature-card__index { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; border-radius: 6px; background: var(--color-green-tint); color: var(--color-green); font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; align-self: flex-start; }
 .feature-card h3 { font-family: var(--font-display); font-weight: 900; font-size: 24px; line-height: 1.15; color: var(--color-ink); }
 @media (min-width: 900px) { .feature-card h3 { font-size: 28px; } }
