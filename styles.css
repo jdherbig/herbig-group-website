@@ -56,11 +56,16 @@
    RESET
    ============================================ */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { scroll-behavior: smooth; }
+/* Both html and body are set here (not just body) so the overscroll/
+   rubber-band area above a fixed-position navbar — visible on a trackpad
+   bounce past the top of the page — renders dark instead of flashing
+   white; every page opens on a dark hero/header, so this reads as a
+   seamless continuation of it rather than a gap. */
+html { scroll-behavior: smooth; background: var(--color-dark); }
 body {
   font-family: var(--font-body);
   color: var(--color-ink);
-  background: var(--color-white);
+  background: var(--color-dark);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
