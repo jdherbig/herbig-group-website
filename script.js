@@ -273,6 +273,44 @@
     revealEls.forEach(function (el) { observer.observe(el); });
   }
 
+  /* ---------- Photo grid: composition-aware assembly ----------
+   * A .photo-grid row (see .gallery-row in the case-study gallery) is
+   * observed as ONE element, not photo-by-photo - the moment it crosses
+   * the trigger line, .is-visible goes on the row itself (and, if one
+   * immediately precedes it, its .gallery-rule divider), and CSS takes it
+   * from there: each image's own reveal direction, distance and delay are
+   * plain child-selector rules keyed to its place in the composition (see
+   * styles.css), not per-element JS. That keeps the whole row resolving
+   * as one short, grouped event instead of a long nth-child cascade. */
+  function initPhotoGrid() {
+    var grids = Array.prototype.slice.call(document.querySelectorAll(".photo-grid"));
+    if (!grids.length) return;
+
+    function reveal(grid) {
+      grid.classList.add("is-visible");
+      var rule = grid.previousElementSibling;
+      if (rule && rule.classList.contains("gallery-rule")) rule.classList.add("is-visible");
+    }
+
+    if (!("IntersectionObserver" in window) || prefersReducedMotion) {
+      grids.forEach(reveal);
+      return;
+    }
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            reveal(entry.target);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.01, rootMargin: "0px 0px 140px 0px" }
+    );
+    grids.forEach(function (g) { observer.observe(g); });
+  }
+
   function initDragScroll(outer) {
     var isDown = false;
     var startX = 0;
@@ -809,6 +847,7 @@
     initHeroZoom();
     initHeroEntrance();
     initScrollReveal();
+    initPhotoGrid();
     initCinematicTrack();
     initEquationReveal();
     initPathwayBreakout();

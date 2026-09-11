@@ -447,6 +447,18 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .hero__content { display: flex; flex-direction: column; gap: 24px; position: relative; z-index: 1; }
 
 .badge { display: inline-flex; align-self: flex-start; padding: 8px 16px; border-radius: 100px; background: rgba(var(--color-green-rgb), 0.28); border: 1px solid var(--glass-border); color: var(--color-white); font-weight: 700; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+/* Hero entrance family: three distinct events instead of one generic
+   fade-up on the whole block (see initHeroZoom's .is-loaded, added next
+   frame on load). The eyebrow badge is light/fast and leads; the glass
+   panel below is the section's one PRIMARY event (its own dedicated
+   entrance, not this generic treatment); the action buttons are a small
+   trailing/supporting beat once the panel has mostly landed. The hero
+   photo itself carries the section's ambient movement via its existing
+   slow is-loaded zoom - it doesn't need its own fade-in too. */
+.hero .badge { opacity: 0; transform: translateY(var(--motion-distance-xs)); transition: opacity var(--motion-interface) var(--motion-ease-enter), transform var(--motion-interface) var(--motion-ease-enter); }
+.hero.is-loaded .badge { opacity: 1; transform: translateY(0); }
+.hero .hero__actions { opacity: 0; transform: translateY(var(--motion-distance-xs)); transition: opacity var(--motion-interface) var(--motion-ease-interface) 0.5s, transform var(--motion-interface) var(--motion-ease-interface) 0.5s; }
+.hero.is-loaded .hero__actions { opacity: 1; transform: translateY(0); }
 
 /* backdrop-filter blurs whatever is actually painted behind an element -
    on a slow connection the hero photo hadn't decoded yet by the time
@@ -470,13 +482,27 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   padding: 28px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  transition: background var(--motion-content) var(--motion-ease-enter), backdrop-filter var(--motion-content) var(--motion-ease-enter);
+  /* Entrance (opacity/transform) is the section's signature move: an
+     architectural surface sliding into frame, not a drawer or a card -
+     kept to a modest travel distance and the site's slowest, most
+     confident ease so it reads as weight settling into place rather than
+     something mechanically sliding. Deliberately gated on .is-loaded
+     (next-frame, not network-dependent) rather than .is-photo-ready: on
+     any normal connection the preloaded photo (see index.html) is
+     already ready well inside this 800ms window, so the panel arrives
+     already frosted; on a slow one it still arrives on schedule showing
+     the solid fallback below, which already reads as intentional. */
+  transition: background var(--motion-content) var(--motion-ease-enter), backdrop-filter var(--motion-content) var(--motion-ease-enter), opacity var(--motion-editorial) var(--motion-ease-enter) 0.08s, transform var(--motion-editorial) var(--motion-ease-enter) 0.08s;
+  opacity: 0.4;
+  transform: translateX(-48px);
 }
+.hero.is-loaded .headline-card { opacity: 1; transform: translateX(0); }
 .hero.is-photo-ready .headline-card {
   background: var(--glass-fill-soft);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
 @media (min-width: 900px) { .headline-card { padding: 44px; gap: 24px; } }
+@media (min-width: 900px) { .headline-card { transform: translateX(-80px); } }
 
 /* Short floating accent segment (not a full-height card border) — matches
    the Figma headline-card's independent 4x120 accent-bar node. */
@@ -803,7 +829,13 @@ html.is-fast-scroll .metric-card:nth-child(2) .metric-card__value,
 html.is-fast-scroll .metric-card:nth-child(2) .metric-card__label,
 html.is-fast-scroll .metric-card:nth-child(3)::before,
 html.is-fast-scroll .metric-card:nth-child(3) .metric-card__value,
-html.is-fast-scroll .metric-card:nth-child(3) .metric-card__label {
+html.is-fast-scroll .metric-card:nth-child(3) .metric-card__label,
+html.is-fast-scroll .photo-grid .gallery-main img,
+html.is-fast-scroll .photo-grid .gallery-col .gallery-card img,
+html.is-fast-scroll .photo-grid.gallery-row--triple .gallery-card img {
+  /* Matches (or beats) the base rules' own specificity - .gallery-col/
+     .gallery-row--triple are folded in here for that reason, not because
+     the selectors need to be this specific to be correct. */
   transition-delay: 0s;
 }
 
@@ -963,8 +995,23 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 
 /* ---- Image cards ---- */
 .holding-card__media { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
-.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1); transition: transform var(--motion-interface) var(--motion-ease-interface); }
-.holding-card:hover .holding-card__media img, .holding-card:focus-visible .holding-card__media img, .holding-card:active .holding-card__media img { transform: scale(1.02); }
+/* The image keeps settling slightly after the card itself has landed
+   (see .reveal-stagger for the card-level arrival) - a heavier, slower
+   photographic settle layered under the card's own quicker entrance,
+   same "text stops, photography keeps a little more weight" idea used
+   for the pathway/gallery imagery elsewhere on the site. .is-visible is
+   the same class the card's own .reveal-stagger reveal adds, so this
+   needs no separate trigger. Hover afterward gets its own much faster
+   interface-speed override so it doesn't inherit the slow entrance
+   transition. */
+.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.035); transition: transform var(--motion-image) var(--motion-ease-enter); }
+.holding-card.is-visible .holding-card__media img { transform: scale(1); }
+.holding-card.is-visible:hover .holding-card__media img,
+.holding-card.is-visible:focus-visible .holding-card__media img,
+.holding-card.is-visible:active .holding-card__media img {
+  transform: scale(1.02);
+  transition: transform var(--motion-interface) var(--motion-ease-interface);
+}
 
 .holding-card__scrim { position: absolute; inset: 0; background: rgba(33, 38, 45, 0.18); pointer-events: none; }
 .holding-card__gradient { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(22, 25, 30, 0) 0%, rgba(22, 25, 30, 0) 50%, rgba(22, 25, 30, 0.44) 75%, rgba(22, 25, 30, 0.9) 100%); }
@@ -1202,6 +1249,57 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .gallery-row--triple .gallery-card { width: 100%; height: 260px; }
 @media (min-width: 900px) { .gallery-row--triple { gap: 10px; } .gallery-row--triple .gallery-card { flex: 1; height: 420px; } }
 
+/* ---- Photo grid: composition-aware assembly (not a photo-1/2/3/4 fade-up cascade) ----
+   A thin structural rule draws first (the "dark section" language: a line
+   establishing before the imagery does), then the row's own images
+   resolve as ONE grouped event via short built-in delays rather than a
+   long per-photo cascade - initPhotoGrid() in script.js adds .is-visible
+   to the whole .photo-grid row (and its preceding .gallery-rule) from a
+   single IntersectionObserver hit, and CSS does the rest. Direction
+   follows each image's place in the composition: the anchor (.gallery-main,
+   the largest/heaviest element) clips open from the left and carries the
+   slowest, heaviest settle; the column's upper secondary clips from the
+   right (it sits opposite the anchor), the lower one from the bottom (it
+   reads as arriving beneath the one above it). The equal-weight triple row
+   has no single anchor, so its left-to-right DOM order doubles as its
+   visual hierarchy and gets a plain left/centre/right stagger instead. */
+.gallery-rule { position: relative; z-index: 1; height: 1px; background: var(--glass-border); transform: scaleX(0); transform-origin: left; transition: transform var(--motion-interface) var(--motion-ease-enter); }
+.gallery-rule.is-visible { transform: scaleX(1); }
+
+.photo-grid .gallery-main img,
+.photo-grid .gallery-card img {
+  transition: clip-path var(--motion-image) var(--motion-ease-enter), transform var(--motion-image) var(--motion-ease-enter), opacity var(--motion-image) var(--motion-ease-enter);
+}
+
+.photo-grid .gallery-main img { clip-path: inset(0 100% 0 0); transform: scale(1.09); transition-delay: 0.05s; }
+.photo-grid.is-visible .gallery-main img { clip-path: inset(0 0 0 0); transform: scale(1); }
+
+.photo-grid .gallery-col .gallery-card:nth-child(1) img { clip-path: inset(0 0 0 100%); transform: scale(1.07); transition-delay: 0.14s; }
+.photo-grid .gallery-col .gallery-card:nth-child(2) img { clip-path: inset(100% 0 0 0); transform: scale(1.07); transition-delay: 0.21s; }
+.photo-grid.is-visible .gallery-col .gallery-card img { clip-path: inset(0 0 0 0); transform: scale(1); }
+
+.photo-grid.gallery-row--triple > .gallery-card:nth-child(1) img { clip-path: inset(0 0 0 100%); transform: scale(1.07); transition-delay: 0.05s; }
+.photo-grid.gallery-row--triple > .gallery-card:nth-child(2) img { clip-path: inset(0); transform: scale(1.1); opacity: 0.55; transition-delay: 0.12s; }
+.photo-grid.gallery-row--triple > .gallery-card:nth-child(3) img { clip-path: inset(0 100% 0 0); transform: scale(1.07); transition-delay: 0.19s; }
+.photo-grid.gallery-row--triple.is-visible > .gallery-card img { clip-path: inset(0); transform: scale(1); opacity: 1; }
+
+/* Restrained desktop hover, once settled: image only, no tile movement,
+   no shadow/border/text piling on at the same time. Overriding the whole
+   transition here is safe - clip-path/opacity aren't changing on hover,
+   only transform is, so this just gives that one change interface-speed
+   timing instead of the (already-finished) entrance's slower one. */
+@media (min-width: 900px) {
+  .photo-grid.is-visible .gallery-main img,
+  .photo-grid.is-visible .gallery-card img {
+    transition-duration: var(--motion-interface);
+    transition-timing-function: var(--motion-ease-interface);
+  }
+  .photo-grid.is-visible .gallery-main:hover img,
+  .photo-grid.is-visible .gallery-card:hover img {
+    transform: scale(1.015);
+  }
+}
+
 .case-cta { position: relative; background: var(--color-bg-soft); padding: 48px var(--container-pad); display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.06); }
 @media (min-width: 900px) { .case-cta { padding: 100px 80px; gap: 32px; } }
 .case-cta h2 { font-family: var(--font-display); font-weight: 900; font-size: 26px; color: var(--color-ink); }
@@ -1332,4 +1430,23 @@ html.hg-intro-pending #route-content {
     opacity: 0.75 !important;
     transform: none !important;
   }
+
+  /* Same belt-and-suspenders guarantee for the homepage hero's own
+     entrance family (badge / glass-panel slide-in / actions) and the
+     photo-grid + holding-card entrances below. */
+  .hero .badge,
+  .hero .hero__actions,
+  .headline-card {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .photo-grid .gallery-main img,
+  .photo-grid .gallery-card img {
+    clip-path: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .gallery-rule { transform: scaleX(1) !important; }
+  .holding-card__media img { transform: none !important; }
+  .gallery-main:hover img, .gallery-card:hover img { transform: none !important; }
 }
