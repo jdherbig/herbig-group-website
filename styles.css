@@ -642,3 +642,26 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 [data-placeholder="true"] { position: relative; background: linear-gradient(135deg, #3ca169 0%, #21262d 65%, #161a1f 100%); }
 [data-placeholder="true"]::before { content: "Photo pending"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.45); text-transform: uppercase; }
 .page-header__bg[data-placeholder="true"] { position: absolute; inset: 0; z-index: 0; }
+
+/* ============================================
+   SUBPAGE: ASSET LIST (active-holdings)
+   ============================================ */
+.asset-list { position: relative; padding: 48px var(--container-pad) 80px; display: flex; flex-direction: column; gap: 24px; }
+.asset-card { position: relative; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 24px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
+.asset-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card-hover); }
+@media (min-width: 900px) { .asset-card { flex-direction: row; align-items: center; gap: 48px; padding: 32px; } }
+.asset-card__photo { position: relative; width: 100%; height: 220px; border-radius: var(--radius-lg); overflow: hidden; flex-shrink: 0; }
+@media (min-width: 900px) { .asset-card__photo { width: 480px; height: 320px; } }
+.asset-card__photo img { width: 100%; height: 100%; object-fit: cover; }
+.asset-card__photo::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.18); }
+.asset-card__info { display: flex; flex-direction: column; gap: 16px; flex: 1; min-width: 0; }
+@media (min-width: 900px) { .asset-card__info { gap: 24px; } }
+.asset-card__meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.asset-card__meta .pill { padding: 4px 12px; font-size: 10px; }
+.asset-card__location { font-weight: 600; font-size: 13px; color: #656d76; }
+.asset-card__info h3 { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--color-ink); }
+@media (min-width: 900px) { .asset-card__info h3 { font-size: 28px; } }
+.asset-card__sub { font-weight: 600; font-size: 15px; color: var(--color-green); }
+.asset-card__specs { font-size: 14px; line-height: 1.6; color: var(--color-ink); opacity: 0.7; }
+.asset-card__btn { display: inline-flex; align-items: center; padding: 12px 24px; border-radius: 8px; background: var(--color-dark); color: var(--color-white); font-weight: 700; font-size: 13px; transition: transform 0.25s var(--ease), background 0.25s var(--ease); }
+.asset-card__btn:hover { background: #2c333c; transform: translateY(-2px); }
