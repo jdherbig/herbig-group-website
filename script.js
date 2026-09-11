@@ -247,6 +247,10 @@
   // Profit scroll-reveal below (#core only exists on index.html).
   var activeEquationScrollCleanup = null;
 
+  // Same story again, for the pathway-card image breakout below
+  // (#pillars only exists on index.html).
+  var activePathwayScrollCleanup = null;
+
   function initPinnedScroll(scrollWrap, sticky, outer, track) {
     scrollWrap.classList.add("is-pinned");
 
@@ -455,6 +459,136 @@
     };
   }
 
+  /* ---------- Pathway image "breakout" toward the viewport edge ----------
+   * Each .pathway-card's image is free to travel past the card's own
+   * footprint now (.pathway-card is overflow:visible on desktop — see
+   * styles.css), so as a card scrolls through the viewport its image
+   * gradually slides outward - left for the first pillar, right for the
+   * reverse-orientation second one - growing slightly and gaining a
+   * touch of saturation as it goes, while the glass panel and copy stay
+   * exactly where they are. It's a second, later stage of the same
+   * card's scroll-through: the breakout only starts once the card is
+   * already well into view, not from the moment it first appears.
+   *
+   * The travel distance isn't a fixed pixel value - it's measured from
+   * the image's own live position out to the actual viewport edge (minus
+   * a fixed breathing-room gap), so it's already correct at any
+   * viewport width without separate tablet/desktop cases, and it can
+   * never overshoot into the scrollbar or off-screen. Below the 900px
+   * breakpoint .pathway-card__image goes back to being a normal
+   * in-flow, clipped box (see styles.css), so there's no edge to break
+   * out toward - the mobile fallback instead does a small in-place
+   * rise + zoom within that same clipped box. */
+  function initPathwayBreakout() {
+    if (activePathwayScrollCleanup) {
+      activePathwayScrollCleanup();
+      activePathwayScrollCleanup = null;
+    }
+
+    var cards = Array.prototype.slice.call(document.querySelectorAll(".pathway-card"));
+    if (!cards.length || prefersReducedMotion) return;
+
+    var EDGE_GAP = 32;        // desktop: breathing room kept between the image and the true viewport edge, px
+    var SCALE_MAX = 1.06;
+    var SATURATE_MAX = 1.1;
+    var MOBILE_RISE = 10;     // mobile: secondary translateY in place of the horizontal breakout, px
+    var BREAKOUT_START = 0.3; // fraction of a card's own scroll-through progress before breakout begins (0-30% = still contained)
+    var TRIGGER_START_FRAC = 0.85; // a card's top at 85% down the viewport -> that card's progress 0
+    var TRIGGER_END_FRAC = 0.25;   // a card's top at 25% down the viewport -> that card's progress 1
+
+    var entries = [];
+    var ticking = false;
+
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+    function measure() {
+      var isDesktop = window.matchMedia("(min-width: 900px)").matches;
+      var vw = document.documentElement.clientWidth || window.innerWidth;
+
+      entries = cards.map(function (card) {
+        var img = card.querySelector(".pathway-card__image");
+        if (!img) return null;
+        var isReverse = card.classList.contains("pathway-card--reverse");
+
+        img.style.transform = ""; // clear first so the rect below reads the true resting position
+
+        var targetX = 0;
+        if (isDesktop) {
+          var rect = img.getBoundingClientRect();
+          // scale() grows the box from its own centre, so at full breakout
+          // (SCALE_MAX) the outward edge has already moved by half the
+          // added width on its own - fold that into the translate target
+          // so the two combine to land exactly EDGE_GAP from the viewport
+          // edge, not overshoot past it.
+          var scaleEdgeShift = (SCALE_MAX - 1) * rect.width / 2;
+          targetX = isReverse
+            ? ((vw - EDGE_GAP) - rect.right) - scaleEdgeShift
+            : (EDGE_GAP - rect.left) + scaleEdgeShift;
+          // Only ever move outward (right for the reverse card, left for the
+          // default one) - never inward, even if a card already sits close
+          // to the edge on a narrower desktop width.
+          targetX = isReverse ? Math.max(0, targetX) : Math.min(0, targetX);
+        }
+
+        return { card: card, img: img, isDesktop: isDesktop, targetX: targetX };
+      }).filter(Boolean);
+    }
+
+    function apply() {
+      ticking = false;
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var startY = vh * TRIGGER_START_FRAC;
+      var endY = vh * TRIGGER_END_FRAC;
+
+      entries.forEach(function (entry) {
+        var rect = entry.card.getBoundingClientRect();
+        var progress = Math.min(1, Math.max(0, (startY - rect.top) / (startY - endY)));
+        var t = easeOutCubic(Math.min(1, Math.max(0, (progress - BREAKOUT_START) / (1 - BREAKOUT_START))));
+
+        if (t <= 0) {
+          entry.img.style.transform = "";
+          entry.img.style.filter = "";
+          entry.img.style.transition = "";
+          return;
+        }
+
+        var scale = 1 + (SCALE_MAX - 1) * t;
+        entry.img.style.transition = "none";
+        entry.img.style.transform = entry.isDesktop
+          ? "translate3d(" + (entry.targetX * t) + "px, 0, 0) scale(" + scale + ")"
+          : "translate3d(0, " + (-MOBILE_RISE * t) + "px, 0) scale(" + scale + ")";
+        entry.img.style.filter = "saturate(" + (1 + (SATURATE_MAX - 1) * t) + ")";
+      });
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    }
+
+    function onResize() {
+      measure();
+      apply();
+    }
+
+    measure();
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+
+    activePathwayScrollCleanup = function () {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      entries.forEach(function (entry) {
+        entry.img.style.transform = "";
+        entry.img.style.filter = "";
+        entry.img.style.transition = "";
+      });
+    };
+  }
+
   function initAssetCardButtons() {
     document.querySelectorAll(".asset-card__btn--disabled").forEach(function (btn) {
       var resetTimer = null;
@@ -493,6 +627,7 @@
     initScrollReveal();
     initCinematicTrack();
     initEquationReveal();
+    initPathwayBreakout();
     initAssetCardButtons();
     initContactForm();
   }

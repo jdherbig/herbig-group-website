@@ -493,9 +493,14 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    ============================================ */
 .pillars { background: var(--color-dark); display: flex; flex-direction: column; gap: 24px; }
 @media (min-width: 900px) { .pillars { gap: 20px; } }
+/* overflow:hidden on .section (inherited) would clip the pathway image
+   breakout below before it ever reaches the viewport edge — .canvas-glow
+   already clips the decorative blobs on its own, so this section doesn't
+   need the section-level clip either (same reasoning as .team above). */
+.pillars { overflow: visible; }
 
 .pathway-card { position: relative; z-index: 1; display: flex; flex-direction: column; border-radius: var(--radius-2xl); overflow: hidden; background: var(--color-dark); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.09), 0 28px 60px rgba(0, 0, 0, 0.26); }
-.pathway-card__image { height: 220px; overflow: hidden; }
+.pathway-card__image { height: 220px; overflow: hidden; will-change: transform; }
 .pathway-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
 .pathway-card:hover .pathway-card__image img { transform: scale(1.04); }
 .pathway-card__panel { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px 24px 32px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 18px 48px rgba(0, 0, 0, 0.12); overflow: hidden; }
@@ -505,12 +510,20 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 @media (min-width: 900px) {
   /* Panel overlaps the image edge by ~10% so the frosted glass actually
-     reveals photo detail underneath, matching the Figma composition. */
-  .pathway-card { display: block; height: 440px; }
-  .pathway-card__image { position: absolute; top: 0; left: 0; bottom: 0; width: 41%; height: 100%; z-index: 0; }
-  .pathway-card__panel { position: relative; z-index: 1; margin-left: 31%; width: 69%; height: 100%; justify-content: center; padding: 48px; gap: 24px; }
-  .pathway-card--reverse .pathway-card__image { left: auto; right: 0; }
-  .pathway-card--reverse .pathway-card__panel { margin-left: 0; }
+     reveals photo detail underneath, matching the Figma composition.
+     .pathway-card itself goes overflow:visible so script.js can carry
+     .pathway-card__image out past the card's own footprint toward the
+     viewport edge on scroll (see initPathwayBreakout). Losing the
+     parent's clip means the image's own outer corner and the panel's
+     own outer corner each need their own border-radius now, matching
+     the corner the parent used to round for them — everything else
+     about their appearance (background, border, box-shadow) already
+     follows border-radius on its own, unaffected by overflow. */
+  .pathway-card { display: block; height: 440px; overflow: visible; }
+  .pathway-card__image { position: absolute; top: 0; left: 0; bottom: 0; width: 41%; height: 100%; z-index: 0; border-radius: var(--radius-2xl) 0 0 var(--radius-2xl); }
+  .pathway-card__panel { position: relative; z-index: 1; margin-left: 31%; width: 69%; height: 100%; justify-content: center; padding: 48px; gap: 24px; border-radius: 0 var(--radius-2xl) var(--radius-2xl) 0; }
+  .pathway-card--reverse .pathway-card__image { left: auto; right: 0; border-radius: 0 var(--radius-2xl) var(--radius-2xl) 0; }
+  .pathway-card--reverse .pathway-card__panel { margin-left: 0; border-radius: var(--radius-2xl) 0 0 var(--radius-2xl); }
   .pathway-card__panel h3 { font-size: 36px; }
   .pathway-card__panel p { font-size: 16px; }
   .pathway-card__image::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, transparent 55%, rgba(33, 38, 45, 0.55) 100%); }
