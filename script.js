@@ -244,27 +244,25 @@
     }
   }
 
-  /* Trigger point for each reveal family, expressed as "top of element
-   * reaches this % of the viewport height" (matches how the rest of the
-   * motion system - initSurfaceEntrances below - talks about timing), then
+  /* Trigger point for each of the three entrance families, expressed as
+   * "top of element reaches this % of the viewport height", then
    * converted to the negative-bottom rootMargin percentage that produces
    * it: shrinking the effective (root-less) viewport's bottom edge inward
    * by (100 - target)% moves the trigger line up to target% down the
    * viewport, so IntersectionObserver only fires once the element's top
    * has actually scrolled that far into view - not the instant it peeks
-   * in at the very bottom edge. A single shared value made every reveal
-   * fire the moment it barely entered the viewport (too early, reported
-   * as feeling disconnected from scroll); these are tiered instead so
-   * large/heavy compositions can still begin a touch earlier than small
-   * copy or metrics, per the site's timing hierarchy. */
+   * in at the very bottom edge. Tiered so large grid compositions can
+   * begin a touch later than editorial text/small structured content,
+   * per the site's timing hierarchy (small text/metrics ~68-72vh,
+   * standard surfaces ~74-78vh, large grids ~78-80vh). */
   var REVEAL_TIERS = [
-    { selector: ".reveal-stagger", targetVh: 70 },  // metrics / small structured content: ~68-72vh
-    { selector: ".reveal-left, .reveal-right", targetVh: 76 }, // image+text split layouts: ~74-78vh
-    { selector: ".reveal", targetVh: 73 }             // editorial text / general surfaces: ~70-76vh
+    { selector: ".reveal-stagger", targetVh: 70 },           // metrics / small structured content: ~68-72vh
+    { selector: ".reveal, .reveal-surface", targetVh: 76 },  // editorial text + surface panels: ~74-78vh
+    { selector: ".reveal-grid", targetVh: 79 }                // large grid/image compositions: ~78-80vh
   ];
 
   function initScrollReveal() {
-    var anyEls = document.querySelectorAll(".reveal, .reveal-stagger, .reveal-left, .reveal-right");
+    var anyEls = document.querySelectorAll(".reveal, .reveal-stagger, .reveal-surface, .reveal-grid");
     if (!anyEls.length) return;
 
     if (!("IntersectionObserver" in window)) {
@@ -286,7 +284,7 @@
             }
           });
         },
-        { threshold: 0.01, rootMargin: "0px 0px " + marginPct + "% 0px" }
+        { threshold: 0.05, rootMargin: "0px 0px " + marginPct + "% 0px" }
       );
       els.forEach(function (el) { observer.observe(el); });
     });
@@ -325,12 +323,11 @@
           }
         });
       },
-      // Large photo grids/image compositions: trigger around 78-82vh (top
-      // reaching ~80% down the viewport), later than the old fixed 140px
-      // margin, which fired as soon as a grid's edge barely cleared the
-      // fold - see REVEAL_TIERS above for the same logic applied to the
-      // generic .reveal family.
-      { threshold: 0.01, rootMargin: "0px 0px -20% 0px" }
+      // Large photo grids/image compositions: trigger around 78-80vh (top
+      // reaching ~79-80% down the viewport) - same "large grid" tier as
+      // .reveal-grid above (see REVEAL_TIERS), just expressed locally
+      // since photo grids keep their own bespoke observer/logic.
+      { threshold: 0.05, rootMargin: "0px 0px -21% 0px" }
     );
     grids.forEach(function (g) { observer.observe(g); });
   }
@@ -420,10 +417,6 @@
   // Same story as activePinnedScrollCleanup above, for the People/Purpose/
   // Profit scroll-reveal below (#core only exists on index.html).
   var activeEquationScrollCleanup = null;
-
-  // Same story again, for the pathway-card image breakout below
-  // (#pillars only exists on index.html).
-  var activePathwayScrollCleanup = null;
 
   function initPinnedScroll(scrollWrap, sticky, outer, track) {
     scrollWrap.classList.add("is-pinned");
@@ -536,14 +529,15 @@
     var sideCards = Array.prototype.slice.call(grid.querySelectorAll(".eq-card:not(.eq-card--dark)"));
     if (!purpose || !sideCards.length) return;
 
-    var REACH = 0.68;       // how far toward Purpose's centre each side card starts, 0-1
-    var RISE = 28;           // secondary "rising into place" offset shared by both side cards, px
-    var PURPOSE_SETTLE = 16; // Purpose's own much smaller settle distance, px
+    var REACH = 0.34;        // how far toward Purpose's centre each side card starts, 0-1 (kept as
+                              // the signature interaction, but with roughly half its old reach)
+    var RISE = 14;            // secondary "rising into place" offset shared by both side cards, px
+    var PURPOSE_SETTLE = 14; // Purpose's own much smaller settle distance, px
     var PURPOSE_END = 0.3;   // Purpose finishes settling by this fraction of overall progress
     var SIDE_START = 0.4;    // side cards begin spreading at this fraction (the gap before it
                               // is the "brief moment of stability" after Purpose settles)
-    var TRIGGER_START_FRAC = 0.85; // grid top at 85% down the viewport -> progress 0
-    var TRIGGER_END_FRAC = 0.3;    // grid top at 30% down the viewport -> progress 1
+    var TRIGGER_START_FRAC = 0.78; // grid top at 78% down the viewport -> progress 0
+    var TRIGGER_END_FRAC = 0.56;   // grid top at 56% down the viewport -> progress 1
 
     var offsets = [];
     var ticking = false;
@@ -598,7 +592,7 @@
         } else {
           o.el.style.transition = "none";
           o.el.style.transform = "translate3d(" + (o.startX * (1 - sideT)) + "px, " + (o.startY * (1 - sideT)) + "px, 0) scale(" + (0.97 + 0.03 * sideT) + ")";
-          o.el.style.opacity = String(0.15 + 0.85 * sideT);
+          o.el.style.opacity = String(0.65 + 0.35 * sideT);
         }
       });
     }
@@ -629,134 +623,6 @@
         o.el.style.transform = "";
         o.el.style.opacity = "";
         o.el.style.transition = "";
-      });
-    };
-  }
-
-  /* ---------- Pathway image "breakout" toward the viewport edge ----------
-   * Each .pathway-card's image is free to travel past the card's own
-   * footprint now (.pathway-card is overflow:visible on desktop — see
-   * styles.css), so as a card scrolls through the viewport its image
-   * gradually slides outward - left for the first pillar, right for the
-   * reverse-orientation second one - growing slightly and gaining a
-   * touch of saturation as it goes, while the glass panel and copy stay
-   * exactly where they are. It's a second, later stage of the same
-   * card's scroll-through: the breakout only starts once the card is
-   * already well into view, not from the moment it first appears.
-   *
-   * The travel distance isn't a fixed pixel value - it's measured from
-   * the image's own live position out to the actual viewport edge (minus
-   * a fixed breathing-room gap), so it's already correct at any
-   * viewport width without separate tablet/desktop cases, and it can
-   * never overshoot into the scrollbar or off-screen. Below the 900px
-   * breakpoint .pathway-card__image goes back to being a normal
-   * in-flow, clipped box (see styles.css), so there's no edge to break
-   * out toward - the mobile fallback instead does a small in-place
-   * rise + zoom within that same clipped box. */
-  function initPathwayBreakout() {
-    if (activePathwayScrollCleanup) {
-      activePathwayScrollCleanup();
-      activePathwayScrollCleanup = null;
-    }
-
-    var cards = Array.prototype.slice.call(document.querySelectorAll(".pathway-card"));
-    if (!cards.length || prefersReducedMotion) return;
-
-    var EDGE_GAP = 32;        // desktop: breathing room kept between the image and the true viewport edge, px
-    var SCALE_MAX = 1.06;
-    var SCALE_MAX_MOBILE = 1.03; // mobile gets a lighter version of every dimension of this effect - see PAGE_RHYTHM/MOBILE in the motion spec
-    var MOBILE_RISE = 10;     // mobile: secondary translateY in place of the horizontal breakout, px
-    var BREAKOUT_START = 0.3; // fraction of a card's own scroll-through progress before breakout begins (0-30% = still contained)
-    var TRIGGER_START_FRAC = 0.85; // a card's top at 85% down the viewport -> that card's progress 0
-    var TRIGGER_END_FRAC = 0.25;   // a card's top at 25% down the viewport -> that card's progress 1
-
-    var entries = [];
-    var ticking = false;
-
-    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-    function measure() {
-      var isDesktop = window.matchMedia("(min-width: 900px)").matches;
-      var vw = document.documentElement.clientWidth || window.innerWidth;
-
-      entries = cards.map(function (card) {
-        var img = card.querySelector(".pathway-card__image");
-        if (!img) return null;
-        var isReverse = card.classList.contains("pathway-card--reverse");
-
-        img.style.transform = ""; // clear first so the rect below reads the true resting position
-
-        var targetX = 0;
-        if (isDesktop) {
-          var rect = img.getBoundingClientRect();
-          // scale() grows the box from its own centre, so at full breakout
-          // (SCALE_MAX) the outward edge has already moved by half the
-          // added width on its own - fold that into the translate target
-          // so the two combine to land exactly EDGE_GAP from the viewport
-          // edge, not overshoot past it.
-          var scaleEdgeShift = (SCALE_MAX - 1) * rect.width / 2;
-          targetX = isReverse
-            ? ((vw - EDGE_GAP) - rect.right) - scaleEdgeShift
-            : (EDGE_GAP - rect.left) + scaleEdgeShift;
-          // Only ever move outward (right for the reverse card, left for the
-          // default one) - never inward, even if a card already sits close
-          // to the edge on a narrower desktop width.
-          targetX = isReverse ? Math.max(0, targetX) : Math.min(0, targetX);
-        }
-
-        return { card: card, img: img, isDesktop: isDesktop, targetX: targetX };
-      }).filter(Boolean);
-    }
-
-    function apply() {
-      ticking = false;
-      var vh = window.innerHeight || document.documentElement.clientHeight;
-      var startY = vh * TRIGGER_START_FRAC;
-      var endY = vh * TRIGGER_END_FRAC;
-
-      entries.forEach(function (entry) {
-        var rect = entry.card.getBoundingClientRect();
-        var progress = Math.min(1, Math.max(0, (startY - rect.top) / (startY - endY)));
-        var t = easeOutCubic(Math.min(1, Math.max(0, (progress - BREAKOUT_START) / (1 - BREAKOUT_START))));
-
-        if (t <= 0) {
-          entry.img.style.transform = "";
-          entry.img.style.transition = "";
-          return;
-        }
-
-        var scaleMax = entry.isDesktop ? SCALE_MAX : SCALE_MAX_MOBILE;
-        var scale = 1 + (scaleMax - 1) * t;
-        entry.img.style.transition = "none";
-        entry.img.style.transform = entry.isDesktop
-          ? "translate3d(" + (entry.targetX * t) + "px, 0, 0) scale(" + scale + ")"
-          : "translate3d(0, " + (-MOBILE_RISE * t) + "px, 0) scale(" + scale + ")";
-      });
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(apply);
-      }
-    }
-
-    function onResize() {
-      measure();
-      apply();
-    }
-
-    measure();
-    apply();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-
-    activePathwayScrollCleanup = function () {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      entries.forEach(function (entry) {
-        entry.img.style.transform = "";
-        entry.img.style.transition = "";
       });
     };
   }
@@ -834,219 +700,6 @@
     };
   }
 
-  /* ---------- Directional scroll-surface entrances ----------
-   * A distinct entrance family from the generic .reveal/.reveal-stagger
-   * fade-up above: selected panels, card rows and split layouts are
-   * treated as physical surfaces that move into their final composition
-   * as the user scrolls them into a short trigger window just below the
-   * fold, then hold there - continuously scroll-linked and reversible
-   * (same idea as initEquationReveal/initPathwayBreakout above - not a
-   * one-shot IntersectionObserver trigger, and not scrubbed for as long
-   * as the section is on screen, just across that one short approach).
-   *
-   * Every [data-surface-group] container is measured from its own
-   * getBoundingClientRect().top against the SAME viewport window
-   * (SURFACE_START_FRAC down the viewport -> progress 0, SURFACE_END_FRAC
-   * -> progress 1); its members move as a function of that one shared
-   * progress, each with its own role (direction/distance) and an
-   * optional phase offset so, e.g., an anchor card settles first and the
-   * two flanking it visibly catch up a beat later, rather than all three
-   * landing in lockstep. There's no default CSS hidden state for any of
-   * this - members only ever get an inline transform while a group's
-   * progress is <1, and it's cleared (handing back to plain CSS) once
-   * that group is fully settled - so content already renders correctly
-   * in its resting layout with no JS at all, just without the entrance. */
-  var activeSurfaceCleanup = null;
-
-  // Per-kind trigger window, tiered instead of one shared value - a group's
-  // own top at TIER.start down the viewport -> progress 0, TIER.end -> 1,
-  // then it holds. Kept as one 0.20 fraction window across every kind (a
-  // consistent overall "duration") while START itself moves later for
-  // lighter/more text-driven compositions: portfolio/triad/panel are the
-  // heaviest, most card-like surfaces and can start a touch earlier; split
-  // (image+text) follows; the two-surface "form" group - contact and joint
-  // venture forms - starts latest and most deliberately, matching the
-  // explicit complaint that those sections were arriving too early and
-  // feeling disconnected from scroll.
-  var SURFACE_TIERS = {
-    portfolio: { start: 0.74, end: 0.54 },
-    triad:     { start: 0.74, end: 0.54 },
-    panel:     { start: 0.74, end: 0.54 },
-    split:     { start: 0.76, end: 0.56 },
-    form:      { start: 0.78, end: 0.58 }
-  };
-
-  function surfaceEaseOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-  // role(t): t is 0 (just entering) -> 1 (at rest), already eased. Values
-  // are per the motion spec for each family - kept here as one lookup
-  // table rather than scattered across each group's own code below.
-  var SURFACE_ROLES = {
-    "col-left": function (t) { return { transform: "translate3d(" + (-70 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
-    "col-center": function (t) { return { transform: "translate3d(0, " + (30 * (1 - t)).toFixed(2) + "px, 0) scale(" + (0.985 + 0.015 * t).toFixed(4) + ")" }; },
-    "col-right": function (t) { return { transform: "translate3d(" + (70 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
-
-    "triad-left": function (t) { return { transform: "translate3d(" + (95 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
-    "triad-anchor": function (t) { return { transform: "translate3d(0, " + (30 * (1 - t)).toFixed(2) + "px, 0) scale(" + (0.985 + 0.015 * t).toFixed(4) + ")" }; },
-    "triad-right": function (t) { return { transform: "translate3d(" + (-95 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
-
-    "split-image": function (t) { return { transform: "translate3d(" + (-60 * (1 - t)).toFixed(2) + "px, 0, 0) scale(" + (1.02 - 0.02 * t).toFixed(4) + ")" }; },
-    "split-text": function (t) { return { transform: "translate3d(" + (40 * (1 - t)).toFixed(2) + "px, 0, 0)", opacity: t.toFixed(3) }; },
-
-    "panel": function (t) { return { transform: "translate3d(" + (-80 * (1 - t)).toFixed(2) + "px, 0, 0) scale(" + (0.99 + 0.01 * t).toFixed(4) + ")", opacity: (0.5 + 0.5 * t).toFixed(3) }; },
-    "panel-copy": function (t) { return { transform: "translate3d(" + (-16 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
-    "panel-cta": function (t) { return { transform: "translate3d(" + (16 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
-
-    // Two-surface "form" family (contact + joint venture inquiry forms):
-    // left info column and dark form panel are the two heavy objects that
-    // establish the composition; everything inside the form panel is a
-    // small, relative settle riding on top of it, not an independent
-    // large-distance entrance of its own.
-    "form-left": function (t) { return { transform: "translate3d(" + (-62 * (1 - t)).toFixed(2) + "px, 0, 0)", opacity: t.toFixed(3) }; },
-    "form-left-detail": function (t) { return { transform: "translate3d(" + (-24 * (1 - t)).toFixed(2) + "px, 0, 0)", opacity: t.toFixed(3) }; },
-    "form-panel": function (t) { return { transform: "translate3d(" + (80 * (1 - t)).toFixed(2) + "px, 0, 0) scale(" + (0.99 + 0.01 * t).toFixed(4) + ")", opacity: (0.5 + 0.5 * t).toFixed(3) }; },
-    "form-panel-heading": function (t) { return { transform: "translate3d(0, " + (12 * (1 - t)).toFixed(2) + "px, 0)" }; },
-    "form-panel-copy": function (t) { return { transform: "translate3d(0, " + (10 * (1 - t)).toFixed(2) + "px, 0)" }; },
-    "form-panel-field": function (t) { return { transform: "translate3d(0, " + (8 * (1 - t)).toFixed(2) + "px, 0)", opacity: (0.4 + 0.6 * t).toFixed(3) }; },
-    "form-panel-button": function (t) { return { transform: "translate3d(0, " + (8 * (1 - t)).toFixed(2) + "px, 0)", opacity: (0.4 + 0.6 * t).toFixed(3) }; }
-  };
-
-  function initSurfaceEntrances() {
-    if (activeSurfaceCleanup) {
-      activeSurfaceCleanup();
-      activeSurfaceCleanup = null;
-    }
-
-    var groups = Array.prototype.slice.call(document.querySelectorAll("[data-surface-group]"));
-    if (!groups.length || prefersReducedMotion) return;
-
-    var entries = groups.map(function (group) {
-      var kind = group.getAttribute("data-surface-group");
-      var members = [];
-
-      if (kind === "portfolio") {
-        // Column-based, not row-based, so a second row of cards repeats
-        // the same left/centre/right bias instead of needing its own rule.
-        Array.prototype.slice.call(group.querySelectorAll(".holding-card")).forEach(function (card, i) {
-          var col = i % 3;
-          members.push({
-            el: card,
-            role: col === 0 ? "col-left" : col === 1 ? "col-center" : "col-right",
-            phase: col === 1 ? 0 : 0.12 // centre leads; the row "assembles toward" it
-          });
-        });
-      } else if (kind === "triad") {
-        // Foundation / Transition (anchor, .timeline-item--dark) / Validation.
-        Array.prototype.slice.call(group.querySelectorAll(".timeline-item")).forEach(function (item, i) {
-          members.push({
-            el: item,
-            role: i === 0 ? "triad-left" : i === 1 ? "triad-anchor" : "triad-right",
-            phase: i === 1 ? 0 : 0.15 // anchor establishes first, sides follow
-          });
-        });
-      } else if (kind === "split") {
-        var img = group.querySelector(".about-stage__image");
-        var card = group.querySelector(".about-stage__card");
-        if (img) members.push({ el: img, role: "split-image", phase: 0 });
-        if (card) members.push({ el: card, role: "split-text", phase: 0.12 });
-      } else if (kind === "panel") {
-        // The panel itself is a member (not just the measured container) -
-        // translateX/scale don't move its own top edge enough to skew the
-        // very next tick's progress read in any way that matters here.
-        members.push({ el: group, role: "panel", phase: 0 });
-        var copy = group.querySelector(".grant-block__copy");
-        var cta = group.querySelector(".grant-block__cta");
-        if (copy) members.push({ el: copy, role: "panel-copy", phase: 0.35 });
-        if (cta) members.push({ el: cta, role: "panel-cta", phase: 0.55 });
-      } else if (kind === "form") {
-        // Shared entrance for both two-surface inquiry forms on the site
-        // (Contact on the homepage, the Joint Venture form) - one
-        // implementation, applied identically, rather than two separate
-        // systems for what is visually the same composition: a left
-        // info/criteria column handing off to a dark form panel a beat
-        // later, with the panel's own heading/copy/fields/button
-        // resolving as small internal settles once the panel itself is
-        // already most of the way in.
-        var formLeft = group.querySelector(".contact-context, .jv-panel");
-        var formLeftDetail = group.querySelector(".contact-links, .jv-criteria");
-        var formPanel = group.querySelector(".inquiry-form, .jv-form-card");
-        if (formLeft) members.push({ el: formLeft, role: "form-left", phase: 0 });
-        if (formLeftDetail) members.push({ el: formLeftDetail, role: "form-left-detail", phase: 0.25 });
-        if (formPanel) {
-          members.push({ el: formPanel, role: "form-panel", phase: 0.08 });
-          var formHeading = formPanel.querySelector("h3");
-          var formCopy = formPanel.querySelector(".inquiry-form__sub, .jv-form-card__heading p");
-          var formFields = Array.prototype.slice.call(formPanel.querySelectorAll(".form-field, .jv-field"));
-          var formButton = formPanel.querySelector("button");
-          if (formHeading) members.push({ el: formHeading, role: "form-panel-heading", phase: 0.16 });
-          if (formCopy) members.push({ el: formCopy, role: "form-panel-copy", phase: 0.24 });
-          formFields.forEach(function (field) {
-            members.push({ el: field, role: "form-panel-field", phase: 0.30 });
-          });
-          if (formButton) members.push({ el: formButton, role: "form-panel-button", phase: 0.40 });
-        }
-      }
-
-      return members.length ? { el: group, kind: kind, members: members } : null;
-    }).filter(Boolean);
-
-    if (!entries.length) return;
-
-    var ticking = false;
-
-    function apply() {
-      ticking = false;
-      var vh = window.innerHeight || document.documentElement.clientHeight;
-
-      entries.forEach(function (entry) {
-        var tier = SURFACE_TIERS[entry.kind] || SURFACE_TIERS.panel;
-        var startY = vh * tier.start;
-        var endY = vh * tier.end;
-        var rect = entry.el.getBoundingClientRect();
-        var raw = Math.min(1, Math.max(0, (startY - rect.top) / (startY - endY)));
-
-        entry.members.forEach(function (m) {
-          if (raw >= 1) {
-            // Fully settled: hand back to plain CSS so hover/etc keep
-            // working normally, same convention as the other continuous
-            // scroll systems above.
-            m.el.style.transform = "";
-            m.el.style.opacity = "";
-            m.el.style.transition = "";
-            return;
-          }
-          var t = m.phase > 0 ? Math.min(1, Math.max(0, (raw - m.phase) / (1 - m.phase))) : raw;
-          var state = SURFACE_ROLES[m.role](surfaceEaseOutCubic(t));
-          m.el.style.transition = "none";
-          m.el.style.transform = state.transform || "";
-          if (state.opacity !== undefined) m.el.style.opacity = state.opacity;
-        });
-      });
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(apply);
-      }
-    }
-
-    apply();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-
-    activeSurfaceCleanup = function () {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      entries.forEach(function (entry) {
-        entry.members.forEach(function (m) {
-          m.el.style.transform = "";
-          m.el.style.opacity = "";
-          m.el.style.transition = "";
-        });
-      });
-    };
-  }
 
   function initAssetCardButtons() {
     document.querySelectorAll(".asset-card__btn--disabled").forEach(function (btn) {
@@ -1088,9 +741,7 @@
     initPhotoGrid();
     initCinematicTrack();
     initEquationReveal();
-    initPathwayBreakout();
     initPhotographyDepth();
-    initSurfaceEntrances();
     initAssetCardButtons();
     initContactForm();
   }

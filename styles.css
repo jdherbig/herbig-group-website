@@ -55,7 +55,7 @@
   --motion-duration-medium: 0.65s;
   --motion-duration-slow: 0.9s;
   --motion-distance-small: 12px;
-  --motion-distance-medium: 20px;
+  --motion-distance-medium: 14px;
   --motion-distance-large: 28px;
 
   /* Institutional motion system (semantic layer over the tokens above -
@@ -74,11 +74,21 @@
   --motion-interface: 260ms;
   --motion-content: var(--motion-duration-medium);
   --motion-editorial: 0.85s;
-  --motion-image: 1.1s;
+  --motion-image: 0.9s;
   --motion-distance-xs: 6px;
   --motion-distance-sm: var(--motion-distance-small);
   --motion-distance-md: var(--motion-distance-medium);
   --motion-distance-lg: var(--motion-distance-large);
+
+  /* ---------- Global motion grammar (reveal architecture) ----------
+   * One small, named set of timing/distance tokens for the site's three
+   * entrance families (see EDITORIAL/SURFACE/GRID reveal rules below) -
+   * deliberately reused everywhere rather than each section inventing
+   * its own duration or distance. --motion-fast is UI/interface speed
+   * (hover, focus, small state changes); the other three are entrance
+   * speeds by how much visual weight is moving. */
+  --motion-fast: var(--motion-interface);
+  --motion-surface: 780ms;
 
   --container-pad: 20px;
   --nav-height: 76px;
@@ -597,14 +607,19 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    ============================================ */
 .pillars { background: var(--color-dark); display: flex; flex-direction: column; gap: 24px; }
 @media (min-width: 900px) { .pillars { gap: 20px; } }
-/* overflow:hidden on .section (inherited) would clip the pathway image
-   breakout below before it ever reaches the viewport edge — .canvas-glow
-   already clips the decorative blobs on its own, so this section doesn't
-   need the section-level clip either (same reasoning as .team above). */
+/* .canvas-glow already clips its own decorative blobs, so this section
+   doesn't need a section-level overflow clip either (same reasoning as
+   .team above). */
 .pillars { overflow: visible; }
 
 .pathway-card { position: relative; z-index: 1; display: flex; flex-direction: column; border-radius: var(--radius-2xl); overflow: hidden; background: var(--color-dark); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.09), 0 28px 60px rgba(0, 0, 0, 0.26); }
-.pathway-card__image { height: 220px; overflow: hidden; will-change: transform; }
+.pathway-card__image { height: 220px; overflow: hidden; }
+/* One-time arrival only (see .reveal-surface[data-direction] in the
+   global reveal rules) - no continued viewport-edge breakout and no
+   large scroll-linked scaling. Once .is-visible lands, the image is at
+   rest; only the existing hover zoom (below) still moves it. */
+.pathway-card__image.reveal-surface { opacity: 0; transform: translateY(20px) scale(1.02); }
+.pathway-card__image.reveal-surface.is-visible { opacity: 1; transform: translateY(0) scale(1); }
 .pathway-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
 .pathway-card:hover .pathway-card__image img { transform: scale(1.04); }
 .pathway-card__panel { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px 24px 32px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 18px 48px rgba(0, 0, 0, 0.12); overflow: hidden; }
@@ -615,14 +630,11 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 @media (min-width: 900px) {
   /* Panel overlaps the image edge by ~10% so the frosted glass actually
      reveals photo detail underneath, matching the Figma composition.
-     .pathway-card itself goes overflow:visible so script.js can carry
-     .pathway-card__image out past the card's own footprint toward the
-     viewport edge on scroll (see initPathwayBreakout). Losing the
-     parent's clip means the image's own outer corner and the panel's
-     own outer corner each need their own border-radius now, matching
-     the corner the parent used to round for them — everything else
-     about their appearance (background, border, box-shadow) already
-     follows border-radius on its own, unaffected by overflow. */
+     .pathway-card stays overflow:visible (a harmless holdover from the
+     old edge-breakout layout — nothing overflows it now that the image
+     only does a one-time settle-in), which is why the image's own outer
+     corner and the panel's own outer corner each carry their own
+     border-radius rather than relying on a parent clip. */
   .pathway-card { display: block; height: 440px; overflow: visible; }
   .pathway-card__image { position: absolute; top: 0; left: 0; bottom: 0; width: 41%; height: 100%; z-index: 0; border-radius: var(--radius-2xl) 0 0 var(--radius-2xl); }
   .pathway-card__panel { position: relative; z-index: 1; margin-left: 31%; width: 69%; height: 100%; justify-content: center; padding: 48px; gap: 24px; border-radius: 0 var(--radius-2xl) var(--radius-2xl) 0; }
@@ -637,9 +649,17 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    ============================================ */
 .roots { background: var(--color-bg-soft); }
 .timeline-row { display: flex; flex-direction: column; gap: 16px; position: relative; z-index: 1; }
+/* GRID composition reveal (same family/treatment as .holdings-grid) -
+   the row establishes as one unit, then its cards get a small capped
+   stagger, not three independently-directional entrances. */
+.timeline-row.reveal-grid .timeline-item { opacity: 0; }
+.timeline-row.reveal-grid.is-visible .timeline-item { opacity: 1; }
+.timeline-row.reveal-grid.is-visible .timeline-item:nth-child(1) { transition-delay: 0s; }
+.timeline-row.reveal-grid.is-visible .timeline-item:nth-child(2) { transition-delay: 0.05s; }
+.timeline-row.reveal-grid.is-visible .timeline-item:nth-child(3) { transition-delay: 0.1s; }
 @media (min-width: 900px) { .timeline-row { flex-direction: row; align-items: stretch; gap: 16px; } }
 
-.timeline-item { position: relative; background: var(--color-bg-soft); border: 1px solid var(--color-border-soft); border-radius: var(--radius-xl); box-shadow: 0 2px 4px rgba(33, 38, 45, 0.03), 0 8px 12px rgba(33, 38, 45, 0.05); padding: 24px; display: flex; flex-direction: column; gap: 14px; transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); overflow: hidden; }
+.timeline-item { position: relative; background: var(--color-bg-soft); border: 1px solid var(--color-border-soft); border-radius: var(--radius-xl); box-shadow: 0 2px 4px rgba(33, 38, 45, 0.03), 0 8px 12px rgba(33, 38, 45, 0.05); padding: 24px; display: flex; flex-direction: column; gap: 14px; transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), opacity var(--motion-content) var(--ease); overflow: hidden; }
 .timeline-item::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--color-green); }
 .timeline-item:hover { transform: translateY(-4px); box-shadow: 0 16px 20px rgba(33, 38, 45, 0.08); }
 .timeline-item--dark { background: var(--color-dark); border-radius: 28px; box-shadow: 0 6px 8px rgba(33, 38, 45, 0.06), 0 16px 16px rgba(33, 38, 45, 0.12); }
@@ -758,7 +778,20 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   .inquiry-form .btn--full { padding-block: 18px; }
 }
 
-.form-field { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+/* Very subtle internal field motion - the panel itself is the primary
+   (surface) entrance; this is a small supporting settle, not a second
+   independent animation. */
+.form-field {
+  display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+}
+.inquiry-form.is-visible .form-field { opacity: 1; transform: translateY(0); }
+.inquiry-form.is-visible .form-field:nth-of-type(1) { transition-delay: 0.1s; }
+.inquiry-form.is-visible .form-field:nth-of-type(2) { transition-delay: 0.15s; }
+.inquiry-form.is-visible .form-field:nth-of-type(3) { transition-delay: 0.2s; }
+.inquiry-form.is-visible .form-field:nth-of-type(n+4) { transition-delay: 0.2s; }
 .form-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
 .form-field input, .form-field textarea { width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--glass-border-soft); border-radius: 10px; padding: 16px 18px; color: var(--color-white); font-family: var(--font-body); font-size: 15px; resize: vertical; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
 .form-field textarea { min-height: 140px; }
@@ -796,31 +829,67 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .footer__links a:hover { opacity: 1; text-decoration: underline; }
 
 /* ============================================
-   SCROLL REVEAL
-   ============================================ */
-/* Secondary reveal (category B in the motion system): restrained
-   fade-up for paragraphs, cards, metadata - not the hero, which gets its
-   own dedicated entrance (see .page-header / .case-hero below). Distance
-   and duration are intentionally modest so the page doesn't read as
-   "everything is animating in" - premium motion needs contrast, not
-   uniform coverage. */
-.reveal, .reveal-stagger { opacity: 0; transform: translateY(var(--motion-distance-medium)); transition: opacity var(--motion-duration-medium) var(--motion-ease-premium), transform var(--motion-duration-medium) var(--motion-ease-premium); }
+   SCROLL REVEAL — global motion grammar
+   ============================================
+   Three entrance families, used sitewide instead of one-off per-section
+   motion. Every one is a plain CSS-transition, one-shot reveal (a single
+   IntersectionObserver in script.js adds .is-visible once, then
+   unobserves - see initScrollReveal()). The rule everywhere: a section
+   may move while it arrives, then it is at rest - nothing here keeps
+   moving once .is-visible has landed and the transition has finished.
+
+   1. EDITORIAL  (.reveal, .reveal-stagger) - text, headings, copy,
+      metrics labels. translateY(14px) -> 0, opacity 0 -> 1, ~650ms.
+   2. SURFACE    (.reveal-surface) - glass panels, forms, dark CTA
+      blocks, large split-layout panels. translateX(±32px) -> 0 (or
+      translateY for centered surfaces via [data-direction="up"]),
+      opacity .5 -> 1, scale .99 -> 1, ~780ms.
+   3. GRID       (.reveal-grid) - card grids and photo compositions.
+      The grid container settles as ONE unit (translateY(14px) + opacity);
+      children get a small capped stagger, never independent directional
+      entrances. See .photo-grid further below for the photography
+      variant of this same family. */
+.reveal, .reveal-stagger {
+  opacity: 0;
+  transform: translateY(var(--motion-distance-medium));
+  transition: opacity var(--motion-content) var(--ease), transform var(--motion-content) var(--ease);
+}
 .reveal.is-visible, .reveal-stagger.is-visible { opacity: 1; transform: translateY(0); }
+/* Capped stagger: 0/50/100/150ms, then it stops increasing - a 5th+
+   item shares the 4th's delay rather than the chain growing indefinitely. */
 .reveal-stagger:nth-child(1) { transition-delay: 0s; }
-.reveal-stagger:nth-child(2) { transition-delay: 0.07s; }
-.reveal-stagger:nth-child(3) { transition-delay: 0.14s; }
-.reveal-stagger:nth-child(4) { transition-delay: 0.21s; }
-.reveal-stagger:nth-child(5) { transition-delay: 0.28s; }
+.reveal-stagger:nth-child(2) { transition-delay: 0.05s; }
+.reveal-stagger:nth-child(3) { transition-delay: 0.1s; }
+.reveal-stagger:nth-child(n+4) { transition-delay: 0.15s; }
+
+.reveal-surface {
+  opacity: 0.5;
+  transform: translateX(0) translateY(0) scale(0.99);
+  transition: opacity var(--motion-surface) var(--ease), transform var(--motion-surface) var(--ease);
+}
+.reveal-surface[data-direction="left"] { transform: translateX(-32px) scale(0.99); }
+.reveal-surface[data-direction="right"] { transform: translateX(32px) scale(0.99); }
+.reveal-surface[data-direction="up"] { transform: translateY(16px) scale(0.99); }
+.reveal-surface.is-visible { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+/* Two-surface layouts (a form panel handing off from its left column) -
+   a small fixed delay stands in for the old scroll-linked "handoff",
+   letting the panel read as following the left column by ~80ms without
+   needing per-section JS choreography. */
+.reveal-surface--delayed { transition-delay: 0.08s; }
+
+.reveal-grid {
+  opacity: 0;
+  transform: translateY(var(--motion-distance-medium));
+  transition: opacity var(--motion-content) var(--ease), transform var(--motion-content) var(--ease);
+}
+.reveal-grid.is-visible { opacity: 1; transform: translateY(0); }
+
 /* Scroll velocity awareness (html.is-fast-scroll, toggled from
    script.js's updateNavbar): a fast scroll still gets every reveal, just
-   without the stagger that only reads as choreography at a normal pace -
-   without this, a quick scroll would leave a visible trail of content
-   still fading in behind the user, each waiting out its own delay. */
-html.is-fast-scroll .reveal-stagger:nth-child(1),
-html.is-fast-scroll .reveal-stagger:nth-child(2),
-html.is-fast-scroll .reveal-stagger:nth-child(3),
-html.is-fast-scroll .reveal-stagger:nth-child(4),
-html.is-fast-scroll .reveal-stagger:nth-child(5),
+   without the stagger/duration that only reads as choreography at a
+   normal pace - without this, a quick scroll would leave a visible
+   trail of content still catching up behind the user. */
+html.is-fast-scroll .reveal-stagger,
 html.is-fast-scroll .metric-card:nth-child(1)::before,
 html.is-fast-scroll .metric-card:nth-child(1) .metric-card__value,
 html.is-fast-scroll .metric-card:nth-child(1) .metric-card__label,
@@ -830,6 +899,11 @@ html.is-fast-scroll .metric-card:nth-child(2) .metric-card__label,
 html.is-fast-scroll .metric-card:nth-child(3)::before,
 html.is-fast-scroll .metric-card:nth-child(3) .metric-card__value,
 html.is-fast-scroll .metric-card:nth-child(3) .metric-card__label,
+html.is-fast-scroll .reveal-grid .holding-card,
+html.is-fast-scroll .reveal-grid .timeline-item,
+html.is-fast-scroll .feature-cards.reveal-grid .feature-card,
+html.is-fast-scroll .inquiry-form.is-visible .form-field,
+html.is-fast-scroll .jv-form-card.is-visible .jv-field,
 html.is-fast-scroll .photo-grid .gallery-main img,
 html.is-fast-scroll .photo-grid .gallery-col .gallery-card img,
 html.is-fast-scroll .photo-grid.gallery-row--triple .gallery-card img {
@@ -841,19 +915,17 @@ html.is-fast-scroll .photo-grid.gallery-row--triple .gallery-card img {
 
 /* Beyond zeroing stagger delay above, a fast scroll also shortens
    whatever transition duration is still running - a quick flick
-   shouldn't leave any .reveal-family element visibly catching up once
+   shouldn't leave any reveal-family element visibly catching up once
    it's already back on screen; it should just arrive, faster. */
 html.is-fast-scroll .reveal,
 html.is-fast-scroll .reveal-stagger,
-html.is-fast-scroll .reveal-left,
-html.is-fast-scroll .reveal-right {
+html.is-fast-scroll .reveal-surface,
+html.is-fast-scroll .reveal-grid,
+html.is-fast-scroll .form-field,
+html.is-fast-scroll .jv-field {
   transition-duration: 0.22s;
+  transition-delay: 0s !important;
 }
-
-.reveal-left, .reveal-right { opacity: 0; transition: opacity var(--motion-duration-medium) var(--motion-ease-premium), transform var(--motion-duration-medium) var(--motion-ease-premium); }
-.reveal-left { transform: translateX(calc(-1 * var(--motion-distance-large))); }
-.reveal-right { transform: translateX(var(--motion-distance-large)); }
-.reveal-left.is-visible, .reveal-right.is-visible { opacity: 1; transform: translateX(0); }
 
 /* ============================================
    COMING SOON (stub pages)
@@ -953,7 +1025,8 @@ main > .case-hero + section {
 @media (min-width: 900px) { .philosophy-fold { flex-direction: row; padding: 80px; gap: 64px; align-items: center; } }
 .philosophy-fold__image { position: relative; width: 100%; max-width: 520px; height: 260px; border-radius: var(--radius-2xl); overflow: hidden; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07), 0 24px 56px rgba(0, 0, 0, 0.15); flex-shrink: 0; z-index: 1; }
 @media (min-width: 900px) { .philosophy-fold__image { height: 400px; width: 520px; } }
-.philosophy-fold__image img { width: 100%; height: 100%; object-fit: cover; }
+.philosophy-fold__image img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.015); transition: transform var(--motion-image) var(--motion-ease-enter); }
+.philosophy-fold__image.reveal-surface.is-visible img { transform: scale(1); }
 .philosophy-fold__image::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.22); }
 .philosophy-fold__content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 24px; color: var(--color-white); }
 @media (min-width: 900px) { .philosophy-fold__content { gap: 32px; flex: 1; } }
@@ -998,6 +1071,16 @@ main > .case-hero + section {
 .holdings-grid { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
 @media (min-width: 600px) { .holdings-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; } }
 @media (min-width: 900px) { .holdings-grid { grid-template-columns: repeat(3, 1fr); gap: 28px; } }
+/* GRID composition reveal: the grid establishes as one unit (this
+   container-level translateY+opacity), then its cards get a small
+   capped stagger of their own - never independent per-card directional
+   entrances. See .reveal-grid above for the shared token values. */
+.holdings-grid.reveal-grid .holding-card { opacity: 0; }
+.holdings-grid.reveal-grid.is-visible .holding-card { opacity: 1; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(1) { transition-delay: 0s; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(2) { transition-delay: 0.05s; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(3) { transition-delay: 0.1s; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(n+4) { transition-delay: 0.15s; }
 
 .holding-card {
   position: relative;
@@ -1011,7 +1094,7 @@ main > .case-hero + section {
   color: inherit;
   text-decoration: none;
   transform: translateY(0) scale(1);
-  transition: transform var(--motion-interface) var(--motion-ease-interface), box-shadow var(--motion-interface) var(--motion-ease-interface), border-color var(--motion-interface) var(--motion-ease-interface);
+  transition: transform var(--motion-interface) var(--motion-ease-interface), box-shadow var(--motion-interface) var(--motion-ease-interface), border-color var(--motion-interface) var(--motion-ease-interface), opacity var(--motion-content) var(--ease);
   box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04);
 }
 a.holding-card, .holding-card[tabindex] { cursor: pointer; }
@@ -1038,11 +1121,11 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
    needs no separate trigger. Hover afterward gets its own much faster
    interface-speed override so it doesn't inherit the slow entrance
    transition. */
-.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.035); transition: transform var(--motion-image) var(--motion-ease-enter); }
-.holding-card.is-visible .holding-card__media img { transform: scale(1); }
-.holding-card.is-visible:hover .holding-card__media img,
-.holding-card.is-visible:focus-visible .holding-card__media img,
-.holding-card.is-visible:active .holding-card__media img {
+.holding-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.015); transition: transform var(--motion-image) var(--motion-ease-enter); }
+.holdings-grid.reveal-grid.is-visible .holding-card__media img { transform: scale(1); }
+.holdings-grid.reveal-grid.is-visible .holding-card:hover .holding-card__media img,
+.holdings-grid.reveal-grid.is-visible .holding-card:focus-visible .holding-card__media img,
+.holdings-grid.reveal-grid.is-visible .holding-card:active .holding-card__media img {
   transform: scale(1.02);
   transition: transform var(--motion-interface) var(--motion-ease-interface);
 }
@@ -1106,7 +1189,13 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 
 .about-stage__image { position: relative; border-radius: var(--radius-xl); overflow: hidden; aspect-ratio: 520 / 480; box-shadow: var(--shadow-card); }
 @media (min-width: 900px) { .about-stage__image { flex: 0 0 44%; max-width: 520px; aspect-ratio: 520 / 620; } }
-.about-stage__image img { width: 100%; height: 100%; object-fit: cover; object-position: 55% 45%; display: block; }
+/* Image+text split: image gets a small SURFACE entrance (the container
+   moves, per .reveal-surface above), its own <img> settles with a
+   restrained scale independently - text gets a plain EDITORIAL reveal
+   (.reveal, in the markup) so the two read as complementary, not
+   opposing dramatic directions. */
+.about-stage__image img { width: 100%; height: 100%; object-fit: cover; object-position: 55% 45%; display: block; transform: scale(1.015); transition: transform var(--motion-image) var(--motion-ease-enter); }
+.about-stage__image.is-visible img { transform: scale(1); }
 .about-stage__card { display: flex; flex-direction: column; gap: 16px; }
 @media (min-width: 900px) { .about-stage__card { flex: 1; padding: 40px; } }
 .about-stage__card h3 { font-family: var(--font-display); font-weight: 900; font-size: 24px; line-height: 1.15; color: var(--color-ink); }
@@ -1138,7 +1227,20 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .jv-form-card__heading h3 { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: #f8fafc; }
 @media (min-width: 900px) { .jv-form-card__heading h3 { font-size: 24px; } }
 .jv-form-card__heading p { font-size: 14px; color: #cbd5e1; opacity: 0.9; }
-.jv-field { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+/* Very subtle internal field motion - the panel itself is the primary
+   (surface) entrance; this is a small supporting settle, not a second
+   independent animation. */
+.jv-field {
+  display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+}
+.jv-form-card.is-visible .jv-field { opacity: 1; transform: translateY(0); }
+.jv-form-card.is-visible .jv-field:nth-of-type(1) { transition-delay: 0.1s; }
+.jv-form-card.is-visible .jv-field:nth-of-type(2) { transition-delay: 0.15s; }
+.jv-form-card.is-visible .jv-field:nth-of-type(3) { transition-delay: 0.2s; }
+.jv-form-card.is-visible .jv-field:nth-of-type(n+4) { transition-delay: 0.2s; }
 .jv-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
 .jv-field input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
 .jv-field input::placeholder { color: #cbd5e1; opacity: 0.65; }
@@ -1177,15 +1279,19 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .metric-card.is-visible .metric-card__value { opacity: 1; transform: translateY(0); }
 .metric-card__label { font-size: 12px; font-weight: 600; color: var(--color-ink); opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.45s var(--motion-ease-premium), transform 0.45s var(--motion-ease-premium); }
 .metric-card.is-visible .metric-card__label { opacity: 1; transform: translateY(0); }
+/* Structural sequence within each card (rule -> value -> descriptor) and
+   a tiny card-to-card stagger, both kept to 50-70ms steps rather than
+   compounding into a long cascade - metrics should read as immediately
+   present, not as something arriving one line at a time. */
 .metric-card:nth-child(1)::before { transition-delay: 0s; }
-.metric-card:nth-child(1) .metric-card__value { transition-delay: 0.08s; }
-.metric-card:nth-child(1) .metric-card__label { transition-delay: 0.16s; }
-.metric-card:nth-child(2)::before { transition-delay: 0.1s; }
-.metric-card:nth-child(2) .metric-card__value { transition-delay: 0.18s; }
-.metric-card:nth-child(2) .metric-card__label { transition-delay: 0.26s; }
-.metric-card:nth-child(3)::before { transition-delay: 0.2s; }
-.metric-card:nth-child(3) .metric-card__value { transition-delay: 0.28s; }
-.metric-card:nth-child(3) .metric-card__label { transition-delay: 0.36s; }
+.metric-card:nth-child(1) .metric-card__value { transition-delay: 0.06s; }
+.metric-card:nth-child(1) .metric-card__label { transition-delay: 0.12s; }
+.metric-card:nth-child(2)::before { transition-delay: 0.05s; }
+.metric-card:nth-child(2) .metric-card__value { transition-delay: 0.11s; }
+.metric-card:nth-child(2) .metric-card__label { transition-delay: 0.17s; }
+.metric-card:nth-child(3)::before { transition-delay: 0.1s; }
+.metric-card:nth-child(3) .metric-card__value { transition-delay: 0.16s; }
+.metric-card:nth-child(3) .metric-card__label { transition-delay: 0.22s; }
 
 .grant-block { position: relative; overflow: hidden; background: var(--color-dark); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 36px; padding: 32px 24px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.09), 0 28px 60px rgba(0, 0, 0, 0.26); }
 @media (min-width: 900px) { .grant-block { padding: 40px; } }
@@ -1251,7 +1357,16 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 
 .feature-cards { display: flex; flex-direction: column; gap: 24px; }
 @media (min-width: 900px) { .feature-cards { gap: 36px; } }
-.feature-card { position: relative; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); }
+/* GRID composition reveal (same family/treatment as .holdings-grid /
+   .timeline-row) - the group establishes as one unit, then each card
+   gets a small capped stagger, not independently-directional entrances. */
+.feature-cards.reveal-grid .feature-card { opacity: 0; }
+.feature-cards.reveal-grid.is-visible .feature-card { opacity: 1; }
+.feature-cards.reveal-grid.is-visible .feature-card:nth-child(1) { transition-delay: 0s; }
+.feature-cards.reveal-grid.is-visible .feature-card:nth-child(2) { transition-delay: 0.05s; }
+.feature-cards.reveal-grid.is-visible .feature-card:nth-child(3) { transition-delay: 0.1s; }
+.feature-cards.reveal-grid.is-visible .feature-card:nth-child(n+4) { transition-delay: 0.15s; }
+.feature-card { position: relative; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: opacity var(--motion-content) var(--ease); }
 .feature-card::before { content: ""; position: absolute; left: 0; top: 0; width: 6px; height: 140px; background: var(--color-green); }
 .feature-card__index { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; border-radius: 6px; background: var(--color-green-tint); color: var(--color-green); font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; align-self: flex-start; }
 .feature-card h3 { font-family: var(--font-display); font-weight: 900; font-size: 24px; line-height: 1.15; color: var(--color-ink); }
@@ -1285,50 +1400,53 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .gallery-row--triple .gallery-card { width: 100%; height: 260px; }
 @media (min-width: 900px) { .gallery-row--triple { gap: 10px; } .gallery-row--triple .gallery-card { flex: 1; height: 420px; } }
 
-/* ---- Photo grid: composition-aware assembly (not a photo-1/2/3/4 fade-up cascade) ----
-   A thin structural rule draws first (the "dark section" language: a line
-   establishing before the imagery does), then the row's own images
-   resolve as ONE grouped event via short built-in delays rather than a
-   long per-photo cascade - initPhotoGrid() in script.js adds .is-visible
-   to the whole .photo-grid row (and its preceding .gallery-rule) from a
-   single IntersectionObserver hit, and CSS does the rest. Direction
-   follows each image's place in the composition: the anchor (.gallery-main,
-   the largest/heaviest element) clips open from the left and carries the
-   slowest, heaviest settle; the column's upper secondary clips from the
-   right (it sits opposite the anchor), the lower one from the bottom (it
-   reads as arriving beneath the one above it). The equal-weight triple row
-   has no single anchor, so its left-to-right DOM order doubles as its
-   visual hierarchy and gets a plain left/centre/right stagger instead. */
+/* ---- Photo grid: composition reveal (GRID family) ----
+   The row is treated as ONE visual surface, not a photo-1/2/3/4 cascade:
+   a thin structural rule draws first (the "dark section" language: a
+   line establishing before the imagery does), then the whole row settles
+   as a single translateY+opacity unit - initPhotoGrid() in script.js adds
+   .is-visible to the .photo-grid row (and its preceding .gallery-rule)
+   from one IntersectionObserver hit, and CSS does the rest. Every image
+   in the row gets the same restrained scale-settle, with only a very
+   small (<=80ms) relational stagger between them - no per-tile directional
+   travel, no opposing clip-paths, no continuous parallax. The photography
+   itself is the visual interest; motion just helps it arrive. */
 .gallery-rule { position: relative; z-index: 1; height: 1px; background: var(--glass-border); transform: scaleX(0); transform-origin: left; transition: transform var(--motion-interface) var(--motion-ease-enter); }
 .gallery-rule.is-visible { transform: scaleX(1); }
 
+.photo-grid { opacity: 0; transform: translateY(var(--motion-distance-medium)); transition: opacity var(--motion-content) var(--ease), transform var(--motion-content) var(--ease); }
+.photo-grid.is-visible { opacity: 1; transform: translateY(0); }
+
 .photo-grid .gallery-main img,
 .photo-grid .gallery-card img {
-  transition: clip-path var(--motion-image) var(--motion-ease-enter), transform var(--motion-image) var(--motion-ease-enter), opacity var(--motion-image) var(--motion-ease-enter);
+  transform: scale(1.015);
+  transition: transform var(--motion-image) var(--motion-ease-enter);
+}
+.photo-grid.is-visible .gallery-main img,
+.photo-grid.is-visible .gallery-card img {
+  transform: scale(1);
+}
+/* Small relational stagger only - a second/third tile settles a beat
+   after the first, capped well under 150ms total. */
+.photo-grid.is-visible .gallery-col .gallery-card:nth-child(2) img,
+.photo-grid.is-visible.gallery-row--triple > .gallery-card:nth-child(2) img {
+  transition-delay: 0.05s;
+}
+.photo-grid.is-visible.gallery-row--triple > .gallery-card:nth-child(3) img {
+  transition-delay: 0.08s;
 }
 
-.photo-grid .gallery-main img { clip-path: inset(0 100% 0 0); transform: scale(1.09); transition-delay: 0.05s; }
-.photo-grid.is-visible .gallery-main img { clip-path: inset(0 0 0 0); transform: scale(1); }
-
-.photo-grid .gallery-col .gallery-card:nth-child(1) img { clip-path: inset(0 0 0 100%); transform: scale(1.07); transition-delay: 0.14s; }
-.photo-grid .gallery-col .gallery-card:nth-child(2) img { clip-path: inset(100% 0 0 0); transform: scale(1.07); transition-delay: 0.21s; }
-.photo-grid.is-visible .gallery-col .gallery-card img { clip-path: inset(0 0 0 0); transform: scale(1); }
-
-.photo-grid.gallery-row--triple > .gallery-card:nth-child(1) img { clip-path: inset(0 0 0 100%); transform: scale(1.07); transition-delay: 0.05s; }
-.photo-grid.gallery-row--triple > .gallery-card:nth-child(2) img { clip-path: inset(0); transform: scale(1.1); opacity: 0.55; transition-delay: 0.12s; }
-.photo-grid.gallery-row--triple > .gallery-card:nth-child(3) img { clip-path: inset(0 100% 0 0); transform: scale(1.07); transition-delay: 0.19s; }
-.photo-grid.gallery-row--triple.is-visible > .gallery-card img { clip-path: inset(0); transform: scale(1); opacity: 1; }
-
 /* Restrained desktop hover, once settled: image only, no tile movement,
-   no shadow/border/text piling on at the same time. Overriding the whole
-   transition here is safe - clip-path/opacity aren't changing on hover,
-   only transform is, so this just gives that one change interface-speed
-   timing instead of the (already-finished) entrance's slower one. */
+   no shadow/border/text piling on at the same time. Overriding duration/
+   easing here is safe - only transform changes on hover, so this just
+   gives that one change interface-speed timing instead of the
+   (already-finished) entrance's slower one. */
 @media (min-width: 900px) {
   .photo-grid.is-visible .gallery-main img,
   .photo-grid.is-visible .gallery-card img {
     transition-duration: var(--motion-interface);
     transition-timing-function: var(--motion-ease-interface);
+    transition-delay: 0s;
   }
   .photo-grid.is-visible .gallery-main:hover img,
   .photo-grid.is-visible .gallery-card:hover img {
