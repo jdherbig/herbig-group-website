@@ -28,14 +28,34 @@
     });
   }
 
-  /* ---------- Navbar scroll state ---------- */
+  /* ---------- Navbar theme (transparent+white over dark sections, solid white+green elsewhere) ---------- */
   var navbar = document.getElementById("navbar");
   if (navbar) {
+    var darkSections = Array.prototype.slice.call(
+      document.querySelectorAll('[data-navbar-theme="dark"]')
+    );
+    var tickingNavbar = false;
     var updateNavbar = function () {
-      navbar.classList.toggle("is-scrolled", window.scrollY > 40);
+      tickingNavbar = false;
+      var testY = navbar.offsetHeight + 1;
+      var overDark = darkSections.some(function (el) {
+        var rect = el.getBoundingClientRect();
+        return rect.top <= testY && rect.bottom > testY;
+      });
+      navbar.classList.toggle("is-scrolled", !overDark);
+    };
+    var requestNavbarUpdate = function () {
+      if (tickingNavbar) return;
+      tickingNavbar = true;
+      window.requestAnimationFrame(updateNavbar);
     };
     updateNavbar();
-    window.addEventListener("scroll", updateNavbar, { passive: true });
+    window.addEventListener("scroll", requestNavbarUpdate, { passive: true });
+    window.addEventListener("resize", requestNavbarUpdate);
+    window.addEventListener("load", requestNavbarUpdate);
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(requestNavbarUpdate).observe(document.body);
+    }
   }
 
   /* ---------- Hero: trigger slow ambient zoom once loaded ---------- */
