@@ -316,18 +316,26 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .mobile-menu {
   display: flex;
   position: fixed;
-  top: var(--nav-height);
+  top: 0;
   left: 0; right: 0;
   z-index: 95;
   flex-direction: column;
   background: var(--color-dark);
+  /* Extends up behind the navbar (which sits at z-index:100, above this)
+     rather than starting exactly at --nav-height — that left a hairline
+     gap on some viewports where rounding made the navbar a fraction of a
+     pixel shorter than the var, letting the page underneath peek through.
+     Overlapping and letting the opaque navbar mask the seam is gap-proof
+     regardless of rounding. The matching top offset lives on
+     .mobile-menu__content below, not here, so this element's own height
+     can still animate cleanly down to a true 0. */
   height: 0;
   overflow: hidden;
   visibility: hidden;
   transition: height 0.6s ease-in-out, visibility 0s linear 0.6s;
 }
 .mobile-menu.is-open {
-  height: calc(100vh - var(--nav-height));
+  height: 100vh;
   visibility: visible;
   transition: height 0.6s ease-in-out, visibility 0s linear 0s;
 }
@@ -349,7 +357,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .mobile-menu__blob--right { right: -40px; top: 46%; width: 200px; height: 200px; background: rgba(var(--color-green-rgb), 0.04); filter: blur(20px); }
 .mobile-menu__specular { position: absolute; right: -30px; top: -30px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.35), rgba(var(--color-green-rgb), 0.12) 45%, transparent 72%); filter: blur(1px); opacity: 0.5; }
 
-.mobile-menu__content { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 16px; padding: 24px; }
+.mobile-menu__content { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 16px; padding: calc(var(--nav-height) + 24px) 24px 24px; }
 
 .mobile-menu__list { display: flex; flex-direction: column; gap: 8px; }
 .mobile-menu__link { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--radius-lg); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); transition: background 0.2s var(--ease), border-color 0.2s var(--ease); }
