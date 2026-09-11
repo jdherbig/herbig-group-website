@@ -667,6 +667,8 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .asset-card__specs { font-size: 14px; line-height: 1.6; color: var(--color-ink); opacity: 0.7; }
 .asset-card__btn { display: inline-flex; align-items: center; padding: 12px 24px; border-radius: 8px; background: var(--color-green); color: var(--color-white); font-weight: 700; font-size: 13px; box-shadow: 0 8px 12px rgba(var(--color-green-rgb), 0.31); transition: transform 0.25s var(--ease), background 0.25s var(--ease); }
 .asset-card__btn:hover { background: #359159; transform: translateY(-2px); }
+.asset-card__btn--disabled { opacity: 0.45; cursor: not-allowed; font-family: inherit; border: none; }
+.asset-card__btn--disabled:hover { background: var(--color-green); transform: none; }
 
 /* ============================================
    SUBPAGE: JOINT VENTURES SPLIT

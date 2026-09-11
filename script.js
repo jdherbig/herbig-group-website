@@ -122,6 +122,19 @@
     );
   }
 
+  /* ---------- Disabled "coming soon" asset CTAs ---------- */
+  document.querySelectorAll(".asset-card__btn--disabled").forEach(function (btn) {
+    var resetTimer = null;
+    btn.addEventListener("click", function () {
+      var defaultLabel = btn.getAttribute("data-default-label") || btn.textContent;
+      window.clearTimeout(resetTimer);
+      btn.textContent = "Coming Soon";
+      resetTimer = window.setTimeout(function () {
+        btn.textContent = defaultLabel;
+      }, 1800);
+    });
+  });
+
   /* ---------- Contact form (client-side only — no backend wired up yet) ---------- */
   var form = document.getElementById("inquiry-form");
   var note = document.getElementById("form-note");
