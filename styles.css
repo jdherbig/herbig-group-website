@@ -839,6 +839,17 @@ html.is-fast-scroll .photo-grid.gallery-row--triple .gallery-card img {
   transition-delay: 0s;
 }
 
+/* Beyond zeroing stagger delay above, a fast scroll also shortens
+   whatever transition duration is still running - a quick flick
+   shouldn't leave any .reveal-family element visibly catching up once
+   it's already back on screen; it should just arrive, faster. */
+html.is-fast-scroll .reveal,
+html.is-fast-scroll .reveal-stagger,
+html.is-fast-scroll .reveal-left,
+html.is-fast-scroll .reveal-right {
+  transition-duration: 0.22s;
+}
+
 .reveal-left, .reveal-right { opacity: 0; transition: opacity var(--motion-duration-medium) var(--motion-ease-premium), transform var(--motion-duration-medium) var(--motion-ease-premium); }
 .reveal-left { transform: translateX(calc(-1 * var(--motion-distance-large))); }
 .reveal-right { transform: translateX(var(--motion-distance-large)); }

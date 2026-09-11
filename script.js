@@ -244,33 +244,52 @@
     }
   }
 
+  /* Trigger point for each reveal family, expressed as "top of element
+   * reaches this % of the viewport height" (matches how the rest of the
+   * motion system - initSurfaceEntrances below - talks about timing), then
+   * converted to the negative-bottom rootMargin percentage that produces
+   * it: shrinking the effective (root-less) viewport's bottom edge inward
+   * by (100 - target)% moves the trigger line up to target% down the
+   * viewport, so IntersectionObserver only fires once the element's top
+   * has actually scrolled that far into view - not the instant it peeks
+   * in at the very bottom edge. A single shared value made every reveal
+   * fire the moment it barely entered the viewport (too early, reported
+   * as feeling disconnected from scroll); these are tiered instead so
+   * large/heavy compositions can still begin a touch earlier than small
+   * copy or metrics, per the site's timing hierarchy. */
+  var REVEAL_TIERS = [
+    { selector: ".reveal-stagger", targetVh: 70 },  // metrics / small structured content: ~68-72vh
+    { selector: ".reveal-left, .reveal-right", targetVh: 76 }, // image+text split layouts: ~74-78vh
+    { selector: ".reveal", targetVh: 73 }             // editorial text / general surfaces: ~70-76vh
+  ];
+
   function initScrollReveal() {
-    var revealEls = document.querySelectorAll(".reveal, .reveal-stagger, .reveal-left, .reveal-right");
-    if (!revealEls.length) return;
+    var anyEls = document.querySelectorAll(".reveal, .reveal-stagger, .reveal-left, .reveal-right");
+    if (!anyEls.length) return;
 
     if (!("IntersectionObserver" in window)) {
-      revealEls.forEach(function (el) { el.classList.add("is-visible"); });
+      anyEls.forEach(function (el) { el.classList.add("is-visible"); });
       return;
     }
 
-    // Positive bottom margin grows the effective viewport downward, so an
-    // element is marked visible while it's still below the fold - it
-    // arrives already in motion by the time the user actually reaches
-    // it, rather than being waited on. threshold stays near-zero to match
-    // (a 0.15 threshold combined with a large rootMargin would just delay
-    // the same intent back out again).
-    var observer = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.01, rootMargin: "0px 0px 180px 0px" }
-    );
-    revealEls.forEach(function (el) { observer.observe(el); });
+    REVEAL_TIERS.forEach(function (tier) {
+      var els = document.querySelectorAll(tier.selector);
+      if (!els.length) return;
+
+      var marginPct = -(100 - tier.targetVh);
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.01, rootMargin: "0px 0px " + marginPct + "% 0px" }
+      );
+      els.forEach(function (el) { observer.observe(el); });
+    });
   }
 
   /* ---------- Photo grid: composition-aware assembly ----------
@@ -306,7 +325,12 @@
           }
         });
       },
-      { threshold: 0.01, rootMargin: "0px 0px 140px 0px" }
+      // Large photo grids/image compositions: trigger around 78-82vh (top
+      // reaching ~80% down the viewport), later than the old fixed 140px
+      // margin, which fired as soon as a grid's edge barely cleared the
+      // fold - see REVEAL_TIERS above for the same logic applied to the
+      // generic .reveal family.
+      { threshold: 0.01, rootMargin: "0px 0px -20% 0px" }
     );
     grids.forEach(function (g) { observer.observe(g); });
   }
@@ -833,8 +857,24 @@
    * that group is fully settled - so content already renders correctly
    * in its resting layout with no JS at all, just without the entrance. */
   var activeSurfaceCleanup = null;
-  var SURFACE_START_FRAC = 0.92; // a group's own top at 92% down the viewport -> progress 0
-  var SURFACE_END_FRAC = 0.72;   // -> progress 1, then it holds
+
+  // Per-kind trigger window, tiered instead of one shared value - a group's
+  // own top at TIER.start down the viewport -> progress 0, TIER.end -> 1,
+  // then it holds. Kept as one 0.20 fraction window across every kind (a
+  // consistent overall "duration") while START itself moves later for
+  // lighter/more text-driven compositions: portfolio/triad/panel are the
+  // heaviest, most card-like surfaces and can start a touch earlier; split
+  // (image+text) follows; the two-surface "form" group - contact and joint
+  // venture forms - starts latest and most deliberately, matching the
+  // explicit complaint that those sections were arriving too early and
+  // feeling disconnected from scroll.
+  var SURFACE_TIERS = {
+    portfolio: { start: 0.74, end: 0.54 },
+    triad:     { start: 0.74, end: 0.54 },
+    panel:     { start: 0.74, end: 0.54 },
+    split:     { start: 0.76, end: 0.56 },
+    form:      { start: 0.78, end: 0.58 }
+  };
 
   function surfaceEaseOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
@@ -855,7 +895,20 @@
 
     "panel": function (t) { return { transform: "translate3d(" + (-80 * (1 - t)).toFixed(2) + "px, 0, 0) scale(" + (0.99 + 0.01 * t).toFixed(4) + ")", opacity: (0.5 + 0.5 * t).toFixed(3) }; },
     "panel-copy": function (t) { return { transform: "translate3d(" + (-16 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
-    "panel-cta": function (t) { return { transform: "translate3d(" + (16 * (1 - t)).toFixed(2) + "px, 0, 0)" }; }
+    "panel-cta": function (t) { return { transform: "translate3d(" + (16 * (1 - t)).toFixed(2) + "px, 0, 0)" }; },
+
+    // Two-surface "form" family (contact + joint venture inquiry forms):
+    // left info column and dark form panel are the two heavy objects that
+    // establish the composition; everything inside the form panel is a
+    // small, relative settle riding on top of it, not an independent
+    // large-distance entrance of its own.
+    "form-left": function (t) { return { transform: "translate3d(" + (-62 * (1 - t)).toFixed(2) + "px, 0, 0)", opacity: t.toFixed(3) }; },
+    "form-left-detail": function (t) { return { transform: "translate3d(" + (-24 * (1 - t)).toFixed(2) + "px, 0, 0)", opacity: t.toFixed(3) }; },
+    "form-panel": function (t) { return { transform: "translate3d(" + (80 * (1 - t)).toFixed(2) + "px, 0, 0) scale(" + (0.99 + 0.01 * t).toFixed(4) + ")", opacity: (0.5 + 0.5 * t).toFixed(3) }; },
+    "form-panel-heading": function (t) { return { transform: "translate3d(0, " + (12 * (1 - t)).toFixed(2) + "px, 0)" }; },
+    "form-panel-copy": function (t) { return { transform: "translate3d(0, " + (10 * (1 - t)).toFixed(2) + "px, 0)" }; },
+    "form-panel-field": function (t) { return { transform: "translate3d(0, " + (8 * (1 - t)).toFixed(2) + "px, 0)", opacity: (0.4 + 0.6 * t).toFixed(3) }; },
+    "form-panel-button": function (t) { return { transform: "translate3d(0, " + (8 * (1 - t)).toFixed(2) + "px, 0)", opacity: (0.4 + 0.6 * t).toFixed(3) }; }
   };
 
   function initSurfaceEntrances() {
@@ -905,9 +958,36 @@
         var cta = group.querySelector(".grant-block__cta");
         if (copy) members.push({ el: copy, role: "panel-copy", phase: 0.35 });
         if (cta) members.push({ el: cta, role: "panel-cta", phase: 0.55 });
+      } else if (kind === "form") {
+        // Shared entrance for both two-surface inquiry forms on the site
+        // (Contact on the homepage, the Joint Venture form) - one
+        // implementation, applied identically, rather than two separate
+        // systems for what is visually the same composition: a left
+        // info/criteria column handing off to a dark form panel a beat
+        // later, with the panel's own heading/copy/fields/button
+        // resolving as small internal settles once the panel itself is
+        // already most of the way in.
+        var formLeft = group.querySelector(".contact-context, .jv-panel");
+        var formLeftDetail = group.querySelector(".contact-links, .jv-criteria");
+        var formPanel = group.querySelector(".inquiry-form, .jv-form-card");
+        if (formLeft) members.push({ el: formLeft, role: "form-left", phase: 0 });
+        if (formLeftDetail) members.push({ el: formLeftDetail, role: "form-left-detail", phase: 0.25 });
+        if (formPanel) {
+          members.push({ el: formPanel, role: "form-panel", phase: 0.08 });
+          var formHeading = formPanel.querySelector("h3");
+          var formCopy = formPanel.querySelector(".inquiry-form__sub, .jv-form-card__heading p");
+          var formFields = Array.prototype.slice.call(formPanel.querySelectorAll(".form-field, .jv-field"));
+          var formButton = formPanel.querySelector("button");
+          if (formHeading) members.push({ el: formHeading, role: "form-panel-heading", phase: 0.16 });
+          if (formCopy) members.push({ el: formCopy, role: "form-panel-copy", phase: 0.24 });
+          formFields.forEach(function (field) {
+            members.push({ el: field, role: "form-panel-field", phase: 0.30 });
+          });
+          if (formButton) members.push({ el: formButton, role: "form-panel-button", phase: 0.40 });
+        }
       }
 
-      return members.length ? { el: group, members: members } : null;
+      return members.length ? { el: group, kind: kind, members: members } : null;
     }).filter(Boolean);
 
     if (!entries.length) return;
@@ -917,10 +997,11 @@
     function apply() {
       ticking = false;
       var vh = window.innerHeight || document.documentElement.clientHeight;
-      var startY = vh * SURFACE_START_FRAC;
-      var endY = vh * SURFACE_END_FRAC;
 
       entries.forEach(function (entry) {
+        var tier = SURFACE_TIERS[entry.kind] || SURFACE_TIERS.panel;
+        var startY = vh * tier.start;
+        var endY = vh * tier.end;
         var rect = entry.el.getBoundingClientRect();
         var raw = Math.min(1, Math.max(0, (startY - rect.top) / (startY - endY)));
 
