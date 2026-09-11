@@ -879,8 +879,8 @@ html.hg-intro-pending #route-content {
   transition: opacity 0.4s ease;
 }
 .page-transition-overlay.is-visible { opacity: 1; pointer-events: all; }
-.page-transition-overlay__logo { width: 260px; max-width: 55vw; aspect-ratio: 1280 / 720; }
-@media (min-width: 900px) { .page-transition-overlay__logo { width: 320px; } }
+.page-transition-overlay__logo { width: 364px; max-width: 77vw; aspect-ratio: 1280 / 720; }
+@media (min-width: 900px) { .page-transition-overlay__logo { width: 448px; } }
 .page-transition-overlay__logo svg { display: block; width: 100%; height: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
