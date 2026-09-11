@@ -1185,6 +1185,12 @@ main > .case-hero + section {
   transform: translateY(16px);
   transition: opacity 700ms var(--ease), transform 700ms var(--ease);
 }
+/* Same specificity as the rule above, so this has to be its own explicit
+   reset rather than relying on the generic .reveal-grid.is-visible (it
+   sits earlier in the file, so on a same-specificity tie it would lose
+   to the unconditional resting-state rule above and the grid would get
+   stuck at 0.35 opacity forever). */
+.holdings-grid.reveal-grid.is-visible { opacity: 1; transform: translateY(0); }
 .holdings-grid.reveal-grid .holding-card { opacity: 0; }
 .holdings-grid.reveal-grid.is-visible .holding-card { opacity: 1; }
 .holdings-grid.reveal-grid.is-visible .holding-card:nth-child(1) { transition-delay: 0s; }
