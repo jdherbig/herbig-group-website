@@ -1049,7 +1049,19 @@ html.is-fast-scroll .jv-field {
    the two rather than a real drop shadow. The 1px border-bottom is the
    only divider. */
 .page-header { position: relative; display: flex; flex-direction: column; gap: 24px; padding: calc(var(--nav-height) + 32px) var(--container-pad) 40px; margin-bottom: 0; overflow: hidden; border-bottom: 1px solid var(--glass-border); color: var(--color-white); background: var(--color-dark); }
-.page-header__bg { position: absolute; inset: 0; z-index: 0; }
+/* Vertical overscan, not inset:0 - initPhotographyDepth() (script.js)
+   translates this whole layer (image + ::after overlay together) up to
+   +-14px on desktop as the page scrolls. Sized to inset:0 exactly, that
+   translate would walk the layer's leading/trailing edge past .page-header's
+   own (overflow:hidden) boundary, exposing a sliver of .page-header's flat
+   background colour past whichever edge it retreated from - a gap that
+   reads as "the photo without its dark tint" since both would otherwise sit
+   over a similarly dark background. 16px of overscan on each edge (the
+   14px max throw plus a small margin) keeps the layer larger than the box
+   it fills at every point in the animation, so there's never an edge to
+   expose. Clipped by .page-header's own overflow:hidden either way, so
+   this never affects layout height or causes horizontal scroll. */
+.page-header__bg { position: absolute; left: 0; right: 0; top: -16px; bottom: -16px; z-index: 0; }
 
 /* ---------- Internal-page hero -> first section handoff ----------
  * Every interior page's first body section (.holdings-showcase,
@@ -1145,7 +1157,7 @@ main > .case-hero + section {
    ============================================ */
 [data-placeholder="true"] { position: relative; background: linear-gradient(135deg, #3ca169 0%, #21262d 65%, #161a1f 100%); }
 [data-placeholder="true"]::before { content: "Photo pending"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.45); text-transform: uppercase; }
-.page-header__bg[data-placeholder="true"] { position: absolute; inset: 0; z-index: 0; }
+.page-header__bg[data-placeholder="true"] { position: absolute; left: 0; right: 0; top: -16px; bottom: -16px; z-index: 0; }
 
 /* ============================================
    SUBPAGE: ACTIVE HOLDINGS GRID
