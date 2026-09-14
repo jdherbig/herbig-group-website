@@ -151,6 +151,16 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    ============================================ */
 .canvas-glow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
 
+/* MOT-06: the drift/shimmer loops below used to run unconditionally,
+   including on every mobile viewport and on every one of these elements
+   regardless of whether it was ever scrolled into view - unnecessary
+   motion and an unnecessary, always-on animation workload on mobile in
+   particular. Below 900px they're frozen outright (see the max-width
+   block after .blob--soft) at their own resting opacity/position rather
+   than a keyframe's mid-cycle value. On desktop they still loop, but
+   initAmbientMotion() in script.js pauses (animation-play-state) each
+   one while it's offscreen or the document is hidden, and resumes it
+   when it's actually visible again. */
 .blob {
   position: absolute;
   border-radius: 50%;
@@ -164,6 +174,9 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .blob--right  { right: -8%;  top: 12%;  width: 26vw; max-width: 380px; aspect-ratio: 1; animation-delay: -7s; animation-direction: reverse; }
 .blob--top    { left: 25%;   top: -14%; width: 50vw; max-width: 720px; aspect-ratio: 1; opacity: 0.7; animation-delay: -14s; }
 .blob--soft   { opacity: 0.65; }
+@media (max-width: 899px) {
+  .blob { animation: none; }
+}
 
 @keyframes drift {
   0%   { transform: translate(0, 0) scale(1); }
@@ -186,6 +199,9 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .specular--subtle { opacity: 0.32; }
 .specular--tr { top: -8%; right: 8%; }
 .specular--bl { bottom: -6%; left: 4%; animation-delay: -3s; }
+@media (max-width: 899px) {
+  .specular { animation: none; }
+}
 @media (min-width: 900px) {
   .specular { width: 220px; height: 220px; }
 }
@@ -265,7 +281,11 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   font-weight: 700;
   font-size: 14px;
   box-shadow: var(--shadow-btn);
-  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease), padding 0.5s var(--motion-ease-premium);
+  /* MOT-05: padding here only ever changes via .navbar.is-compact
+     .btn--nav - was 0.5s (legacy), now aligned to the navbar's own
+     180-260ms appearance-transition timing so the two don't visibly
+     drift apart during a compact-state change. */
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease), padding 0.2s var(--motion-ease-premium);
   will-change: transform;
   width: 100%;
   border: none;
@@ -322,7 +342,11 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   transition: background 0.2s var(--ease), backdrop-filter 0.2s var(--ease), border-color 0.2s var(--ease) 0.04s, box-shadow 0.2s var(--ease) 0.04s;
 }
 .navbar.is-scrolled { background: var(--color-white); border-bottom: 1px solid var(--color-border); box-shadow: 0 4px 20px rgba(33, 38, 45, 0.06); backdrop-filter: none; -webkit-backdrop-filter: none; }
-.navbar__inner { display: flex; align-items: center; justify-content: space-between; padding: 16px var(--container-pad); max-width: 1600px; margin: 0 auto; transition: padding 0.5s var(--motion-ease-premium); }
+/* MOT-05: padding transition was 0.5s (legacy), now aligned to the
+   navbar's own 180-260ms appearance-transition timing (its background/
+   border/shadow swap already uses 0.2s) so a compact-state change
+   doesn't visibly run two different durations at once. */
+.navbar__inner { display: flex; align-items: center; justify-content: space-between; padding: 16px var(--container-pad); max-width: 1600px; margin: 0 auto; transition: padding 0.2s var(--motion-ease-premium); }
 @media (min-width: 900px) { .navbar__inner { padding: 18px var(--container-pad); } }
 /* Compact scroll state: ~25% off vertical padding on mobile, ~22% on
    desktop - noticeable without feeling squeezed. */
@@ -332,7 +356,9 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
 .brand__icon { width: 36px; height: 36px; }
 @media (min-width: 900px) { .brand__icon { width: 52px; height: 52px; } }
-.brand__icon-wrap { position: relative; width: 36px; height: 36px; flex-shrink: 0; transition: width 0.5s var(--motion-ease-premium), height 0.5s var(--motion-ease-premium); }
+/* MOT-05: width/height transition was 0.5s (legacy) - same alignment to
+   180-260ms as .navbar__inner's padding above. */
+.brand__icon-wrap { position: relative; width: 36px; height: 36px; flex-shrink: 0; transition: width 0.2s var(--motion-ease-premium), height 0.2s var(--motion-ease-premium); }
 @media (min-width: 900px) { .brand__icon-wrap { width: 52px; height: 52px; } }
 /* Logo shrinks modestly on scroll (~11-13%), not in lockstep with the
    header - it should stay the visually dominant brand mark. */
@@ -396,31 +422,35 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    Lives outside #route-content alongside the navbar, so it
    persists untouched across PJAX page swaps (see transitions.js).
    ============================================ */
+/* MOT-04: was height:0 -> 100vh over 500ms on --ease-snap (cubic-bezier
+   (0.34,1.56,0.64,1) - an overshoot/bounce curve, a different motion
+   family from the rest of the site, and animating height is a layout
+   property, triggering reflow every frame it moves). The panel is now a
+   fixed, always-100vh surface (still extends up behind the navbar for
+   the same rounding/gap-proofing reason as before) that enters/exits on
+   opacity alone - fixed geometry, no bounce, nothing to lay out. Entry
+   uses the site's entrance curve, exit its dedicated exit curve, at the
+   spec's 240-300ms open / 180-220ms close. */
 .mobile-menu {
   display: flex;
   position: fixed;
   top: 0;
   left: 0; right: 0;
+  height: 100vh;
   z-index: 95;
   flex-direction: column;
   background: var(--color-dark);
-  /* Extends up behind the navbar (which sits at z-index:100, above this)
-     rather than starting exactly at --nav-height — that left a hairline
-     gap on some viewports where rounding made the navbar a fraction of a
-     pixel shorter than the var, letting the page underneath peek through.
-     Overlapping and letting the opaque navbar mask the seam is gap-proof
-     regardless of rounding. The matching top offset lives on
-     .mobile-menu__content below, not here, so this element's own height
-     can still animate cleanly down to a true 0. */
-  height: 0;
   overflow: hidden;
   visibility: hidden;
-  transition: height 0.5s var(--ease-snap), visibility 0s linear 0.5s;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--motion-ease-exit), visibility 0s linear 0.2s;
 }
 .mobile-menu.is-open {
-  height: 100vh;
   visibility: visible;
-  transition: height 0.5s var(--ease-snap), visibility 0s linear 0s;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.26s var(--ease), visibility 0s linear 0s;
 }
 @media (min-width: 1200px) { .mobile-menu { display: none !important; } }
 .no-scroll { overflow: hidden; }
@@ -1023,9 +1053,6 @@ html.is-fast-scroll .jv-field {
     transform: translateY(16px) scale(0.99);
   }
 
-  .about-stage__image.reveal-surface { transform: translateY(16px); }
-  .about-stage__image.reveal-surface.is-visible { transform: translateY(0); }
-
   .pathway-card__image.reveal-surface,
   .pathway-card--reverse .pathway-card__image.reveal-surface {
     transform: translateY(16px) scale(1.015);
@@ -1049,6 +1076,15 @@ html.is-fast-scroll .jv-field {
   .reveal-stagger:nth-child(2) { transition-delay: 0.04s; }
   .reveal-stagger:nth-child(3) { transition-delay: 0.07s; }
   .reveal-stagger:nth-child(n+4) { transition-delay: 0.1s; }
+
+  /* MOT-01: mobile entrance target is 250-400ms, not desktop's 650ms
+     var(--motion-content) - explicit overrides rather than redefining
+     --motion-content itself, which many unrelated components also read
+     (navbar, feature cards, photo grids...) and shouldn't shrink here.
+     (.stage-card's own mobile override lives next to its base rule
+     further down - same specificity, and its base rule sits later in
+     the file, so a copy placed here would lose to it.) */
+  .reveal, .reveal-stagger { transition-duration: 0.35s, 0.35s; }
 }
 
 /* ============================================
@@ -1108,6 +1144,17 @@ main > .case-hero + section {
    frame 0; nothing here can block or depend on network timing. */
 .page-header__bg img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.025); transition: transform 1.15s var(--motion-ease-premium) 0.1s; }
 .page-header.is-loaded .page-header__bg img { transform: scale(1); }
+/* MOT-08: the 1.15s/0.1s-delay image settle above is a deliberate desktop
+   flourish, but on mobile it was the last piece of a ~1.1-1.25s chain
+   (heading, then copy, then image) standing between arrival and being able
+   to read the page - too long for a mobile visitor deciding whether to
+   keep reading. Below 900px the image settles fast and barely scales at
+   all, so it never delays the primary message. Placed after the base rule
+   above so it wins the specificity tie (same lesson as every other
+   reveal-transition bug this phase). */
+@media (max-width: 899px) {
+  .page-header__bg img { transform: scale(1.01); transition: transform 0.4s var(--motion-ease-premium); }
+}
 .page-header__bg::after { content: ""; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.68); }
 .page-header--tint-62 .page-header__bg::after { background: rgba(15, 23, 42, 0.62); }
 .page-header--tint-66 .page-header__bg::after { background: rgba(15, 23, 42, 0.66); }
@@ -1123,6 +1170,28 @@ main > .case-hero + section {
 .page-header.is-loaded .page-header__copy h1 > span { transform: translateY(0); }
 .page-header__sub { opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.65s var(--motion-ease-premium) 0.45s, transform 0.65s var(--motion-ease-premium) 0.45s; }
 .page-header.is-loaded .page-header__sub { opacity: 1; transform: translateY(0); }
+/* MOT-08: heading (800ms+280ms) + copy (650ms+450ms) together used to
+   settle ~1.1s after the image had even started, before a mobile visitor
+   could read the primary message. Below 900px the whole text group reads
+   fast - short fades, a much smaller lift, and a stagger that stays inside
+   the "total <=80ms" mobile budget - so the message is the first thing to
+   land, not the last. Desktop keeps its original masked-reveal timing.
+   Placed after the base rules above for the same specificity-order reason
+   as the image override. */
+@media (max-width: 899px) {
+  .page-header__copy .tag {
+    transform: translateY(6px);
+    transition: opacity 0.25s var(--motion-ease-premium), transform 0.25s var(--motion-ease-premium);
+  }
+  .page-header__copy h1 > span {
+    transform: translateY(10px);
+    transition: transform 0.3s var(--motion-ease-premium) 0.04s;
+  }
+  .page-header__sub {
+    transform: translateY(6px);
+    transition: opacity 0.35s var(--motion-ease-premium) 0.08s, transform 0.35s var(--motion-ease-premium) 0.08s;
+  }
+}
 .page-header h1 { font-family: var(--font-display); font-weight: 900; font-size: 30px; line-height: 1.15; }
 @media (min-width: 900px) { .page-header h1 { font-size: 48px; } }
 .page-header__sub { font-size: 15px; line-height: 1.65; opacity: 0.75; }
@@ -1147,7 +1216,40 @@ main > .case-hero + section {
 @media (min-width: 900px) { .operating-pillars { padding: 80px; gap: 56px; } }
 .pipeline-grid { display: flex; flex-direction: column; gap: 24px; }
 @media (min-width: 900px) { .pipeline-grid { flex-direction: row; } }
-.stage-card { position: relative; flex: 1; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 32px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
+/* MOT-01: transform/box-shadow here share a selector (one class) with
+   .reveal-stagger's own opacity/transform transition, and the shorthand
+   below used to replace that transition outright rather than add to it
+   (same specificity, later in the file wins) - opacity had no
+   transition at all, so the reveal-stagger entrance snapped straight
+   from 0 to 1 instead of fading. Listed longhand (transition-property/
+   -duration/-timing-function, same pattern as .timeline-item) so the
+   card's own hover transform/box-shadow keep their quick 0.35s while
+   opacity gets the shared entrance duration back. */
+.stage-card { position: relative; flex: 1; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 32px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition-property: transform, box-shadow, opacity; transition-duration: 0.35s, 0.35s, var(--motion-content); transition-timing-function: var(--ease), var(--ease), var(--ease); }
+/* MOT-01: mobile entrance target is 250-400ms - placed here, after the
+   base rule above, so it actually wins (same selector/specificity as
+   the base rule; a copy in the shared mobile block earlier in the file
+   would lose the tie to this later rule). */
+@media (max-width: 899px) { .stage-card { transition-duration: 0.35s, 0.35s, 0.35s; } }
+/* MOT-03: the shared .reveal-stagger:nth-child() capped-stagger rules
+   (further up) set a single transition-delay value, which - like
+   .holding-card above - applies to every one of .stage-card's own
+   transitioning properties, not just opacity, so its hover lift kept
+   inheriting the entrance stagger indefinitely. Same specificity as
+   those shared rules, so this has to sit after them (it does, being
+   this far down the file) to actually win; scoped 3-value lists (same
+   transform/box-shadow/opacity order as .stage-card's own transition
+   above) zero the delay for hover's transform/box-shadow and keep it
+   only on the entrance opacity fade. */
+.stage-card:nth-child(1) { transition-delay: 0s, 0s, 0s; }
+.stage-card:nth-child(2) { transition-delay: 0s, 0s, 0.05s; }
+.stage-card:nth-child(3) { transition-delay: 0s, 0s, 0.1s; }
+.stage-card:nth-child(n+4) { transition-delay: 0s, 0s, 0.15s; }
+@media (max-width: 899px) {
+  .stage-card:nth-child(2) { transition-delay: 0s, 0s, 0.04s; }
+  .stage-card:nth-child(3) { transition-delay: 0s, 0s, 0.07s; }
+  .stage-card:nth-child(n+4) { transition-delay: 0s, 0s, 0.1s; }
+}
 .stage-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-card-hover); }
 .stage-card__number { font-family: var(--font-display); font-weight: 900; font-size: 34px; color: var(--color-green); opacity: 0.4; line-height: 1; }
 @media (min-width: 900px) { .stage-card__number { font-size: 40px; } }
@@ -1226,9 +1328,16 @@ main > .case-hero + section {
 .holdings-grid.reveal-grid.is-visible { opacity: 1; transform: translateY(0); }
 .holdings-grid.reveal-grid .holding-card { opacity: 0; }
 .holdings-grid.reveal-grid.is-visible .holding-card { opacity: 1; }
-.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(1) { transition-delay: 0s; }
-.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(2) { transition-delay: 0.07s; }
-.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(n+3) { transition-delay: 0.12s; }
+/* MOT-03: .holding-card's own transition lists 4 properties, in this
+   order - transform, box-shadow, border-color, opacity (see .holding-card
+   below). transition-delay with a single value applies (cyclically) to
+   every one of them, so a plain "transition-delay: 0.07s" here delayed
+   hover/focus/press feedback by the same amount as the entrance fade,
+   even long after the grid had finished revealing. A 4-value list keeps
+   the stagger on entrance opacity only and zeroes it for the rest. */
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(1) { transition-delay: 0s, 0s, 0s, 0s; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(2) { transition-delay: 0s, 0s, 0s, 0.07s; }
+.holdings-grid.reveal-grid.is-visible .holding-card:nth-child(n+3) { transition-delay: 0s, 0s, 0s, 0.12s; }
 
 .holding-card {
   position: relative;
@@ -1347,12 +1456,20 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
    instead of one plain fade on the whole card, so the sequence reads as
    image leads -> headline follows -> body settles, not three things
    arriving at once. Complementary motion, not opposing directions. */
+/* MOT-02: mobile-first now, not a desktop-only unconditional rule with a
+   mobile override earlier in the file trying (and losing, same
+   specificity, later-in-file wins) to redirect it - the horizontal
+   entrance is scoped to >=900px directly, so mobile just uses the base
+   vertical one with nothing to override. */
 .about-stage__image.reveal-surface {
   opacity: 0.6;
-  transform: translateX(-28px);
+  transform: translateY(16px);
   transition: opacity 760ms var(--ease), transform 760ms var(--ease);
 }
-.about-stage__image.reveal-surface.is-visible { opacity: 1; transform: translateX(0); }
+@media (min-width: 900px) {
+  .about-stage__image.reveal-surface { transform: translateX(-28px); }
+}
+.about-stage__image.reveal-surface.is-visible { opacity: 1; transform: translateX(0) translateY(0); }
 .about-stage__image img { width: 100%; height: 100%; object-fit: cover; object-position: 55% 45%; display: block; transform: scale(1.015); transition: transform var(--motion-image) var(--motion-ease-enter); }
 .about-stage__image.is-visible img { transform: scale(1); }
 /* .about-stage__card keeps the shared .reveal class only so it still
@@ -1517,10 +1634,33 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .case-hero__intro p { font-size: 15px; line-height: 1.65; opacity: 0; transform: translateY(var(--motion-distance-small)); transition: opacity 0.65s var(--motion-ease-premium) 0.45s, transform 0.65s var(--motion-ease-premium) 0.45s; }
 .case-hero.is-loaded .case-hero__intro p { opacity: 0.75; transform: translateY(0); }
 @media (min-width: 900px) { .case-hero__intro p { font-size: 18px; } }
+/* MOT-08: same fix and same reasoning as .page-header's mobile override
+   above - shortened text entrance + a fast, barely-there image settle, so
+   the case-study headline and summary are readable almost immediately on
+   mobile instead of ~1.1-1.25s in. Desktop keeps the original timing.
+   Placed after every base rule it overrides, for the same specificity-tie
+   reason as elsewhere in this file. */
+@media (max-width: 899px) {
+  .case-hero__intro h1 > span {
+    transform: translateY(10px);
+    transition: transform 0.3s var(--motion-ease-premium) 0.04s;
+  }
+  .case-hero__intro .tag {
+    transform: translateY(6px);
+    transition: opacity 0.25s var(--motion-ease-premium), transform 0.25s var(--motion-ease-premium);
+  }
+  .case-hero__intro p {
+    transform: translateY(6px);
+    transition: opacity 0.35s var(--motion-ease-premium) 0.08s, transform 0.35s var(--motion-ease-premium) 0.08s;
+  }
+}
 .case-hero__media { position: relative; z-index: 1; width: 100%; height: 260px; border-radius: var(--radius-2xl); overflow: hidden; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07), 0 24px 56px rgba(0, 0, 0, 0.15); }
 @media (min-width: 900px) { .case-hero__media { height: 640px; } }
 .case-hero__media img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.025); transition: transform 1.15s var(--motion-ease-premium) 0.1s; }
 .case-hero.is-loaded .case-hero__media img { transform: scale(1); }
+@media (max-width: 899px) {
+  .case-hero__media img { transform: scale(1.01); transition: transform 0.4s var(--motion-ease-premium); }
+}
 .case-hero__media::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.28); }
 .case-meta-bar { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 20px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: var(--radius-2xl); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 24px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.15); }
 @media (min-width: 900px) { .case-meta-bar { padding: 32px; gap: 32px; flex-wrap: nowrap; } }

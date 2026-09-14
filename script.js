@@ -94,7 +94,21 @@
   var COMPACT_THRESHOLD = 24;
   var THEME_ANTICIPATE = 32; // px of lead on the navbar dark/light theme switch — see updateNavbar()
   var DIRECTION_DEADZONE = 2; // px of scroll noise to ignore before treating it as a real up/down move
+  // MOT-05: DIRECTION_DEADZONE alone used to gate is-compact directly off
+  // the last single rAF tick's delta sign, so a 3px trackpad wobble or a
+  // scroll's momentum settling could flip the state right back within a
+  // couple of frames - a "small scroll correction" repeatedly resizing
+  // the navbar. DIRECTION_HYSTERESIS instead requires that much
+  // *sustained* movement in a direction (tracked from wherever the
+  // current directional run started, see runStartY below) before
+  // is-compact actually commits to that direction, while still reacting
+  // immediately to a real, deliberate reversal - a scroll up of more
+  // than this any time past the threshold still expands the navbar
+  // right away, per the original "even deep in the page" intent.
+  var DIRECTION_HYSTERESIS = 40;
   var lastScrollY = Math.max(0, window.scrollY || 0);
+  var directionSign = 0; // -1 = running up, 1 = running down, 0 = none yet
+  var runStartY = lastScrollY; // scroll Y where the current directional run began
 
   /* ---------- Scroll velocity awareness ----------
    * A fast trackpad/wheel scroll shouldn't leave a trail of staggered
@@ -136,10 +150,32 @@
 
     var currentY = Math.max(0, window.scrollY);
     var delta = currentY - lastScrollY;
-    if (currentY <= COMPACT_THRESHOLD || delta < -DIRECTION_DEADZONE) {
+
+    if (currentY <= COMPACT_THRESHOLD) {
       navbar.classList.remove("is-compact");
-    } else if (delta > DIRECTION_DEADZONE) {
-      navbar.classList.add("is-compact");
+      directionSign = 0;
+      runStartY = currentY;
+    } else {
+      // A per-tick delta past the deadzone starts (or continues) a
+      // directional run; a delta within the deadzone (near-zero motion,
+      // e.g. between discrete wheel ticks) doesn't reset it, so a run
+      // isn't broken up by the gaps between frames that carried it.
+      if (delta > DIRECTION_DEADZONE && directionSign !== 1) {
+        directionSign = 1;
+        runStartY = lastScrollY;
+      } else if (delta < -DIRECTION_DEADZONE && directionSign !== -1) {
+        directionSign = -1;
+        runStartY = lastScrollY;
+      }
+
+      var runDistance = currentY - runStartY;
+      if (directionSign === 1 && runDistance > DIRECTION_HYSTERESIS) {
+        navbar.classList.add("is-compact");
+      } else if (directionSign === -1 && -runDistance > DIRECTION_HYSTERESIS) {
+        navbar.classList.remove("is-compact");
+      }
+      // else: this run hasn't gone far enough yet to commit a state
+      // change - leave is-compact exactly as it already is.
     }
 
     markScrollVelocity(delta, currentY);
@@ -264,15 +300,26 @@
    * than its desktop equivalent, per the site's timing hierarchy -
    * small detail/metrics, then editorial text, then surface panels,
    * then large grid/photo compositions, each tier later than the last. */
+  /* MOT-01: .reveal-stagger and .reveal now trigger at ~90vh (top of
+   * element crossing 90% down the viewport) instead of 70-76vh, and
+   * reveal immediately if already inside that region when the observer
+   * is set up (see revealIfOnscreenAtLoad below) - both per the Phase 2
+   * motion spec ("reveal when an element's top crosses approximately
+   * 90% of the viewport... initialize elements already in that region
+   * without requiring an additional scroll"). .reveal-surface and
+   * .reveal-grid are unchanged; MOT-01 only names the small-detail tier
+   * (Blueprint stage cards) and the .reveal-tier case-study gallery
+   * heading, so the surface/grid tiers keep their existing, later
+   * trigger points and deliberate hierarchy. */
   var REVEAL_TIERS_DESKTOP = [
-    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 70, revealIfOnscreenAtLoad: true }, // small detail / metrics: ~68-71vh
-    { selector: ".reveal", targetVh: 72 },                            // editorial text: ~70-74vh
+    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 90, revealIfOnscreenAtLoad: true },
+    { selector: ".reveal", targetVh: 90, revealIfOnscreenAtLoad: true },
     { selector: ".reveal-surface", targetVh: 76 },                    // surface panels/forms: ~74-77vh
     { selector: ".reveal-grid", targetVh: 79 }                        // large grid/image compositions: ~78-80vh
   ];
   var REVEAL_TIERS_MOBILE = [
-    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 74, revealIfOnscreenAtLoad: true }, // small detail: ~72-76vh
-    { selector: ".reveal", targetVh: 76 },                            // editorial text: ~74-78vh
+    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 90, revealIfOnscreenAtLoad: true },
+    { selector: ".reveal", targetVh: 90, revealIfOnscreenAtLoad: true },
     { selector: ".reveal-surface", targetVh: 80 },                    // surface panels/forms: ~78-82vh
     { selector: ".reveal-grid", targetVh: 83 }                        // large grid/image compositions: ~82-84vh
   ];
@@ -281,7 +328,19 @@
     var anyEls = document.querySelectorAll(".reveal, .reveal-stagger, .reveal-surface, .reveal-grid, .eq-reveal-mobile");
     if (!anyEls.length) return;
 
-    if (!("IntersectionObserver" in window)) {
+    // MOT-09: every other reveal-ish init function (initPhotoGrid below,
+    // initPhotographyDepth, initAmbientMotion, initPinnedScroll's canPin)
+    // already short-circuits under reduced motion - this one didn't. The
+    // revealIfOnscreenAtLoad tiers above only resolve what's already
+    // onscreen at setup time, so anything further down the page (the
+    // entire .reveal-surface/.reveal-grid tiers, which never opt into
+    // that early check, plus any .reveal/.reveal-stagger below the fold)
+    // was left sitting at its pre-reveal opacity/transform until an
+    // IntersectionObserver callback got around to it - exactly the
+    // "waiting on another scroll/observer" the reduced-motion spec rules
+    // out. No observer at all under reduced motion: everything just
+    // starts in its final state.
+    if (!("IntersectionObserver" in window) || prefersReducedMotion) {
       anyEls.forEach(function (el) { el.classList.add("is-visible"); });
       return;
     }
@@ -731,6 +790,66 @@
     };
   }
 
+  /* ---------- Ambient decoration: pause offscreen / tab hidden ----------
+   * MOT-06: .blob/.specular (styles.css) are frozen outright below
+   * 900px by CSS - no JS needed for that. On desktop they keep their
+   * drift/shimmer loop, but it's wasted work while a blob is scrolled
+   * out of view or the tab is backgrounded, so this pauses each one's
+   * own animation-play-state via IntersectionObserver (offscreen) and
+   * visibilitychange (tab hidden), resuming only the ones actually
+   * visible again. Same reduced-motion/desktop-only guard and the same
+   * "tear down before re-running" cleanup pattern as
+   * initPhotographyDepth() above, since this also runs again after
+   * every PJAX swap against a fresh set of elements. */
+  var activeAmbientCleanup = null;
+
+  function initAmbientMotion() {
+    if (activeAmbientCleanup) {
+      activeAmbientCleanup();
+      activeAmbientCleanup = null;
+    }
+
+    if (prefersReducedMotion || !window.matchMedia("(min-width: 900px)").matches) return;
+
+    var targets = Array.prototype.slice.call(document.querySelectorAll(".blob, .specular"));
+    if (!targets.length || !("IntersectionObserver" in window)) return;
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        entry.target.style.animationPlayState = (entry.isIntersecting && !document.hidden) ? "running" : "paused";
+      });
+    }, { threshold: 0 });
+    targets.forEach(function (el) { observer.observe(el); });
+
+    function onVisibilityChange() {
+      if (document.hidden) {
+        targets.forEach(function (el) { el.style.animationPlayState = "paused"; });
+        return;
+      }
+      // Coming back from a hidden tab: re-check each element's own
+      // position rather than assuming they're all in view again. A raw
+      // getBoundingClientRect() comparison against the viewport isn't
+      // enough here - several blobs are deliberately offset outside
+      // their own section via negative left/top percentages and get
+      // clipped by that section's overflow:hidden, so their unclipped
+      // rect can overlap the viewport even while nothing is actually
+      // rendered on screen. Re-observing forces the IntersectionObserver
+      // to recompute real (clipped) intersection and drive playState via
+      // its callback instead of duplicating that logic by hand.
+      targets.forEach(function (el) {
+        observer.unobserve(el);
+        observer.observe(el);
+      });
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    activeAmbientCleanup = function () {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      targets.forEach(function (el) { el.style.animationPlayState = ""; });
+    };
+  }
+
 
   function initAssetCardButtons() {
     document.querySelectorAll(".asset-card__btn--disabled").forEach(function (btn) {
@@ -773,6 +892,7 @@
     initCinematicTrack();
     initEquationReveal();
     initPhotographyDepth();
+    initAmbientMotion();
     initAssetCardButtons();
     initContactForm();
   }
@@ -796,4 +916,34 @@
   window.Herbig.setInitialNavbarTheme = function (isDark) {
     if (navbar) navbar.classList.toggle("is-scrolled", !isDark);
   };
+
+  /* ---------- MOT-09: react live to a reduced-motion preference change ----------
+   * prefersReducedMotion above is a plain snapshot taken once at script
+   * load - every function that reads it (initScrollReveal, initPhotoGrid,
+   * initPhotographyDepth, initAmbientMotion, initPinnedScroll, the drag-
+   * scroll glide, ...) was correct for whatever the preference was at
+   * page load, but none of them would ever hear about a change made while
+   * the page stayed open - motion already in progress (an ambient blob
+   * loop, a parallax offset, a pinned scroll effect) had nothing telling
+   * it to stop, and reveal-gated content still pending an observer would
+   * never have gotten the "just show it" branch above. Re-running
+   * initContent() after flipping the flag re-applies every one of those
+   * guards against the new value in one pass - each already tears down
+   * its own previous listeners/observers first (activeDepthCleanup,
+   * activeAmbientCleanup, activePinnedScrollCleanup,
+   * activeEquationScrollCleanup), so switching TO reduced motion cleanly
+   * cancels anything running and reveals whatever was still pending, and
+   * switching away restores the normal effects rather than leaving the
+   * page permanently frozen from one earlier preference change. */
+  var reducedMotionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var onReducedMotionChange = function (e) {
+    prefersReducedMotion = e.matches;
+    initContent();
+  };
+  if (typeof reducedMotionMedia.addEventListener === "function") {
+    reducedMotionMedia.addEventListener("change", onReducedMotionChange);
+  } else if (typeof reducedMotionMedia.addListener === "function") {
+    // Older Safari/WebKit.
+    reducedMotionMedia.addListener(onReducedMotionChange);
+  }
 })();

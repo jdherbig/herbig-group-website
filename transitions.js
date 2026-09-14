@@ -36,6 +36,15 @@
 
   if (!routeContent) return;
 
+  // Manual scroll restoration, set as early as possible: the browser's own
+  // automatic restore (the default) can race the PJAX router's own instant
+  // scroll handling on a Back/Forward popstate, producing a double-jump. See
+  // the scrollPositions block below for how reload/Back/Forward get their
+  // position back under manual mode.
+  if (window.history && "scrollRestoration" in window.history) {
+    history.scrollRestoration = "manual";
+  }
+
   var LOTTIE_SRC = "assets/lottie/logo-animation.json";
   var SEG_FULL = [0, 90];        // full "HERBIG GROUP" wordmark cascade — intro + logo-click replay
   var LOGO_SAFETY_MS = 1300;     // don't wait on lottie forever if it stalls or fails to load
@@ -46,8 +55,7 @@
   // like a wait. Reduced motion skips it (0ms) entirely.
   var EXIT_MS = prefersReducedMotion ? 0 : 180;
 
-  // Manual scroll restoration (history.scrollRestoration = "manual" below):
-  // remembers each page's own scroll position, keyed by URL, so Back/
+  // Remembers each page's own scroll position, keyed by URL, so Back/
   // Forward can restore it instead of every navigation - forward or
   // backward - dropping the user at the top. Kept continuously up to
   // date by a passive scroll listener (rather than only captured at the
@@ -55,13 +63,27 @@
   // browser has already updated window.location to the destination -
   // there is no reliable "still on the old page" moment left to hook for
   // a Back/Forward-triggered leave, only for an ordinary link click.
-  // Session-lifetime only, an in-memory map is enough (a fresh session
-  // has nothing to restore).
+  //
+  // MOT-07: also mirrored into sessionStorage, not just kept in memory.
+  // Back/Forward within a PJAX session never loses the in-memory map, but
+  // a real reload tears this whole script down and reruns it from
+  // scratch - an in-memory-only map has nothing left to restore from at
+  // that point. sessionStorage survives the reload (session-lifetime,
+  // same as before - a fresh browser session still has nothing to
+  // restore), which is what lets the reload-restoration block further
+  // below recover the position.
+  var SCROLL_STORE_KEY = "hgScrollPositions";
   var scrollPositions = {};
+  try {
+    var storedScrollPositions = sessionStorage.getItem(SCROLL_STORE_KEY);
+    if (storedScrollPositions) scrollPositions = JSON.parse(storedScrollPositions) || {};
+  } catch (e) {}
+
   var scrollSaveTicking = false;
   function saveScrollPosition() {
     scrollSaveTicking = false;
     scrollPositions[window.location.href] = window.scrollY;
+    try { sessionStorage.setItem(SCROLL_STORE_KEY, JSON.stringify(scrollPositions)); } catch (e) {}
   }
   window.addEventListener("scroll", function () {
     if (scrollSaveTicking) return;
@@ -155,6 +177,51 @@
       root.style.scrollBehavior = prevBehavior;
     });
   }
+
+  /* ---------- MOT-07: restore reading position on reload ----------
+   * A real reload doesn't go through navigate()/applySwap() at all - the
+   * browser re-requests and re-parses the whole document from scratch, and
+   * this entire script reruns as part of that. With scrollRestoration set
+   * to "manual" above, nothing was putting the scroll position back
+   * afterward, so a reload always landed at y=0 and replayed the
+   * top-of-page entrance in front of the reader instead of picking up
+   * where they left off. A fresh/typed-URL load and an ordinary PJAX
+   * navigation both still intentionally start at the top - this only
+   * fires for an actual reload of a URL this session already has a saved
+   * position for.
+   *
+   * This runs synchronously, at the end of a normal (non-deferred)
+   * <script> tag placed after all of the page's own markup, so the DOM is
+   * already fully parsed and laid out at this point - every image on the
+   * site reserves its box with an explicit width/height or aspect-ratio
+   * (no layout-shifting image loads), so the scrollTo below already lands
+   * on the right spot immediately, before the browser's first paint of
+   * this document (same reasoning as the hg-intro-pending overlay avoiding
+   * a flash of the wrong state). The one thing that can still nudge
+   * layout after that is a late web-font swap - the window "load" pass
+   * below corrects for that without fighting a reader who has already
+   * started scrolling on their own by then. */
+  try {
+    var navEntries = window.performance && performance.getEntriesByType
+      ? performance.getEntriesByType("navigation")
+      : [];
+    var navType = navEntries && navEntries[0] ? navEntries[0].type : null;
+
+    if (navType === "reload") {
+      var restoreY = scrollPositions[window.location.href];
+      if (restoreY && restoreY > 16) {
+        resetScrollInstant(restoreY);
+        window.addEventListener("load", function () {
+          // Only correct if nothing has meaningfully moved the scroll
+          // position since our own restore above - never override a
+          // reader who started scrolling before images/fonts settled.
+          if (Math.abs(window.scrollY - restoreY) < 4) {
+            window.scrollTo(0, restoreY);
+          }
+        }, { once: true });
+      }
+    }
+  } catch (e) {}
 
   function pathFilename(href) {
     try {
@@ -375,7 +442,20 @@
     navigate(window.location.href, true);
   });
 
-  if (window.history && "scrollRestoration" in window.history) {
-    history.scrollRestoration = "manual";
+  // MOT-09: prefersReducedMotion/EXIT_MS above are snapshots taken once at
+  // script load - keep them in sync with a live preference change so the
+  // next internal navigation (exit conceal duration, hash-link scroll
+  // behavior) respects it immediately rather than only after a fresh
+  // reload. script.js has its own matching listener for everything it
+  // gates on the same preference.
+  var reducedMotionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var onReducedMotionChange = function (e) {
+    prefersReducedMotion = e.matches;
+    EXIT_MS = prefersReducedMotion ? 0 : 180;
+  };
+  if (typeof reducedMotionMedia.addEventListener === "function") {
+    reducedMotionMedia.addEventListener("change", onReducedMotionChange);
+  } else if (typeof reducedMotionMedia.addListener === "function") {
+    reducedMotionMedia.addListener(onReducedMotionChange);
   }
 })();
