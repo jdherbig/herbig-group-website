@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found — Herbig Group</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* HG-P3-07: a deliberately lightweight, standalone error page - it
+       reuses the site's shared design tokens/typography from styles.css
+       but skips the full navbar/mobile-menu/PJAX shell, since this is a
+       terminal page reached only when normal navigation has already
+       failed, not a page the router needs to swap into. Netlify serves
+       this file (with a real 404 status) for any unmatched route when it
+       sits at the publish root, so no redirect rule is needed and
+       refresh/Back behave exactly as the browser normally would. */
+    body {
+      background: var(--color-dark);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+    }
+    .not-found {
+      max-width: 560px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    .not-found__eyebrow {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--color-green);
+    }
+    .not-found__code {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(56px, 12vw, 96px);
+      line-height: 1;
+      color: var(--color-white);
+    }
+    .not-found h1 {
+      font-weight: 800;
+      font-size: clamp(22px, 4vw, 28px);
+      color: var(--color-white);
+    }
+    .not-found p {
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .not-found__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .not-found .btn--outline { background: transparent; color: var(--color-white); border-color: rgba(255, 255, 255, 0.35); }
+    .not-found .btn--outline:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.55); }
+  </style>
+</head>
+<body>
+
+  <main class="not-found">
+    <span class="not-found__eyebrow">Herbig Group</span>
+    <span class="not-found__code" aria-hidden="true">404</span>
+    <h1>We couldn&rsquo;t find that page</h1>
+    <p>The page you were looking for may have moved or no longer exists. Here are a couple of places to pick back up.</p>
+    <div class="not-found__actions">
+      <a href="index.html" class="btn btn--primary"><span>Return Home</span></a>
+      <a href="active-holdings.html" class="btn btn--outline"><span>View Active Holdings</span></a>
+    </div>
+  </main>
+
+</body>
+</html>

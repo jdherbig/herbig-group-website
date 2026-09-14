@@ -223,6 +223,27 @@
     }
   } catch (e) {}
 
+  // HG-P3-03/HG-P3-06: a same-document section target (#team/#core/
+  // #contact) isn't natively focusable, so scrollIntoView alone moves the
+  // viewport but leaves keyboard/screen-reader focus stranded wherever it
+  // was before the click (often the menu link that's about to close, or -
+  // after a cross-page hash arrival - nowhere meaningful at all). Giving
+  // it a temporary tabindex="-1" and focusing it lands the reader right
+  // at the section they asked for, and is removed again on blur so it
+  // doesn't linger in the tab order for anyone tabbing through afterward.
+  function focusSectionTarget(target) {
+    if (!target) return;
+    var hadTabindex = target.hasAttribute("tabindex");
+    if (!hadTabindex) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+    if (!hadTabindex) {
+      target.addEventListener("blur", function onBlur() {
+        target.removeEventListener("blur", onBlur);
+        target.removeAttribute("tabindex");
+      });
+    }
+  }
+
   function pathFilename(href) {
     try {
       var u = new URL(href, window.location.href);
@@ -232,11 +253,22 @@
     }
   }
 
+  // HG-P3-01: is-active already got toggled on every navigation, but never
+  // carried the actual semantic (aria-current="page") screen readers and
+  // other assistive tech rely on to know which nav item represents the
+  // page the user is currently on - the visual accent existed with no
+  // matching announcement. Kept in lockstep with is-active right here
+  // rather than as a second pass over the links.
   function updateActiveNav(filename) {
     var target = ACTIVE_NAV_MAP[filename] || null;
     document.querySelectorAll("#nav-links .nav-link, #mobile-menu-list .mobile-menu__link").forEach(function (link) {
       var isActive = !!target && pathFilename(link.getAttribute("href")) === target;
       link.classList.toggle("is-active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
     });
   }
 
@@ -292,8 +324,16 @@
     return true;
   }
 
+  // HG-P3-01: compares resolved filenames rather than raw pathnames, so a
+  // canonical "index.html#contact"-style link still reads as "already
+  // home" when the page was actually reached via the bare root URL
+  // (pathname "/") - a plain pathname === pathname check would otherwise
+  // mismatch ("/" vs "/index.html") and send an already-home click on an
+  // unnecessary round trip through navigate() instead of scrolling in
+  // place. pathFilename is declared further below but hoisted, same as
+  // every other function here.
   function isSamePage(a) {
-    return a.pathname === window.location.pathname && a.search === window.location.search;
+    return pathFilename(a.href) === pathFilename(window.location.href) && a.search === window.location.search;
   }
 
   var navToken = 0;
@@ -403,8 +443,19 @@
     if (hash) {
       window.setTimeout(function () {
         var target = document.getElementById(hash.slice(1));
-        if (target) target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
+        if (target) {
+          target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
+          focusSectionTarget(target);
+        }
       }, prefersReducedMotion ? 0 : 400);
+    } else {
+      // HG-P3-03: no fragment to land on - focus the new page's own
+      // heading so a screen reader announces where the reader actually
+      // is, falling back to the route wrapper itself if a page is ever
+      // missing one. Matches what a full page load already gives for
+      // free; a client-side swap was otherwise leaving focus wherever it
+      // happened to be on the previous page.
+      focusSectionTarget(routeContent.querySelector("h1") || routeContent);
     }
   }
 
@@ -429,6 +480,16 @@
         if (target) {
           e.preventDefault();
           target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
+          focusSectionTarget(target);
+          // HG-P3-06: preventDefault above also suppresses the browser's
+          // own default fragment-navigation, which is what would normally
+          // update the address bar - without this the URL stayed on
+          // whatever fragment (or none) was already there, disagreeing
+          // with the section actually on screen. replaceState (not
+          // pushState) keeps this to the one history entry per real
+          // navigation Back/Forward already relies on, rather than
+          // stacking a new entry for every section clicked in a session.
+          try { history.replaceState(history.state, "", a.href); } catch (err) {}
         }
       }
       return;

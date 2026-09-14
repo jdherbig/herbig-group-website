@@ -48,7 +48,7 @@
       <nav class="nav-links" id="nav-links" aria-label="Primary">
         <a href="our-blueprint.html" class="nav-link">Our Blueprint</a>
         <a href="active-holdings.html" class="nav-link">Active Holdings</a>
-        <a href="joint-ventures.html" class="nav-link is-active">Joint Ventures</a>
+        <a href="joint-ventures.html" class="nav-link is-active" aria-current="page">Joint Ventures</a>
         <a href="housing-projects.html" class="nav-link">Housing Projects</a>
         <a href="index.html#contact" class="btn btn--primary btn--nav">
           <span>Partner With Us</span>
@@ -56,7 +56,7 @@
         </a>
       </nav>
 
-      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -82,7 +82,7 @@
             <span class="mobile-menu__label">View Active Holdings</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
           </a>
-          <a href="joint-ventures.html" class="mobile-menu__link is-active">
+          <a href="joint-ventures.html" class="mobile-menu__link is-active" aria-current="page">
             <span class="mobile-menu__index">03</span>
             <span class="mobile-menu__label">Joint Ventures</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
@@ -174,7 +174,11 @@
           </div>
         </div>
 
-        <form class="jv-form-card reveal-surface reveal-surface--delayed" id="jv-form" data-direction="right" novalidate>
+        <form class="jv-form-card reveal-surface reveal-surface--delayed" id="jv-form" data-direction="right" name="joint-venture" method="POST" data-netlify="true" netlify-honeypot="jv-bot-field" novalidate>
+          <input type="hidden" name="form-name" value="joint-venture">
+          <p class="jv-field jv-field--hidden" aria-hidden="true">
+            <label>Leave this field blank<input type="text" name="jv-bot-field" tabindex="-1" autocomplete="off"></label>
+          </p>
           <span class="accent-bar"></span>
           <div class="jv-form-card__heading">
             <h3>Joint Venture Inquiry</h3>
@@ -182,19 +186,22 @@
           </div>
           <label class="jv-field">
             <span class="jv-field__label">Enterprise / Brand Name</span>
-            <input type="text" name="company" placeholder="Enter your organization's legal name" required autocomplete="organization">
+            <input type="text" name="company" id="jv-company" placeholder="Enter your organization's legal name" required autocomplete="organization" aria-describedby="jv-company-error">
+            <span class="jv-field__error" id="jv-company-error" role="alert"></span>
           </label>
           <label class="jv-field">
             <span class="jv-field__label">Desired Square Footage</span>
-            <input type="text" name="sqft" placeholder="e.g. 15,000 - 30,000 sq ft">
+            <input type="text" name="sqft" id="jv-sqft" placeholder="e.g. 15,000 - 30,000 sq ft">
           </label>
           <label class="jv-field">
             <span class="jv-field__label">Primary Email Address</span>
-            <input type="email" name="email" placeholder="you@organization.com" required autocomplete="email">
+            <input type="email" name="email" id="jv-email" placeholder="you@organization.com" required autocomplete="email" aria-describedby="jv-email-error">
+            <span class="jv-field__error" id="jv-email-error" role="alert"></span>
           </label>
-          <button type="submit" class="btn btn--primary">
+          <button type="submit" class="btn btn--primary" id="jv-submit">
             <span>Submit Joint Venture Proposal</span>
           </button>
+          <p class="jv-form-card__note" id="jv-form-note" role="status" aria-live="polite"></p>
         </form>
       </div>
     </section>
@@ -222,8 +229,8 @@
     <div class="footer__bottom">
       <p>Copyright &copy; 2026 Herbig Group. All rights reserved.</p>
       <div class="footer__links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Engagement</a>
+        <span class="footer__link-disabled" title="Coming soon">Privacy Policy</span>
+        <span class="footer__link-disabled" title="Coming soon">Terms of Engagement</span>
       </div>
     </div>
   </footer>

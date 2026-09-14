@@ -232,6 +232,16 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .section { padding: 48px var(--container-pad); position: relative; overflow: hidden; }
 @media (min-width: 900px) { .section { padding: 120px var(--container-pad); } }
 
+/* HG-P3-06: #core/#team/#contact are the landing targets for the
+   Core/Leadership/Contact same-page anchor links (navbar CTA, mobile
+   menu, and any cross-page "index.html#..." link) - scrollIntoView on a
+   bare element aligns its top flush with the viewport top, which tucks
+   it straight behind the fixed navbar. scroll-margin-top offsets that
+   for every scroll-into-view path (native fragment navigation on a fresh
+   load/refresh included, not just the JS-driven scrollIntoView calls in
+   transitions.js) without needing extra JS math anywhere. */
+#core, #team, #contact { scroll-margin-top: calc(var(--nav-height) + 16px); }
+
 .tag {
   display: inline-flex;
   padding: 6px 16px;
@@ -308,6 +318,13 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .btn--primary:hover { background: #349159; transform: translateY(-2px); box-shadow: 0 10px 18px rgba(var(--color-green-rgb), 0.28); }
 .btn--primary:active { transform: translateY(0); }
 
+/* HG-P3-04: a CTA-styled placeholder for content that doesn't exist yet.
+   Marked up as a <span>, not an <a href="#">, so it carries no link
+   semantics (unreachable by keyboard, does nothing on click/Enter) instead
+   of a fake destination that just jumps to the top of the page. */
+.btn--disabled { opacity: 0.55; cursor: default; pointer-events: none; }
+.btn--disabled::before { display: none; }
+
 .btn--outline { background: var(--color-white); color: var(--color-green); border: 1.5px solid var(--color-green); }
 .btn--outline:hover { background: var(--color-green-tint); transform: translateY(-2px); box-shadow: 0 10px 18px rgba(var(--color-green-rgb), 0.15); }
 
@@ -380,7 +397,13 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .nav-links { display: none; align-items: center; gap: 36px; }
 @media (min-width: 1200px) { .nav-links { display: flex; } }
-.nav-link { position: relative; font-weight: 600; font-size: 15px; color: var(--color-white); padding-bottom: 4px; opacity: 0.9; transition: color var(--motion-micro) var(--ease) 0.07s; }
+/* HG-P3-09: desktop pointers don't need a 44px touch target, but the same
+   invisible padding/negative-margin technique used on the mobile menu adds
+   some comfortable extra hit height here too, at no cost to the navbar's
+   own height (36px of gap between links leaves easy room for it). Only
+   padding-top/margin-top are touched, leaving the existing padding-bottom
+   (reserved for the ::after underline below) and its offset untouched. */
+.nav-link { position: relative; font-weight: 600; font-size: 15px; color: var(--color-white); padding-top: 8px; padding-bottom: 4px; margin-top: -8px; opacity: 0.9; transition: color var(--motion-micro) var(--ease) 0.07s; }
 .navbar.is-scrolled .nav-link { color: var(--color-ink); }
 .nav-link::after { content: ""; position: absolute; left: 0; bottom: 0; width: 0; height: 2px; background: var(--color-green); transition: width 0.25s var(--ease); }
 .nav-link:hover::after { width: 100%; }
@@ -485,11 +508,25 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .mobile-menu__card { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius-xl); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .mobile-menu__card-title { font-family: var(--font-display); font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
 .mobile-menu__card-sub { font-size: 12px; line-height: 1.5; color: var(--color-white); opacity: 0.65; margin-top: 2px; }
-.mobile-menu__card-contacts { display: flex; flex-direction: column; gap: 8px; }
-.mobile-menu__contact { display: flex; align-items: center; gap: 10px; font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--color-white); }
+/* HG-P3-09: gap widened from 8px to 12px so the two contact rows' expanded
+   hit areas below (6px top + 6px bottom each = 12px combined at the seam)
+   meet edge-to-edge instead of overlapping. */
+.mobile-menu__card-contacts { display: flex; flex-direction: column; gap: 12px; }
+/* Visual row is unchanged (~32px, icon-driven) - padding-block expands the
+   actual clickable box to 44px and margin-block of the same size pulls the
+   element back to its original position, so neither the row's own
+   footprint nor the surrounding layout grows. This is the standard
+   invisible hit-area expansion technique for meeting a minimum touch
+   target without changing visual density. */
+.mobile-menu__contact { display: flex; align-items: center; gap: 10px; font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--color-white); padding-block: 6px; margin-block: -6px; }
 .mobile-menu__contact-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--radius-lg); background: rgba(var(--color-green-rgb), 0.12); }
 .mobile-menu__contact-icon img { width: 16px; height: 16px; }
-.mobile-menu__cta.btn.btn--primary { padding: 10px 16px; font-size: 12px; border-radius: var(--radius-md); box-shadow: 0 4px 6px rgba(var(--color-green-rgb), 0.19); }
+/* Same technique: ~35px visible button grows to >=44px of hit area via
+   padding, offset by an equal negative margin. The 6px it adds each side
+   sits well inside the 12px gap above (.mobile-menu__card's own gap, next
+   to the contacts block) and the 16px card padding below, so it can't
+   collide with a neighboring hit area. */
+.mobile-menu__cta.btn.btn--primary { padding: 10px 16px; font-size: 12px; border-radius: var(--radius-md); box-shadow: 0 4px 6px rgba(var(--color-green-rgb), 0.19); padding-block: 16px; margin-block: -6px; }
 
 /* ============================================
    HERO
@@ -900,6 +937,11 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .form-field input::placeholder, .form-field textarea::placeholder { color: rgba(255, 255, 255, 0.45); }
 .form-field input:focus, .form-field textarea:focus { outline: none; border-color: var(--color-green); background: rgba(255, 255, 255, 0.09); }
 .form-field input:user-invalid, .form-field textarea:user-invalid { border-color: #d9695f; }
+/* HG-P3-08: JS-driven validation state (initContactForm), independent of
+   the browser's own :user-invalid so it stays in sync with our custom
+   error text/focus handling rather than relying on native UI alone. */
+.form-field input.is-invalid, .form-field textarea.is-invalid { border-color: #d9695f; }
+.form-field__error { font-size: 12px; font-weight: 600; color: #ef8b83; min-height: 15px; }
 
 .inquiry-form .btn--full { border-radius: 10px; box-shadow: 0 2px 6px rgba(33, 38, 45, 0.13), 0 10px 28px rgba(60, 161, 105, 0.31); }
 .inquiry-form__note { font-size: 13px; color: var(--color-green); min-height: 18px; font-weight: 600; position: relative; z-index: 1; }
@@ -933,6 +975,11 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .footer__links a { opacity: 0.6; transition: opacity 0.2s var(--ease); padding: 12px; min-height: 44px; display: inline-flex; align-items: center; }
 @media (min-width: 900px) { .footer__links { margin: 0; gap: 24px; } .footer__links a { padding: 4px 8px; min-height: auto; } }
 .footer__links a:hover { opacity: 1; text-decoration: underline; }
+/* HG-P3-04: Privacy Policy / Terms of Engagement have no real page yet.
+   A plain, non-interactive <span> (not an <a href="#">) so it isn't in the
+   tab order and does nothing on click - no fake destination to jump to. */
+.footer__link-disabled { opacity: 0.35; padding: 12px; min-height: 44px; display: inline-flex; align-items: center; cursor: default; }
+@media (min-width: 900px) { .footer__link-disabled { padding: 4px 8px; min-height: auto; } }
 
 /* ============================================
    SCROLL REVEAL — global motion grammar
@@ -1439,6 +1486,40 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
   .holding-card--dark:hover .holding-card__cta-arrow, .holding-card--dark:focus-visible .holding-card__cta-arrow, .holding-card--dark:active .holding-card__cta-arrow { transform: none; }
 }
 
+/* HG-P3-05: static cards (Herbigives Center, Res Resiliency, the three
+   "Coming Soon" cards) have no real destination - they're no longer
+   tabindex'd or wrapped in an <a>, so cursor: pointer already reverts on
+   its own (see "a.holding-card, .holding-card[tabindex]" above). This
+   block also cancels every :hover/:focus-visible/:active "this is
+   clickable" cue - shadow/border pop, image zoom, gradient darken, index
+   badge recolor, cta pill slide - so the card is inert but still shows its
+   photo, status pill and copy exactly as it does at rest. */
+.holding-card--static:hover,
+.holding-card--static:focus-visible,
+.holding-card--static:active {
+  box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04);
+  border-color: var(--color-border-soft);
+  transform: translateY(0) scale(1);
+}
+.holding-card--static.holding-card--dark:hover,
+.holding-card--static.holding-card--dark:focus-visible,
+.holding-card--static.holding-card--dark:active {
+  box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.holdings-grid.reveal-grid.is-visible .holding-card--static:hover .holding-card__media img,
+.holdings-grid.reveal-grid.is-visible .holding-card--static:focus-visible .holding-card__media img,
+.holdings-grid.reveal-grid.is-visible .holding-card--static:active .holding-card__media img { transform: scale(1); }
+.holding-card--static:hover .holding-card__gradient--hover,
+.holding-card--static:focus-visible .holding-card__gradient--hover,
+.holding-card--static:active .holding-card__gradient--hover { opacity: 0; }
+.holding-card--static:hover .holding-card__index,
+.holding-card--static:focus-visible .holding-card__index,
+.holding-card--static:active .holding-card__index { background: rgba(0, 0, 0, 0.4); border-color: rgba(255, 255, 255, 0.15); }
+.holding-card--static:hover .holding-card__cta,
+.holding-card--static:focus-visible .holding-card__cta,
+.holding-card--static:active .holding-card__cta { transform: none; background: rgba(255, 255, 255, 0.08); opacity: 0.55; }
+
 /* ============================================
    HOMEPAGE: ABOUT US STAGE
    ============================================ */
@@ -1536,7 +1617,19 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .jv-field input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
 .jv-field input::placeholder { color: #cbd5e1; opacity: 0.65; }
 .jv-field input:focus { outline: none; border-color: var(--color-green); background: rgba(255, 255, 255, 0.08); }
+/* HG-P3-02: per-field validation state, set/cleared by JS in initJVForm(). */
+.jv-field input.is-invalid { border-color: #d9695f; }
+.jv-field__error { font-size: 12px; font-weight: 600; color: #ef8b83; min-height: 15px; }
+/* Honeypot field: present for bots/scripts to fill in, hidden from sighted
+   and assistive-tech users via the standard visually-hidden pattern (not
+   display:none/visibility:hidden, which some bots skip filling in). */
+.jv-field--hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .jv-form-card .btn--primary { width: 100%; justify-content: center; position: relative; z-index: 1; box-shadow: 0 10px 14px rgba(60, 161, 105, 0.31); }
+.jv-form-card .btn--primary:disabled { opacity: 0.7; cursor: not-allowed; }
+.jv-form-card__note { font-size: 13px; color: var(--color-green); min-height: 18px; font-weight: 600; position: relative; z-index: 1; }
+.jv-form-card__note.is-error { color: #ef8b83; }
+.jv-form-card__note.is-success { color: var(--color-green); }
+.jv-form-card__note.is-pending { color: #cbd5e1; }
 
 /* ============================================
    SUBPAGE: HOUSING HIGHLIGHTS (housing-projects)

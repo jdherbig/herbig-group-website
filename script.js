@@ -11,26 +11,53 @@
    * so opening reads as one seamless move into dark mode rather than two
    * separate things happening on top of each other. The hamburger button
    * (which already animates into an X via the existing aria-expanded
-   * rules) is the only open/close control — no separate close button. */
+   * rules) is the only open/close control — no separate close button, so
+   * it doubles as "Close" for focus-trapping purposes below.
+   *
+   * HG-P3-03: this used to only toggle visual state - nothing stopped Tab
+   * from walking straight through the (still perfectly focusable)
+   * underlying page while the overlay sat on top of it, and Escape closed
+   * the panel but left focus stranded on a link that had just gone
+   * invisible. Below 900px, route content sits fully behind the overlay
+   * while it's open, so it's made inert for the duration (removes it from
+   * both the tab order and the accessibility tree in one step) and focus
+   * is explicitly trapped to [toggle, ...everything focusable inside the
+   * menu], with Escape/close always returning focus to the toggle. */
   var toggle = document.getElementById("menu-toggle");
   var mobileMenu = document.getElementById("mobile-menu");
   var navbar = document.getElementById("navbar");
+  var menuInertTarget = document.getElementById("route-content");
 
   if (toggle && mobileMenu) {
+    var MENU_FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    // toggle first: Tab from the last real menu control wraps to it, and
+    // Shift+Tab from the first real control wraps back to it too, so the
+    // close affordance is always one Tab away in either direction.
+    var getMenuFocusables = function () {
+      return [toggle].concat(Array.prototype.slice.call(mobileMenu.querySelectorAll(MENU_FOCUSABLE_SELECTOR)));
+    };
+
     var openMobileMenu = function () {
       mobileMenu.classList.add("is-open");
       mobileMenu.setAttribute("aria-hidden", "false");
       toggle.setAttribute("aria-expanded", "true");
       if (navbar) navbar.classList.add("menu-open");
       document.documentElement.classList.add("no-scroll");
+      if (menuInertTarget) menuInertTarget.setAttribute("inert", "");
+
+      var focusables = getMenuFocusables();
+      if (focusables[1]) focusables[1].focus();
     };
 
-    var closeMobileMenu = function () {
+    var closeMobileMenu = function (returnFocus) {
       mobileMenu.classList.remove("is-open");
       mobileMenu.setAttribute("aria-hidden", "true");
       toggle.setAttribute("aria-expanded", "false");
       if (navbar) navbar.classList.remove("menu-open");
       document.documentElement.classList.remove("no-scroll");
+      if (menuInertTarget) menuInertTarget.removeAttribute("inert");
+      if (returnFocus !== false) toggle.focus();
     };
 
     toggle.addEventListener("click", function () {
@@ -42,11 +69,36 @@
     });
 
     mobileMenu.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", closeMobileMenu);
+      link.addEventListener("click", function () {
+        // Selection: close and unlock, but don't steal focus back to the
+        // toggle - the destination content takes it instead (see the
+        // post-navigation focus handling in transitions.js).
+        closeMobileMenu(false);
+      });
     });
 
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && mobileMenu.classList.contains("is-open")) closeMobileMenu();
+      if (!mobileMenu.classList.contains("is-open")) return;
+
+      if (e.key === "Escape") {
+        closeMobileMenu();
+        return;
+      }
+
+      if (e.key !== "Tab") return;
+      var focusables = getMenuFocusables();
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || focusables.indexOf(active) === -1) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || focusables.indexOf(active) === -1) {
+        e.preventDefault();
+        first.focus();
+      }
     });
 
     // Never leave the overlay stuck open (e.g. a resize past the 1200px
@@ -57,7 +109,7 @@
     // wrapping, so the mobile menu now covers 900-1199px too).
     window.addEventListener("resize", function () {
       if (window.matchMedia("(min-width: 1200px)").matches && mobileMenu.classList.contains("is-open")) {
-        closeMobileMenu();
+        closeMobileMenu(false);
       }
     });
   }
@@ -865,21 +917,204 @@
     });
   }
 
+  /* HG-P3-08: field-specific errors, aria-invalid + aria-describedby
+   * associations, and focus on the first invalid field - rather than only
+   * a single general status message with focus left on the submit button.
+   * Mirrors the pattern in initJVForm() below. Values are never cleared on
+   * failure (this form is never .reset() at all, even on "success", since
+   * it isn't wired to a real endpoint - see the placeholder message).
+   */
   function initContactForm() {
     var form = document.getElementById("inquiry-form");
     var note = document.getElementById("form-note");
     if (!form || !note) return;
+
+    function requiredFields() {
+      return Array.prototype.slice.call(form.querySelectorAll("[required]"));
+    }
+
+    function errorElFor(field) {
+      return document.getElementById(field.id + "-error");
+    }
+
+    function clearFieldError(field) {
+      field.classList.remove("is-invalid");
+      field.removeAttribute("aria-invalid");
+      var errorEl = errorElFor(field);
+      if (errorEl) errorEl.textContent = "";
+    }
+
+    function setFieldError(field, message) {
+      field.classList.add("is-invalid");
+      field.setAttribute("aria-invalid", "true");
+      var errorEl = errorElFor(field);
+      if (errorEl) errorEl.textContent = message;
+    }
+
+    function validate() {
+      var firstInvalid = null;
+      requiredFields().forEach(function (field) {
+        clearFieldError(field);
+        var value = field.value.trim();
+        if (!value) {
+          setFieldError(field, "This field is required.");
+          firstInvalid = firstInvalid || field;
+          return;
+        }
+        if (field.type === "email" && !field.checkValidity()) {
+          setFieldError(field, "Enter a valid email address.");
+          firstInvalid = firstInvalid || field;
+        }
+      });
+      return firstInvalid;
+    }
+
+    requiredFields().forEach(function (field) {
+      field.addEventListener("input", function () {
+        if (field.classList.contains("is-invalid")) clearFieldError(field);
+      });
+    });
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      if (!form.checkValidity()) {
-        note.textContent = "Please fill out every field before sending.";
+
+      var firstInvalid = validate();
+      if (firstInvalid) {
+        var invalidCount = form.querySelectorAll(".is-invalid").length;
+        note.textContent = "Please correct the highlighted field" + (invalidCount > 1 ? "s" : "") + " before sending.";
         note.classList.add("is-error");
         note.classList.remove("is-success");
+        firstInvalid.focus();
         return;
       }
+
       note.classList.remove("is-error");
       note.classList.add("is-success");
       note.textContent = "Thanks — this form isn't connected to an inbox yet, so nothing was sent. Email hello@herbiggroup.com directly for now.";
+    });
+  }
+
+  /* HG-P3-02: Joint Venture inquiry form (joint-ventures.html). Unlike the
+   * contact form above, this one is wired to a real Netlify Forms endpoint
+   * per the site owner's direction - it validates client-side (focusing the
+   * first invalid field, same as a native required-field failure would),
+   * then POSTs to "/" as Netlify Forms expects, with pending/success/error
+   * status states and duplicate-submit prevention. Values are preserved on
+   * failure (the form is only ever .reset() on confirmed success).
+   */
+  function initJVForm() {
+    var form = document.getElementById("jv-form");
+    var note = document.getElementById("jv-form-note");
+    if (!form || !note) return;
+
+    var submitBtn = form.querySelector("button[type='submit']");
+    var isSubmitting = false;
+
+    function requiredFields() {
+      return Array.prototype.slice.call(form.querySelectorAll("input[required]"));
+    }
+
+    function errorElFor(field) {
+      return document.getElementById(field.id + "-error");
+    }
+
+    function clearFieldError(field) {
+      field.classList.remove("is-invalid");
+      field.removeAttribute("aria-invalid");
+      var errorEl = errorElFor(field);
+      if (errorEl) errorEl.textContent = "";
+    }
+
+    function setFieldError(field, message) {
+      field.classList.add("is-invalid");
+      field.setAttribute("aria-invalid", "true");
+      var errorEl = errorElFor(field);
+      if (errorEl) errorEl.textContent = message;
+    }
+
+    function validate() {
+      var firstInvalid = null;
+      requiredFields().forEach(function (field) {
+        clearFieldError(field);
+        var value = field.value.trim();
+        if (!value) {
+          setFieldError(field, "This field is required.");
+          firstInvalid = firstInvalid || field;
+          return;
+        }
+        if (field.type === "email" && !field.checkValidity()) {
+          setFieldError(field, "Enter a valid email address.");
+          firstInvalid = firstInvalid || field;
+        }
+      });
+      return firstInvalid;
+    }
+
+    requiredFields().forEach(function (field) {
+      field.addEventListener("input", function () {
+        if (field.classList.contains("is-invalid")) clearFieldError(field);
+      });
+    });
+
+    function setNote(text, state) {
+      note.classList.remove("is-error", "is-success", "is-pending");
+      if (state) note.classList.add(state);
+      note.textContent = text;
+    }
+
+    function setPending(pending) {
+      isSubmitting = pending;
+      if (submitBtn) submitBtn.disabled = pending;
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (isSubmitting) return;
+
+      var firstInvalid = validate();
+      if (firstInvalid) {
+        var invalidCount = form.querySelectorAll(".is-invalid").length;
+        setNote("Please correct the highlighted field" + (invalidCount > 1 ? "s" : "") + " before submitting.", "is-error");
+        firstInvalid.focus();
+        return;
+      }
+
+      // Honeypot: real users never see or fill this field. If it has a
+      // value, silently treat as success without sending - no network
+      // request, no error surfaced to whatever filled it in.
+      var honeypot = form.querySelector("[name='jv-bot-field']");
+      if (honeypot && honeypot.value) {
+        setNote("Thanks - we will be in touch shortly.", "is-success");
+        form.reset();
+        return;
+      }
+
+      setPending(true);
+      setNote("Sending your proposal…", "is-pending");
+
+      var params = [];
+      new FormData(form).forEach(function (value, key) {
+        params.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
+      });
+
+      fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.join("&"),
+      })
+        .then(function (response) {
+          setPending(false);
+          if (response.ok) {
+            setNote("Thanks - your joint venture proposal has been sent. We'll be in touch soon.", "is-success");
+            form.reset();
+          } else {
+            setNote("Something went wrong sending your proposal. Please try again or email hello@herbiggroup.com directly.", "is-error");
+          }
+        })
+        .catch(function () {
+          setPending(false);
+          setNote("Something went wrong sending your proposal. Please try again or email hello@herbiggroup.com directly.", "is-error");
+        });
     });
   }
 
@@ -895,6 +1130,7 @@
     initAmbientMotion();
     initAssetCardButtons();
     initContactForm();
+    initJVForm();
   }
 
   initContent();

@@ -50,13 +50,13 @@
         <a href="active-holdings.html" class="nav-link">Active Holdings</a>
         <a href="joint-ventures.html" class="nav-link">Joint Ventures</a>
         <a href="housing-projects.html" class="nav-link">Housing Projects</a>
-        <a href="#contact" class="btn btn--primary btn--nav">
+        <a href="index.html#contact" class="btn btn--primary btn--nav">
           <span>Partner With Us</span>
           <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.3328 8H12.6672M8 12.6672L12.6672 8L8 3.3328" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </a>
       </nav>
 
-      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -92,12 +92,12 @@
             <span class="mobile-menu__label">Housing Projects</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
           </a>
-          <a href="#team" class="mobile-menu__link">
+          <a href="index.html#team" class="mobile-menu__link">
             <span class="mobile-menu__index">05</span>
             <span class="mobile-menu__label">Leadership &amp; Advisors</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
           </a>
-          <a href="#core" class="mobile-menu__link">
+          <a href="index.html#core" class="mobile-menu__link">
             <span class="mobile-menu__index">06</span>
             <span class="mobile-menu__label">Our Core Equation</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
@@ -119,7 +119,7 @@
             <span>(480) 555-0148</span>
           </a>
         </div>
-        <a href="#contact" class="btn btn--primary mobile-menu__cta">
+        <a href="index.html#contact" class="btn btn--primary mobile-menu__cta">
           <span>Become a Partner</span>
           <svg class="btn__arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.3328 8H12.6672M8 12.6672L12.6672 8L8 3.3328" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </a>
@@ -232,7 +232,7 @@
           </div>
         </a>
 
-        <div class="holding-card" tabindex="0">
+        <div class="holding-card holding-card--static">
           <div class="holding-card__media">
             <img src="assets/images/asset-herbigives-center.jpg" alt="The Herbigives Center exterior" loading="lazy">
           </div>
@@ -247,7 +247,7 @@
           </div>
         </div>
 
-        <div class="holding-card" tabindex="0">
+        <div class="holding-card holding-card--static">
           <div class="holding-card__media">
             <img src="assets/images/asset-res-resiliency.jpg" alt="Res Resiliency Housing exterior" loading="lazy">
           </div>
@@ -486,15 +486,18 @@
 
           <label class="form-field">
             <span class="form-field__label">Name</span>
-            <input type="text" name="name" placeholder="Enter your name" required autocomplete="name">
+            <input type="text" name="name" id="contact-name" placeholder="Enter your name" required autocomplete="name" aria-describedby="contact-name-error">
+            <span class="form-field__error" id="contact-name-error" role="alert"></span>
           </label>
           <label class="form-field">
             <span class="form-field__label">Email</span>
-            <input type="email" name="email" placeholder="you@company.com" required autocomplete="email">
+            <input type="email" name="email" id="contact-email" placeholder="you@company.com" required autocomplete="email" aria-describedby="contact-email-error">
+            <span class="form-field__error" id="contact-email-error" role="alert"></span>
           </label>
           <label class="form-field">
             <span class="form-field__label">Message</span>
-            <textarea name="message" rows="4" placeholder="Tell us about your project and what you need." required></textarea>
+            <textarea name="message" id="contact-message" rows="4" placeholder="Tell us about your project and what you need." required aria-describedby="contact-message-error"></textarea>
+            <span class="form-field__error" id="contact-message-error" role="alert"></span>
           </label>
 
           <button type="submit" class="btn btn--primary btn--full">
@@ -529,8 +532,8 @@
     <div class="footer__bottom">
       <p>Copyright © 2025 Herbig Group. All rights reserved.</p>
       <div class="footer__links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Engagement</a>
+        <span class="footer__link-disabled" title="Coming soon">Privacy Policy</span>
+        <span class="footer__link-disabled" title="Coming soon">Terms of Engagement</span>
       </div>
     </div>
   </footer>

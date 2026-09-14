@@ -47,7 +47,7 @@
 
       <nav class="nav-links" id="nav-links" aria-label="Primary">
         <a href="our-blueprint.html" class="nav-link">Our Blueprint</a>
-        <a href="active-holdings.html" class="nav-link is-active">Active Holdings</a>
+        <a href="active-holdings.html" class="nav-link is-active" aria-current="page">Active Holdings</a>
         <a href="joint-ventures.html" class="nav-link">Joint Ventures</a>
         <a href="housing-projects.html" class="nav-link">Housing Projects</a>
         <a href="index.html#contact" class="btn btn--primary btn--nav">
@@ -56,7 +56,7 @@
         </a>
       </nav>
 
-      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -77,7 +77,7 @@
             <span class="mobile-menu__label">Explore Our Blueprint</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
           </a>
-          <a href="active-holdings.html" class="mobile-menu__link is-active">
+          <a href="active-holdings.html" class="mobile-menu__link is-active" aria-current="page">
             <span class="mobile-menu__index">02</span>
             <span class="mobile-menu__label">View Active Holdings</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
@@ -271,8 +271,8 @@
     <div class="footer__bottom">
       <p>Copyright &copy; 2026 Herbig Group. All rights reserved.</p>
       <div class="footer__links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Engagement</a>
+        <span class="footer__link-disabled" title="Coming soon">Privacy Policy</span>
+        <span class="footer__link-disabled" title="Coming soon">Terms of Engagement</span>
       </div>
     </div>
   </footer>

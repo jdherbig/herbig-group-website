@@ -47,7 +47,7 @@
 
       <nav class="nav-links" id="nav-links" aria-label="Primary">
         <a href="our-blueprint.html" class="nav-link">Our Blueprint</a>
-        <a href="active-holdings.html" class="nav-link is-active">Active Holdings</a>
+        <a href="active-holdings.html" class="nav-link is-active" aria-current="page">Active Holdings</a>
         <a href="joint-ventures.html" class="nav-link">Joint Ventures</a>
         <a href="housing-projects.html" class="nav-link">Housing Projects</a>
         <a href="index.html#contact" class="btn btn--primary btn--nav">
@@ -56,7 +56,7 @@
         </a>
       </nav>
 
-      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -77,7 +77,7 @@
             <span class="mobile-menu__label">Explore Our Blueprint</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
           </a>
-          <a href="active-holdings.html" class="mobile-menu__link is-active">
+          <a href="active-holdings.html" class="mobile-menu__link is-active" aria-current="page">
             <span class="mobile-menu__index">02</span>
             <span class="mobile-menu__label">View Active Holdings</span>
             <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
@@ -165,7 +165,7 @@
           </div>
         </a>
 
-        <div class="holding-card" tabindex="0">
+        <div class="holding-card holding-card--static">
           <div class="holding-card__media">
             <img src="assets/images/asset-herbigives-center.jpg" alt="The Herbigives Center exterior" loading="lazy">
           </div>
@@ -180,7 +180,7 @@
           </div>
         </div>
 
-        <div class="holding-card" tabindex="0">
+        <div class="holding-card holding-card--static">
           <div class="holding-card__media">
             <img src="assets/images/asset-res-resiliency.jpg" alt="Res Resiliency Housing exterior" loading="lazy">
           </div>
@@ -195,30 +195,30 @@
           </div>
         </div>
 
-        <div class="holding-card holding-card--dark" tabindex="0">
+        <div class="holding-card holding-card--dark holding-card--static">
           <div class="holding-card__top-row">
             <span class="holding-card__index">04</span>
-            <span class="holding-card__cta"><span>Coming Soon</span><span class="holding-card__cta-arrow" aria-hidden="true">&#8599;</span></span>
+            <span class="holding-card__cta"><span>Coming Soon</span></span>
           </div>
           <h3 class="holding-card__title">New Acquisition</h3>
           <p class="holding-card__eyebrow">Future Holding</p>
           <p class="holding-card__body">We're currently evaluating new development and acquisition opportunities. Details will appear here as this holding moves into the active portfolio.</p>
         </div>
 
-        <div class="holding-card holding-card--dark" tabindex="0">
+        <div class="holding-card holding-card--dark holding-card--static">
           <div class="holding-card__top-row">
             <span class="holding-card__index">05</span>
-            <span class="holding-card__cta"><span>Coming Soon</span><span class="holding-card__cta-arrow" aria-hidden="true">&#8599;</span></span>
+            <span class="holding-card__cta"><span>Coming Soon</span></span>
           </div>
           <h3 class="holding-card__title">New Acquisition</h3>
           <p class="holding-card__eyebrow">Under Evaluation</p>
           <p class="holding-card__body">A second opportunity is currently moving through underwriting as we continue expanding our footprint. Details will appear here once terms are finalized.</p>
         </div>
 
-        <div class="holding-card holding-card--dark" tabindex="0">
+        <div class="holding-card holding-card--dark holding-card--static">
           <div class="holding-card__top-row">
             <span class="holding-card__index">06</span>
-            <span class="holding-card__cta"><span>Coming Soon</span><span class="holding-card__cta-arrow" aria-hidden="true">&#8599;</span></span>
+            <span class="holding-card__cta"><span>Coming Soon</span></span>
           </div>
           <h3 class="holding-card__title">New Acquisition</h3>
           <p class="holding-card__eyebrow">In Diligence</p>
@@ -250,8 +250,8 @@
     <div class="footer__bottom">
       <p>Copyright &copy; 2026 Herbig Group. All rights reserved.</p>
       <div class="footer__links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Engagement</a>
+        <span class="footer__link-disabled" title="Coming soon">Privacy Policy</span>
+        <span class="footer__link-disabled" title="Coming soon">Terms of Engagement</span>
       </div>
     </div>
   </footer>
