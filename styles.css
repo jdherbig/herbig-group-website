@@ -295,8 +295,15 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .btn--ghost:hover { background: rgba(255, 255, 255, 0.14); transform: translateY(-2px); }
 
 .btn--nav { display: none; }
-@media (min-width: 900px) { .btn--nav { display: inline-flex; width: auto; } }
-@media (min-width: 900px) { .navbar.is-compact .btn--nav { padding: 13px 32px; } }
+/* HG-VR-05: the row nav (brand + 4 links + CTA) needs ~1180px of room
+   at this type scale/spacing before it stops wrapping onto a second
+   line - see the matching 1200px threshold on .nav-links, .menu-toggle
+   and .mobile-menu below. Switching all four together at a wider,
+   shared breakpoint (instead of 900px) keeps the already-correct
+   mobile/hamburger layout in place through tablet-landscape widths
+   rather than showing a cramped, wrapping row nav there. */
+@media (min-width: 1200px) { .btn--nav { display: inline-flex; width: auto; } }
+@media (min-width: 1200px) { .navbar.is-compact .btn--nav { padding: 13px 32px; } }
 .btn--full { width: 100%; }
 
 .btn__arrow { transition: transform 0.25s var(--ease); flex-shrink: 0; }
@@ -346,7 +353,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .footer .brand__name, .footer .brand__tagline { color: var(--color-white); }
 
 .nav-links { display: none; align-items: center; gap: 36px; }
-@media (min-width: 900px) { .nav-links { display: flex; } }
+@media (min-width: 1200px) { .nav-links { display: flex; } }
 .nav-link { position: relative; font-weight: 600; font-size: 15px; color: var(--color-white); padding-bottom: 4px; opacity: 0.9; transition: color var(--motion-micro) var(--ease) 0.07s; }
 .navbar.is-scrolled .nav-link { color: var(--color-ink); }
 .nav-link::after { content: ""; position: absolute; left: 0; bottom: 0; width: 0; height: 2px; background: var(--color-green); transition: width 0.25s var(--ease); }
@@ -355,7 +362,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .nav-link.is-active::after, .nav-link.is-active:hover::after { width: 16px; height: 3px; border-radius: 99px; }
 
 .menu-toggle { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; width: 44px; height: 44px; margin: -10px -10px -10px 0; background: none; border: none; padding: 0; }
-@media (min-width: 900px) { .menu-toggle { display: none; } }
+@media (min-width: 1200px) { .menu-toggle { display: none; } }
 .menu-toggle span { display: block; height: 2px; width: 20px; background: var(--color-white); border-radius: 2px; transition: transform 0.3s var(--ease), opacity 0.3s var(--ease), background var(--motion-micro) var(--ease) 0.07s; }
 .navbar.is-scrolled .menu-toggle span { background: var(--color-ink); }
 .menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
@@ -415,7 +422,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   visibility: visible;
   transition: height 0.5s var(--ease-snap), visibility 0s linear 0s;
 }
-@media (min-width: 900px) { .mobile-menu { display: none !important; } }
+@media (min-width: 1200px) { .mobile-menu { display: none !important; } }
 .no-scroll { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -571,7 +578,17 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   .hero__content { position: relative; z-index: 2; padding: calc(var(--nav-height) + 56px) 0 64px 80px; justify-content: center; gap: 32px; max-width: 700px; }
   .badge { padding: 8px 16px; font-size: 11px; letter-spacing: 1.5px; }
   .hero__actions { flex-direction: row; gap: 16px; }
-  .hero__media { position: absolute; top: 0; right: 0; bottom: 0; width: 56%; height: auto; border-radius: 0 0 0 72px; margin: 0; z-index: 0; }
+  /* bottom: var(--container-pad) (80px at this width), not bottom:0 - the
+     image previously ran flush to .hero's own bottom edge, leaving no
+     breathing room before the next section. --container-pad is already
+     this exact component's own gutter unit (it's the "80px" in
+     .hero__content's left padding above), so using it here gives the
+     image the same inset from the bottom that the content already gets
+     from the left, revealing .hero's own dark background as an
+     intentional band beneath the image. .hero__media is absolutely
+     positioned, so this is purely visual - it doesn't change .hero's
+     height or push any other element. */
+  .hero__media { position: absolute; top: 0; right: 0; bottom: var(--container-pad); width: 56%; height: auto; border-radius: 0 0 0 72px; margin: 0; z-index: 0; }
 }
 
 /* ============================================
@@ -862,8 +879,12 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 /* ============================================
    FOOTER
    ============================================ */
-.footer { background: var(--color-dark-footer); color: var(--color-white); padding: 48px 20px 24px; display: flex; flex-direction: column; gap: 40px; position: relative; overflow: hidden; box-shadow: 0 24px 72px rgba(0, 0, 0, 0.14); }
-@media (min-width: 900px) { .footer { background: var(--color-dark); padding: 80px 80px 40px; gap: 64px; } }
+/* Same charcoal (--color-dark) as desktop at every width - the footer
+   previously used a separate green-tinted --color-dark-footer below
+   900px, which read as a visibly different (greener) color from the
+   desktop footer instead of one consistent brand background. */
+.footer { background: var(--color-dark); color: var(--color-white); padding: 48px 20px 24px; display: flex; flex-direction: column; gap: 40px; position: relative; overflow: hidden; box-shadow: 0 24px 72px rgba(0, 0, 0, 0.14); }
+@media (min-width: 900px) { .footer { padding: 80px 80px 40px; gap: 64px; } }
 
 .footer__header { display: flex; flex-direction: column; gap: 24px; position: relative; z-index: 1; }
 @media (min-width: 900px) { .footer__header { flex-direction: row; align-items: center; justify-content: space-between; } }
@@ -1264,8 +1285,13 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .holding-card__index { position: absolute; top: 15px; right: 15px; z-index: 2; display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 100px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--color-white); font-weight: 700; font-size: 15px; transition: background var(--motion-interface) var(--motion-ease-interface), border-color var(--motion-interface) var(--motion-ease-interface); }
 .holding-card:hover .holding-card__index, .holding-card:focus-visible .holding-card__index, .holding-card:active .holding-card__index { background: rgba(var(--color-green-rgb), 0.65); border-color: rgba(var(--color-green-rgb), 0.7); }
 
-.holding-card__content { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; opacity: 0; transform: translateY(var(--motion-distance-xs)); transition: opacity var(--motion-interface) var(--motion-ease-interface), transform var(--motion-interface) var(--motion-ease-interface); }
-.holding-card:hover .holding-card__content, .holding-card:focus-visible .holding-card__content, .holding-card:active .holding-card__content { opacity: 1; transform: translateY(0); }
+/* HG-VR-07: name/location need to be readable at rest, not just on
+   hover/focus - this is the only place a card identifies itself, and
+   touch devices have no hover state to reveal it at all. The base
+   .holding-card__gradient already darkens the bottom of the image for
+   contrast regardless of hover, so content is legible here without
+   waiting on .holding-card__gradient--hover's extra darkening. */
+.holding-card__content { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; opacity: 1; transform: translateY(0); }
 .holding-card__content .pill { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.22); color: var(--color-white); }
 .holding-card__title { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--color-white); line-height: 1.25; }
 .holding-card__location { font-weight: 600; font-size: 12px; color: rgba(255, 255, 255, 0.75); }
@@ -1295,12 +1321,11 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 /* ---- Reduced motion: keep a static hover/focus cue (colour + shadow
    change only), drop every transform, zoom and content-slide. ---- */
 @media (prefers-reduced-motion: reduce) {
-  .holding-card, .holding-card__media img, .holding-card__gradient--hover, .holding-card__content, .holding-card__index, .holding-card__cta, .holding-card__cta-arrow {
+  .holding-card, .holding-card__media img, .holding-card__gradient--hover, .holding-card__index, .holding-card__cta, .holding-card__cta-arrow {
     transition-duration: 0.01ms !important;
   }
   .holding-card:hover, .holding-card:focus-visible, .holding-card:active { transform: none; }
   .holding-card:hover .holding-card__media img, .holding-card:focus-visible .holding-card__media img, .holding-card:active .holding-card__media img { transform: none; }
-  .holding-card:hover .holding-card__content, .holding-card:focus-visible .holding-card__content, .holding-card:active .holding-card__content { transform: none; }
   .holding-card--dark:hover .holding-card__cta, .holding-card--dark:focus-visible .holding-card__cta, .holding-card--dark:active .holding-card__cta,
   .holding-card--dark:hover .holding-card__cta-arrow, .holding-card--dark:focus-visible .holding-card__cta-arrow, .holding-card--dark:active .holding-card__cta-arrow { transform: none; }
 }
@@ -1404,11 +1429,24 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .feature-split { display: flex; flex-direction: column; gap: 32px; align-items: center; }
 @media (min-width: 900px) { .feature-split { flex-direction: row; gap: 48px; align-items: center; } }
 .feature-split__image { position: relative; width: 100%; height: 320px; border-radius: var(--radius-2xl); overflow: hidden; flex-shrink: 0; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07), 0 24px 56px rgba(0, 0, 0, 0.15); }
-@media (min-width: 900px) { .feature-split__image { width: 560px; height: 520px; } }
+/* HG-VR-08: the image was a flat 560px at every desktop width, so at
+   900-1024px (tablet landscape) the copy column was squeezed down to
+   ~130-260px - a wrapped-to-3-lines heading, a narrow ribbon of body
+   copy, and the metrics stacking instead of sitting in a row. Sizing
+   both columns off the same 560:672 ratio the design uses at 1440px
+   (the site's reference/widest width - see .gallery-main/.gallery-col
+   for the same technique) keeps that exact composition at 1440px and
+   lets both columns shrink together, proportionally, below it, instead
+   of the image staying fixed while the content column absorbs the
+   entire loss. aspect-ratio replaces the flat 520px height so the image
+   doesn't get cropped taller and taller as its width comes down. */
+@media (min-width: 900px) {
+  .feature-split__image { width: auto; height: auto; aspect-ratio: 560 / 520; flex: 5 1 0%; flex-shrink: 1; max-width: 560px; min-width: 0; }
+}
 .feature-split__image img { width: 100%; height: 100%; object-fit: cover; }
 .feature-split__image::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.18); }
 .feature-split__content { display: flex; flex-direction: column; gap: 20px; flex: 1; min-width: 0; }
-@media (min-width: 900px) { .feature-split__content { gap: 24px; } }
+@media (min-width: 900px) { .feature-split__content { gap: 24px; flex: 6 1 0%; } }
 .feature-split__content h2 { font-family: var(--font-display); font-weight: 800; font-size: 24px; color: var(--color-ink); }
 @media (min-width: 900px) { .feature-split__content h2 { font-size: 32px; } }
 .feature-split__content > p { font-size: 14px; line-height: 1.6; color: var(--color-ink); opacity: 0.75; }
@@ -1494,9 +1532,21 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 @media (min-width: 900px) { .status-badge { font-size: 12px; } }
 
 .case-deep-dive { position: relative; background: var(--color-bg-soft); padding: 48px var(--container-pad); display: flex; flex-direction: column; gap: 40px; box-shadow: 0 16px 24px rgba(0, 0, 0, 0.06); }
-@media (min-width: 900px) { .case-deep-dive { flex-direction: row; gap: 56px; padding: 80px; align-items: flex-start; } }
+/* Row layout needs a fixed 560px narrative PLUS a legible feature-cards
+   column to coexist - that needs roughly 560 + 56 gap + ~360 minimum
+   card width + 160 side padding =~1136px. Switching to the row at the
+   generic 900px breakpoint left the row active for ~250px of viewport
+   width where there wasn't room for both: .case-narrative's
+   flex-shrink:0 never gave up its 560px, so .feature-cards absorbed the
+   entire shortfall - past a point that's overflow, not just cramped
+   text. Reusing the existing stacked (column) layout up to 1150px,
+   same as it already works below 900px, means both children get their
+   full natural width instead of fighting over space that doesn't
+   exist yet. 1280/1440px (and up) are unaffected - same row layout as
+   before, same 560px narrative. */
+@media (min-width: 1150px) { .case-deep-dive { flex-direction: row; gap: 56px; padding: 80px; align-items: flex-start; } }
 .case-narrative { display: flex; flex-direction: column; gap: 24px; }
-@media (min-width: 900px) { .case-narrative { max-width: 560px; flex-shrink: 0; } }
+@media (min-width: 1150px) { .case-narrative { max-width: 560px; flex-shrink: 0; } }
 .case-narrative__eyebrow { display: flex; flex-direction: column; gap: 16px; }
 .case-narrative__eyebrow span { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-green); }
 .case-narrative__eyebrow h2 { font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.15; color: var(--color-ink); }
@@ -1537,7 +1587,17 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .gallery-row { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 16px; }
 @media (min-width: 900px) { .gallery-row { flex-direction: row; gap: 24px; } }
 .gallery-main { position: relative; width: 100%; height: 260px; border-radius: var(--radius-2xl); overflow: hidden; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07), 0 24px 56px rgba(0, 0, 0, 0.15); flex-shrink: 0; }
-@media (min-width: 900px) { .gallery-main { width: 760px; height: 420px; } }
+/* Fluid 1.53:1 split (main:col), not a fixed 760px main - a fixed width
+   plus flex-shrink:0 on .gallery-main left .gallery-col (flex:1) to
+   absorb 100% of the shortfall as the row narrows, so it hit 0px well
+   before tablet widths. 1.53:1 reproduces the original 760/496 split
+   exactly at the 1256px-available 1440px reference width (the design
+   this was built at), then scales both sides down together below that,
+   so the composition's proportions - not just its pixel widths - stay
+   intact all the way to 900px instead of one side starving the other.
+   max-width keeps .gallery-main from growing past its original 760px
+   on wider-than-1440px screens; .gallery-col simply gets the extra. */
+@media (min-width: 900px) { .gallery-main { width: auto; height: 420px; flex: 1.53 1 0%; flex-shrink: 1; max-width: 760px; min-width: 0; } }
 .gallery-main img { width: 100%; height: 100%; object-fit: cover; }
 .gallery-main::after { content: ""; position: absolute; inset: 0; background: rgba(33, 38, 45, 0.28); }
 .gallery-col { display: flex; flex-direction: column; gap: 16px; flex: 1; min-width: 0; }

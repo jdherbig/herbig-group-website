@@ -49,11 +49,14 @@
       if (e.key === "Escape" && mobileMenu.classList.contains("is-open")) closeMobileMenu();
     });
 
-    // Never leave the overlay stuck open (e.g. a resize past the 900px
+    // Never leave the overlay stuck open (e.g. a resize past the 1200px
     // breakpoint, where .mobile-menu is force-hidden by CSS but would
     // otherwise still hold the scroll lock and aria-expanded state).
+    // Kept in sync with the .mobile-menu/.nav-links/.btn--nav/.menu-toggle
+    // breakpoint in styles.css (HG-VR-05: row nav needs ~1180px to avoid
+    // wrapping, so the mobile menu now covers 900-1199px too).
     window.addEventListener("resize", function () {
-      if (window.matchMedia("(min-width: 900px)").matches && mobileMenu.classList.contains("is-open")) {
+      if (window.matchMedia("(min-width: 1200px)").matches && mobileMenu.classList.contains("is-open")) {
         closeMobileMenu();
       }
     });
@@ -262,13 +265,13 @@
    * small detail/metrics, then editorial text, then surface panels,
    * then large grid/photo compositions, each tier later than the last. */
   var REVEAL_TIERS_DESKTOP = [
-    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 70 }, // small detail / metrics: ~68-71vh
+    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 70, revealIfOnscreenAtLoad: true }, // small detail / metrics: ~68-71vh
     { selector: ".reveal", targetVh: 72 },                            // editorial text: ~70-74vh
     { selector: ".reveal-surface", targetVh: 76 },                    // surface panels/forms: ~74-77vh
     { selector: ".reveal-grid", targetVh: 79 }                        // large grid/image compositions: ~78-80vh
   ];
   var REVEAL_TIERS_MOBILE = [
-    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 74 }, // small detail: ~72-76vh
+    { selector: ".reveal-stagger, .eq-reveal-mobile", targetVh: 74, revealIfOnscreenAtLoad: true }, // small detail: ~72-76vh
     { selector: ".reveal", targetVh: 76 },                            // editorial text: ~74-78vh
     { selector: ".reveal-surface", targetVh: 80 },                    // surface panels/forms: ~78-82vh
     { selector: ".reveal-grid", targetVh: 83 }                        // large grid/image compositions: ~82-84vh
@@ -300,7 +303,26 @@
         },
         { threshold: 0.05, rootMargin: "0px 0px " + marginPct + "% 0px" }
       );
-      els.forEach(function (el) { observer.observe(el); });
+      els.forEach(function (el) {
+        // HG-VR-06: the small-detail tier's trigger line sits at ~70-74%
+        // down the viewport, meant for content scrolling INTO view. On
+        // shorter pages that content can instead land just below that
+        // line at first paint (before the visitor has scrolled at all),
+        // so it's already on screen but still reads as "not revealed"
+        // until a few px of scroll happen to nudge it across the line.
+        // Content already visible at load shouldn't wait on a scroll
+        // gesture that may not come - so for this tier only, skip the
+        // trigger line and reveal immediately if any part of the element
+        // is already within the real (unshrunk) viewport at load.
+        if (tier.revealIfOnscreenAtLoad) {
+          var rect = el.getBoundingClientRect();
+          if (rect.top < window.innerHeight && rect.bottom > 0) {
+            el.classList.add("is-visible");
+            return;
+          }
+        }
+        observer.observe(el);
+      });
     });
   }
 
