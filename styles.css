@@ -280,13 +280,16 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 
 .section-title { font-weight: 800; font-size: 26px; line-height: 1.2; color: var(--color-ink); }
 .section-title--light { color: var(--color-white); }
-.section-sub--light { color: rgba(255, 255, 255, 0.72); }
 @media (min-width: 900px) { .section-title { font-size: 44px; } }
 .roots .section-title { line-height: 1.15; }
 
 .section-sub { font-size: 16px; line-height: 1.6; color: var(--color-ink); opacity: 0.8; max-width: 640px; }
 .pillars .section-sub { color: var(--color-white); opacity: 0.7; }
 .core .section-sub { opacity: 0.5; }
+/* Declared AFTER .section-sub on purpose: both are single-class selectors,
+   so source order decides. Placed above, the base rule's dark ink won and
+   this supporting line rendered near-invisible on its dark section. */
+.section-sub--light { color: rgba(255, 255, 255, 0.78); opacity: 1; }
 
 /* Buttons */
 .btn {
