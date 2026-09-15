@@ -91,12 +91,16 @@
     window.requestAnimationFrame(saveScrollPosition);
   }, { passive: true });
 
+  // Keyed by normalized route key (see routeKey() below), i.e. without any
+  // .html suffix - the same entry has to match whether a route is spelled
+  // the way the source markup writes it ("our-blueprint.html") or the way
+  // the deployed site serves it ("/our-blueprint").
   var ACTIVE_NAV_MAP = {
-    "our-blueprint.html": "our-blueprint.html",
-    "active-holdings.html": "active-holdings.html",
-    "joint-ventures.html": "joint-ventures.html",
-    "housing-projects.html": "housing-projects.html",
-    "fortitude-arizona-case-study.html": "active-holdings.html"
+    "our-blueprint": "our-blueprint",
+    "active-holdings": "active-holdings",
+    "joint-ventures": "joint-ventures",
+    "housing-projects": "housing-projects",
+    "fortitude-arizona-case-study": "active-holdings"
   };
 
   /* ---------- Lottie (single shared instance, lazily created) ---------- */
@@ -244,10 +248,27 @@
     }
   }
 
-  function pathFilename(href) {
+  /* HG-P3-01: every route comparison in this file goes through one
+   * normalized key rather than a raw path or filename, because the same
+   * route legitimately arrives spelled several different ways:
+   *
+   *   source markup / local preview   our-blueprint.html
+   *   deployed (pretty URLs)          /our-blueprint
+   *   with a trailing slash           /our-blueprint/
+   *   the homepage                    /  or  /index.html  or  ""
+   *
+   * The deployed site rewrites internal links to their extensionless form,
+   * so a comparison against the literal ".html" filename the source writes
+   * matches locally and silently misses in production - which is exactly
+   * how the active-route marker went missing after a client-side
+   * navigation while a full reload (whose markup carries is-active
+   * already) still looked correct.
+   */
+  function routeKey(href) {
     try {
       var u = new URL(href, window.location.href);
-      return u.pathname.split("/").pop() || "index.html";
+      var last = u.pathname.split("/").filter(Boolean).pop() || "index";
+      return last.replace(/\.html$/i, "").toLowerCase();
     } catch (e) {
       return "";
     }
@@ -259,10 +280,10 @@
   // page the user is currently on - the visual accent existed with no
   // matching announcement. Kept in lockstep with is-active right here
   // rather than as a second pass over the links.
-  function updateActiveNav(filename) {
-    var target = ACTIVE_NAV_MAP[filename] || null;
+  function updateActiveNav(key) {
+    var target = ACTIVE_NAV_MAP[key] || null;
     document.querySelectorAll("#nav-links .nav-link, #mobile-menu-list .mobile-menu__link").forEach(function (link) {
-      var isActive = !!target && pathFilename(link.getAttribute("href")) === target;
+      var isActive = !!target && routeKey(link.getAttribute("href")) === target;
       link.classList.toggle("is-active", isActive);
       if (isActive) {
         link.setAttribute("aria-current", "page");
@@ -324,17 +345,33 @@
     return true;
   }
 
-  // HG-P3-01: compares resolved filenames rather than raw pathnames, so a
-  // canonical "index.html#contact"-style link still reads as "already
+  // HG-P3-01: compares normalized route keys rather than raw pathnames, so
+  // a canonical "index.html#contact"-style link still reads as "already
   // home" when the page was actually reached via the bare root URL
-  // (pathname "/") - a plain pathname === pathname check would otherwise
-  // mismatch ("/" vs "/index.html") and send an already-home click on an
-  // unnecessary round trip through navigate() instead of scrolling in
-  // place. pathFilename is declared further below but hoisted, same as
-  // every other function here.
+  // (pathname "/") or its deployed pretty-URL spelling - a plain
+  // pathname === pathname check would otherwise mismatch ("/" vs
+  // "/index.html") and send an already-home click on an unnecessary round
+  // trip through navigate() instead of scrolling in place. routeKey is
+  // declared further below but hoisted, same as every other function here.
   function isSamePage(a) {
-    return pathFilename(a.href) === pathFilename(window.location.href) && a.search === window.location.search;
+    return routeKey(a.href) === routeKey(window.location.href) && a.search === window.location.search;
   }
+
+  function urlSearch(href) {
+    try {
+      return new URL(href, window.location.href).search;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  // HG-P3-06: which document is currently rendered inside #route-content.
+  // A popstate that lands on the same document (only the fragment changed,
+  // i.e. Back/Forward across in-page section selections) must not refetch
+  // and re-swap the page - it only has to move to the section that history
+  // entry points at. Kept up to date by applySwap().
+  var currentRouteKey = routeKey(window.location.href);
+  var currentSearch = window.location.search;
 
   var navToken = 0;
 
@@ -426,7 +463,9 @@
     var targetScroll = isPopstate ? (scrollPositions[url] || 0) : 0;
     resetScrollInstant(targetScroll);
 
-    updateActiveNav(pathFilename(url));
+    currentRouteKey = routeKey(url);
+    currentSearch = urlSearch(url);
+    updateActiveNav(currentRouteKey);
 
     if (window.Herbig && typeof window.Herbig.initContent === "function") {
       window.Herbig.initContent();
@@ -485,11 +524,22 @@
           // own default fragment-navigation, which is what would normally
           // update the address bar - without this the URL stayed on
           // whatever fragment (or none) was already there, disagreeing
-          // with the section actually on screen. replaceState (not
-          // pushState) keeps this to the one history entry per real
-          // navigation Back/Forward already relies on, rather than
-          // stacking a new entry for every section clicked in a session.
-          try { history.replaceState(history.state, "", a.href); } catch (err) {}
+          // with the section actually on screen.
+          //
+          // Each explicit change of destination gets its own history
+          // entry, exactly as a native fragment navigation would, so Back
+          // walks back through the sections the reader actually chose
+          // rather than skipping the whole in-page journey and jumping
+          // straight to the previous route. Re-selecting the section
+          // that's already current rewrites the entry instead of stacking
+          // a duplicate one that Back would have to step over twice.
+          try {
+            if (a.hash === window.location.hash) {
+              history.replaceState(history.state, "", a.href);
+            } else {
+              history.pushState({ url: a.href }, "", a.href);
+            }
+          } catch (err) {}
         }
       }
       return;
@@ -500,6 +550,27 @@
   });
 
   window.addEventListener("popstate", function () {
+    // HG-P3-06: Back/Forward across in-page section entries stays on the
+    // same document - the fragment is all that changed. Refetching and
+    // re-swapping identical markup there would throw away the page the
+    // reader is already looking at (and flash the exit conceal) just to
+    // rebuild it, so that case only moves to the section the restored
+    // entry points at. Nothing here writes to history: restoration must
+    // never push or replace entries of its own.
+    if (routeKey(window.location.href) === currentRouteKey && window.location.search === currentSearch) {
+      var hash = window.location.hash;
+      var target = hash && hash.length > 1 ? document.getElementById(hash.slice(1)) : null;
+      if (target) {
+        target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
+        focusSectionTarget(target);
+      } else {
+        // An entry with no fragment: the position that entry was left at,
+        // not the top - same contract as a Back between two routes.
+        resetScrollInstant(scrollPositions[window.location.href] || 0);
+      }
+      return;
+    }
+
     navigate(window.location.href, true);
   });
 
