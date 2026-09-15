@@ -510,6 +510,28 @@
     var newTitle = doc.querySelector("title");
     if (newTitle) document.title = newTitle.textContent;
 
+    // P7-01: the title was already kept in step with the route, but the rest
+    // of the document's identity - description, canonical, Open Graph and
+    // Twitter fields - lived only in the <head> the first load happened to
+    // parse, and <head> survives a client-side swap. Crawlers never reach
+    // this path (they read the initial HTML, which stamp.js writes per
+    // route), so this is not what makes sharing work; it is what stops the
+    // live document from claiming to be the homepage after three clicks -
+    // which anything reading the current DOM, an extension or a share
+    // button among them, would otherwise repeat. Replaced wholesale from
+    // the fetched document rather than patched, so nothing accumulates.
+    if (doc.head) {
+      var META_SELECTOR =
+        'link[rel="canonical"], meta[name="description"], ' +
+        'meta[property^="og:"], meta[name^="twitter:"]';
+      document.head.querySelectorAll(META_SELECTOR).forEach(function (node) {
+        node.parentNode.removeChild(node);
+      });
+      doc.head.querySelectorAll(META_SELECTOR).forEach(function (node) {
+        document.head.appendChild(node.cloneNode(true));
+      });
+    }
+
     // HG-P4-04: <head> survives a client-side swap, so without this the
     // page keeps the previous route's image preload - an instruction that
     // now names the wrong resource entirely - and the incoming hero is
