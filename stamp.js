@@ -68,3 +68,62 @@ if (missing.length) {
   missing.forEach((p) => console.warn(`  ${p}`));
 }
 console.log(`done: ${total} references across ${pages.length} pages, ${HASHES.size} unique assets`);
+
+/* ---------------------------------------------------------------------------
+ * Canonical URLs, sitemap and robots.txt.
+ *
+ * These need an absolute origin, and the origin is the one thing this
+ * repository should not hard-code: the site is mid-migration to its own
+ * domain, and a canonical pointing at a host that is not serving the site
+ * is worse than no canonical at all. Netlify already knows the answer and
+ * passes it in as URL (the primary custom domain once one is attached,
+ * the netlify.app address until then), so the correct origin appears on
+ * its own the moment the domain cuts over, with no code change.
+ *
+ * Deploy previews and branch deploys get a noindex robots.txt instead, so
+ * a staging copy cannot compete with the real site in search.
+ * ------------------------------------------------------------------------- */
+const ORIGIN = (process.env.URL || "").replace(/\/+$/, "");
+const CONTEXT = process.env.CONTEXT || "local";
+const IS_PRODUCTION = CONTEXT === "production" && !!ORIGIN;
+
+// Route per page, matching how the site is actually served (extensionless).
+const ROUTES = {
+  "index.html": "/",
+  "our-blueprint.html": "/our-blueprint",
+  "active-holdings.html": "/active-holdings",
+  "joint-ventures.html": "/joint-ventures",
+  "housing-projects.html": "/housing-projects",
+  "fortitude-arizona-case-study.html": "/fortitude-arizona-case-study",
+};
+
+if (IS_PRODUCTION) {
+  let canonicals = 0;
+  for (const [page, route] of Object.entries(ROUTES)) {
+    const file = path.join(ROOT, page);
+    if (!fs.existsSync(file)) continue;
+    const href = ORIGIN + route;
+    let html = fs.readFileSync(file, "utf8");
+    html = html.replace(/\s*<link rel="canonical"[^>]*>/g, "");
+    html = html.replace("</head>", `  <link rel="canonical" href="${href}">\n</head>`);
+    fs.writeFileSync(file, html);
+    canonicals += 1;
+  }
+
+  const urls = Object.values(ROUTES)
+    .map((route) => `  <url><loc>${ORIGIN}${route}</loc></url>`)
+    .join("\n");
+  fs.writeFileSync(
+    path.join(ROOT, "sitemap.xml"),
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
+  );
+  fs.writeFileSync(
+    path.join(ROOT, "robots.txt"),
+    `User-agent: *\nAllow: /\n\nSitemap: ${ORIGIN}/sitemap.xml\n`
+  );
+  console.log(`canonical: ${canonicals} pages at ${ORIGIN}, sitemap and robots.txt written`);
+} else {
+  // Anything that is not the production deploy stays out of search entirely.
+  fs.writeFileSync(path.join(ROOT, "robots.txt"), "User-agent: *\nDisallow: /\n");
+  console.log(`context "${CONTEXT}": canonicals skipped, robots.txt set to disallow`);
+}

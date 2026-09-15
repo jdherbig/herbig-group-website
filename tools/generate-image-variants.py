@@ -41,8 +41,6 @@ JPEG_QUALITY = 86
 # extra files.
 PLAN = {
     "asset-fortitude-hq.jpg": ([480, 640, 768, 960], False),
-    "asset-herbigives-center.jpg": ([480, 640, 768, 960], False),
-    "asset-res-resiliency.jpg": ([480, 640, 768, 960], False),
     "case-feature-cryotherapy.jpg": ([480, 640, 768, 900], False),
     "case-feature-rehab-labs.jpg": ([480, 640, 768, 900], False),
     "case-gallery-main.jpg": ([480, 640, 768, 960, 1300], True),

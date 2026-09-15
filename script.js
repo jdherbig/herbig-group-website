@@ -931,101 +931,33 @@
     });
   }
 
-  /* HG-P3-08: field-specific errors, aria-invalid + aria-describedby
-   * associations, and focus on the first invalid field - rather than only
-   * a single general status message with focus left on the submit button.
-   * Mirrors the pattern in initJVForm() below. Values are never cleared on
-   * failure (this form is never .reset() at all, even on "success", since
-   * it isn't wired to a real endpoint - see the placeholder message).
+  /* Inquiry forms (contact and joint venture).
+   *
+   * One implementation for both: identical validation, identical delivery,
+   * identical states. Field-specific errors carry aria-invalid and an
+   * associated description, and a failed submit focuses the first invalid
+   * field rather than leaving focus on the button with only a general
+   * message (HG-P3-08). Delivery goes to Netlify Forms, so the success
+   * message below is only ever shown after a submission the server
+   * confirmed - it is never a reassurance the page invented. Values are
+   * preserved on failure; the form is reset only on confirmed success.
    */
-  function initContactForm() {
-    var form = document.getElementById("inquiry-form");
-    var note = document.getElementById("form-note");
-    if (!form || !note) return;
+  var INQUIRY_MESSAGES = {
+    pending: "Sending your inquiry\u2026",
+    success: "Thank you. Your inquiry has been received.",
+    failure: "Your inquiry could not be sent. Please try again."
+  };
 
-    function requiredFields() {
-      return Array.prototype.slice.call(form.querySelectorAll("[required]"));
-    }
-
-    function errorElFor(field) {
-      return document.getElementById(field.id + "-error");
-    }
-
-    function clearFieldError(field) {
-      field.classList.remove("is-invalid");
-      field.removeAttribute("aria-invalid");
-      var errorEl = errorElFor(field);
-      if (errorEl) errorEl.textContent = "";
-    }
-
-    function setFieldError(field, message) {
-      field.classList.add("is-invalid");
-      field.setAttribute("aria-invalid", "true");
-      var errorEl = errorElFor(field);
-      if (errorEl) errorEl.textContent = message;
-    }
-
-    function validate() {
-      var firstInvalid = null;
-      requiredFields().forEach(function (field) {
-        clearFieldError(field);
-        var value = field.value.trim();
-        if (!value) {
-          setFieldError(field, "This field is required.");
-          firstInvalid = firstInvalid || field;
-          return;
-        }
-        if (field.type === "email" && !field.checkValidity()) {
-          setFieldError(field, "Enter a valid email address.");
-          firstInvalid = firstInvalid || field;
-        }
-      });
-      return firstInvalid;
-    }
-
-    requiredFields().forEach(function (field) {
-      field.addEventListener("input", function () {
-        if (field.classList.contains("is-invalid")) clearFieldError(field);
-      });
-    });
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      var firstInvalid = validate();
-      if (firstInvalid) {
-        var invalidCount = form.querySelectorAll(".is-invalid").length;
-        note.textContent = "Please correct the highlighted field" + (invalidCount > 1 ? "s" : "") + " before sending.";
-        note.classList.add("is-error");
-        note.classList.remove("is-success");
-        firstInvalid.focus();
-        return;
-      }
-
-      note.classList.remove("is-error");
-      note.classList.add("is-success");
-      note.textContent = "Thanks — this form isn't connected to an inbox yet, so nothing was sent. Email hello@herbiggroup.com directly for now.";
-    });
-  }
-
-  /* HG-P3-02: Joint Venture inquiry form (joint-ventures.html). Unlike the
-   * contact form above, this one is wired to a real Netlify Forms endpoint
-   * per the site owner's direction - it validates client-side (focusing the
-   * first invalid field, same as a native required-field failure would),
-   * then POSTs to "/" as Netlify Forms expects, with pending/success/error
-   * status states and duplicate-submit prevention. Values are preserved on
-   * failure (the form is only ever .reset() on confirmed success).
-   */
-  function initJVForm() {
-    var form = document.getElementById("jv-form");
-    var note = document.getElementById("jv-form-note");
+  function initInquiryForm(options) {
+    var form = document.getElementById(options.formId);
+    var note = document.getElementById(options.noteId);
     if (!form || !note) return;
 
     var submitBtn = form.querySelector("button[type='submit']");
     var isSubmitting = false;
 
     function requiredFields() {
-      return Array.prototype.slice.call(form.querySelectorAll("input[required]"));
+      return Array.prototype.slice.call(form.querySelectorAll("[required]"));
     }
 
     function errorElFor(field) {
@@ -1088,23 +1020,22 @@
       var firstInvalid = validate();
       if (firstInvalid) {
         var invalidCount = form.querySelectorAll(".is-invalid").length;
-        setNote("Please correct the highlighted field" + (invalidCount > 1 ? "s" : "") + " before submitting.", "is-error");
+        setNote("Please correct the highlighted field" + (invalidCount > 1 ? "s" : "") + " before sending.", "is-error");
         firstInvalid.focus();
         return;
       }
 
-      // Honeypot: real users never see or fill this field. If it has a
-      // value, silently treat as success without sending - no network
-      // request, no error surfaced to whatever filled it in.
-      var honeypot = form.querySelector("[name='jv-bot-field']");
+      // Honeypot: a real person never sees this field. If it has a value,
+      // report success and send nothing at all.
+      var honeypot = form.querySelector("[name='" + options.honeypot + "']");
       if (honeypot && honeypot.value) {
-        setNote("Thanks - we will be in touch shortly.", "is-success");
+        setNote(INQUIRY_MESSAGES.success, "is-success");
         form.reset();
         return;
       }
 
       setPending(true);
-      setNote("Sending your proposal…", "is-pending");
+      setNote(INQUIRY_MESSAGES.pending, "is-pending");
 
       var params = [];
       new FormData(form).forEach(function (value, key) {
@@ -1119,17 +1050,25 @@
         .then(function (response) {
           setPending(false);
           if (response.ok) {
-            setNote("Thanks - your joint venture proposal has been sent. We'll be in touch soon.", "is-success");
+            setNote(INQUIRY_MESSAGES.success, "is-success");
             form.reset();
           } else {
-            setNote("Something went wrong sending your proposal. Please try again or email hello@herbiggroup.com directly.", "is-error");
+            setNote(INQUIRY_MESSAGES.failure, "is-error");
           }
         })
         .catch(function () {
           setPending(false);
-          setNote("Something went wrong sending your proposal. Please try again or email hello@herbiggroup.com directly.", "is-error");
+          setNote(INQUIRY_MESSAGES.failure, "is-error");
         });
     });
+  }
+
+  function initContactForm() {
+    initInquiryForm({ formId: "inquiry-form", noteId: "form-note", honeypot: "contact-bot-field" });
+  }
+
+  function initJVForm() {
+    initInquiryForm({ formId: "jv-form", noteId: "jv-form-note", honeypot: "jv-bot-field" });
   }
 
   function initContent() {
