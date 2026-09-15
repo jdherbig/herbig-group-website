@@ -1067,15 +1067,25 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .footer__bottom { border-top: 1px solid rgba(255, 255, 255, 0.13); padding-top: 24px; display: flex; flex-direction: column; gap: 16px; font-size: 12px; position: relative; z-index: 1; }
 @media (min-width: 900px) { .footer__bottom { flex-direction: row; align-items: center; justify-content: space-between; padding-top: 32px; font-size: 13px; } }
 .footer__bottom p { opacity: 0.6; }
-.footer__links { display: flex; gap: 8px; margin: -12px -12px -12px 0; }
+/* P7-07: social links join this row once their profile URLs exist (see
+   SOCIAL_PROFILES in stamp.js). Five items do not fit on one 320px line, so
+   the row wraps rather than pushing the footer into horizontal overflow -
+   set now, while the row is still short, so adding them cannot regress the
+   320px reflow gate. */
+.footer__links { display: flex; flex-wrap: wrap; gap: 8px; margin: -12px -12px -12px 0; }
 .footer__links a { opacity: 0.6; transition: opacity 0.2s var(--ease); padding: 12px; min-height: 44px; display: inline-flex; align-items: center; }
-@media (min-width: 900px) { .footer__links { margin: 0; gap: 24px; } .footer__links a { padding: 4px 8px; min-height: auto; } }
+/* min-height rather than auto: at 13px/1.4 the desktop padding left these
+   links 23px tall, one pixel under WCAG 2.2's 24x24 target minimum, and they
+   are a standalone row rather than links inline in a sentence, so the inline
+   exception does not cover them. Nothing moves visually - the row simply
+   stops one pixel short of a failure. */
+@media (min-width: 900px) { .footer__links { margin: 0; gap: 24px; } .footer__links a { padding: 4px 8px; min-height: 24px; } }
 .footer__links a:hover { opacity: 1; text-decoration: underline; }
 /* HG-P3-04: Privacy Policy / Terms of Engagement have no real page yet.
    A plain, non-interactive <span> (not an <a href="#">) so it isn't in the
    tab order and does nothing on click - no fake destination to jump to. */
 .footer__link-disabled { opacity: 0.35; padding: 12px; min-height: 44px; display: inline-flex; align-items: center; cursor: default; }
-@media (min-width: 900px) { .footer__link-disabled { padding: 4px 8px; min-height: auto; } }
+@media (min-width: 900px) { .footer__link-disabled { padding: 4px 8px; min-height: 24px; } }
 
 /* ============================================
    SCROLL REVEAL — global motion grammar

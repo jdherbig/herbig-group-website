@@ -54,13 +54,62 @@ function stampHtml(file) {
   return replaced;
 }
 
+/* ---------------------------------------------------------------------------
+ * Social channels (P7-07 / P7-08).
+ *
+ * Facebook, LinkedIn and Instagram are the intended channels, but the
+ * profiles do not exist yet. A placeholder href="#" would be a link that
+ * looks real, does nothing, and still lands in the tab order - so nothing is
+ * rendered at all until a real URL is filled in below. Add the URL, redeploy,
+ * and the link appears in the footer of every route; leave it empty and the
+ * markup is never written.
+ *
+ * Order here is the order they appear.
+ * ------------------------------------------------------------------------- */
+const SOCIAL_PROFILES = [
+  { name: "LinkedIn", url: "" },
+  { name: "Facebook", url: "" },
+  { name: "Instagram", url: "" },
+];
+
+const configuredProfiles = SOCIAL_PROFILES.filter((p) => p.url.trim() !== "");
+for (const profile of configuredProfiles) {
+  // A half-filled config is worse than an empty one: it ships the exact
+  // dead link this is here to prevent.
+  if (!/^https:\/\/[^\s"#]+$/.test(profile.url.trim())) {
+    console.error(`social profile "${profile.name}" is not an absolute https URL: ${profile.url}`);
+    process.exit(1);
+  }
+}
+
+const FOOTER_LINKS_OPEN = '<div class="footer__links">';
+
+function stampSocial(file) {
+  if (!configuredProfiles.length) return 0;
+  let html = fs.readFileSync(file, "utf8");
+  if (!html.includes(FOOTER_LINKS_OPEN)) return 0;
+  // Idempotent: clear anything a previous run put here before writing again.
+  html = html.replace(/\s*<a class="footer__social"[^>]*>[\s\S]*?<\/a>/g, "");
+  const markup = configuredProfiles
+    .map((p) => `\n          <a class="footer__social" href="${p.url.trim()}" `
+      + `rel="noopener me" target="_blank">${p.name}</a>`)
+    .join("");
+  html = html.replace(FOOTER_LINKS_OPEN, FOOTER_LINKS_OPEN + markup);
+  fs.writeFileSync(file, html);
+  return configuredProfiles.length;
+}
+
 const pages = fs.readdirSync(ROOT).filter((name) => name.endsWith(".html"));
 let total = 0;
 for (const page of pages) {
   const count = stampHtml(path.join(ROOT, page));
+  stampSocial(path.join(ROOT, page));
   total += count;
   console.log(`stamped ${String(count).padStart(3)} asset references in ${page}`);
 }
+console.log(configuredProfiles.length
+  ? `social: ${configuredProfiles.map((p) => p.name).join(", ")} linked in the footer`
+  : "social: no profile URLs configured, so no social links are rendered");
 
 const missing = [...HASHES.entries()].filter(([, hash]) => !hash).map(([p]) => p);
 if (missing.length) {
