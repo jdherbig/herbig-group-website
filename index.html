@@ -464,35 +464,35 @@
           </div>
         </div>
 
-        <form class="inquiry-form reveal-surface reveal-surface--delayed" id="inquiry-form" data-direction="right" name="contact" method="POST" data-netlify="true" netlify-honeypot="contact-bot-field" novalidate>
+        <form class="inquiry-form reveal-surface reveal-surface--delayed" id="inquiry-form" aria-labelledby="contact-form-heading" aria-describedby="contact-required-note" data-direction="right" name="contact" method="POST" data-netlify="true" netlify-honeypot="contact-bot-field" novalidate>
           <input type="hidden" name="form-name" value="contact">
           <p class="form-field form-field--hidden" aria-hidden="true">
             <label>Leave this field blank<input type="text" name="contact-bot-field" tabindex="-1" autocomplete="off"></label>
           </p>
           <div class="inquiry-form__stripe"></div>
-          <h3>Send an inquiry</h3>
+          <h3 id="contact-form-heading">Send an inquiry</h3>
           <p class="inquiry-form__sub">Tell us about your idea, location and goals.</p>
-        <p class="form-required-note" id="contact-required-note">All fields are required unless marked optional.</p>
+          <p class="form-required-note" id="contact-required-note">All fields are required unless marked optional.</p>
 
-          <label class="form-field">
-            <span class="form-field__label">Name</span>
+          <div class="form-field">
+            <label class="form-field__label" for="contact-name">Name</label>
             <input type="text" name="name" id="contact-name" placeholder="Enter your name" required autocomplete="name" aria-describedby="contact-name-error">
             <span class="form-field__error" id="contact-name-error" role="alert"></span>
-          </label>
-          <label class="form-field">
-            <span class="form-field__label">Email</span>
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="contact-email">Email</label>
             <input type="email" name="email" id="contact-email" placeholder="you@company.com" required autocomplete="email" aria-describedby="contact-email-error">
             <span class="form-field__error" id="contact-email-error" role="alert"></span>
-          </label>
-          <label class="form-field">
-            <span class="form-field__label">Organization <span class="form-field__optional">(optional)</span></span>
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="contact-organization">Organization <span class="form-field__optional">(optional)</span></label>
             <input type="text" name="organization" id="contact-organization" placeholder="Where you work" autocomplete="organization">
-          </label>
-          <label class="form-field">
-            <span class="form-field__label">Message</span>
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="contact-message">Message</label>
             <textarea name="message" id="contact-message" rows="4" placeholder="Tell us about your idea, location and goals." required aria-describedby="contact-message-error"></textarea>
             <span class="form-field__error" id="contact-message-error" role="alert"></span>
-          </label>
+          </div>
 
           <button type="submit" class="btn btn--primary btn--full">
             <span>Send Inquiry</span>

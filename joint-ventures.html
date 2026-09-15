@@ -208,31 +208,31 @@
           </div>
         </div>
 
-        <form class="jv-form-card reveal-surface reveal-surface--delayed" id="jv-form" data-direction="right" name="joint-venture" method="POST" data-netlify="true" netlify-honeypot="jv-bot-field" novalidate>
+        <form class="jv-form-card reveal-surface reveal-surface--delayed" id="jv-form" aria-labelledby="jv-form-heading" aria-describedby="jv-required-note" data-direction="right" name="joint-venture" method="POST" data-netlify="true" netlify-honeypot="jv-bot-field" novalidate>
           <input type="hidden" name="form-name" value="joint-venture">
           <p class="jv-field jv-field--hidden" aria-hidden="true">
             <label>Leave this field blank<input type="text" name="jv-bot-field" tabindex="-1" autocomplete="off"></label>
           </p>
           <span class="accent-bar"></span>
           <div class="jv-form-card__heading">
-            <h3>Discuss an opportunity</h3>
+            <h3 id="jv-form-heading">Discuss an opportunity</h3>
             <p>Introduce your organization, the location you are considering and the purpose of your proposed facility.</p>
           </div>
           <p class="form-required-note" id="jv-required-note">All fields are required unless marked optional.</p>
-          <label class="jv-field">
-            <span class="jv-field__label">Organization</span>
+          <div class="jv-field">
+            <label class="jv-field__label" for="jv-company">Organization</label>
             <input type="text" name="company" id="jv-company" placeholder="Your organization’s name" required autocomplete="organization" aria-describedby="jv-company-error">
             <span class="jv-field__error" id="jv-company-error" role="alert"></span>
-          </label>
-          <label class="jv-field">
-            <span class="jv-field__label">Location you are considering <span class="form-field__optional">(optional)</span></span>
+          </div>
+          <div class="jv-field">
+            <label class="jv-field__label" for="jv-sqft">Location you are considering <span class="form-field__optional">(optional)</span></label>
             <input type="text" name="location" id="jv-sqft" placeholder="City or region">
-          </label>
-          <label class="jv-field">
-            <span class="jv-field__label">Email</span>
+          </div>
+          <div class="jv-field">
+            <label class="jv-field__label" for="jv-email">Email</label>
             <input type="email" name="email" id="jv-email" placeholder="you@organization.com" required autocomplete="email" aria-describedby="jv-email-error">
             <span class="jv-field__error" id="jv-email-error" role="alert"></span>
-          </label>
+          </div>
           <button type="submit" class="btn btn--primary" id="jv-submit">
             <span>Send Inquiry</span>
           </button>
