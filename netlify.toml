@@ -1,0 +1,14 @@
+# Herbig Group — Netlify configuration (HG-P4-07)
+#
+# The site is still plain static files; the only build step is stamp.js,
+# which rewrites asset references to content-hashed URLs in the build
+# workspace so the long-lived cache headers in _headers are safe. Nothing
+# is generated, bundled or minified here, and the repository keeps ordinary
+# filenames.
+
+[build]
+  command = "node stamp.js"
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "20"

@@ -8,7 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&family=Ramsina&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="assets/images/hero.jpg" fetchpriority="high">
+  <link rel="preload" as="image" type="image/avif" data-route-image
+        imagesrcset="assets/images/r/hero-640.avif 640w, assets/images/r/hero-768.avif 768w, assets/images/r/hero-960.avif 960w, assets/images/r/hero-1200.avif 1200w, assets/images/r/hero-1440.avif 1440w, assets/images/r/hero-1800.avif 1800w, assets/images/r/hero-2200.avif 2200w"
+        imagesizes="(max-width: 360px) 534px, (max-width: 430px) 650px, (max-width: 500px) 767px, (max-width: 600px) 934px, (max-width: 700px) 1100px, (max-width: 768px) 1214px, 1541px" fetchpriority="high">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,14 +22,43 @@
     <div id="page-transition-logo" class="page-transition-overlay__logo"></div>
   </div>
   <script>
+    /* HG-P4-01: this script both conceals route content for the branded
+       intro and bounds that concealment. Everything that would normally
+       uncover the page again - the Lottie library from a CDN, its animation
+       JSON, the transition script chained behind them - is optional
+       decoration on a critical path it has no business owning. The watchdog
+       below starts in the same breath as the concealment, before any of
+       those dependencies has even been requested, so a stalled request or a
+       promise that never settles can never hold readable content for longer
+       than MAX_MS. transitions.js calls release() itself when the intro
+       finishes normally, and skips the intro entirely if this already
+       fired. */
     (function () {
-      try {
-        if (!sessionStorage.getItem("hgIntroSeen")) {
-          var overlay = document.getElementById("page-transition-overlay");
-          if (overlay) overlay.hidden = false;
-          document.documentElement.classList.add("hg-intro-pending");
-        }
-      } catch (e) {}
+      var MAX_MS = 1300;
+      var seen = false;
+      try { seen = !!sessionStorage.getItem("hgIntroSeen"); } catch (e) {}
+      if (seen) return;
+
+      var root = document.documentElement;
+      var overlay = document.getElementById("page-transition-overlay");
+      if (overlay) overlay.hidden = false;
+      root.classList.add("hg-intro-pending");
+
+      var intro = window.hgIntro = { released: false, timedOut: false };
+      intro.release = function () {
+        if (intro.released) return;
+        intro.released = true;
+        window.clearTimeout(intro.timer);
+        root.classList.remove("hg-intro-pending");
+        // Dropping is-visible restores the overlay's own pointer-events:
+        // none and fades it out; it never intercepts input after this.
+        if (overlay) overlay.classList.remove("is-visible");
+        try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
+      };
+      intro.timer = window.setTimeout(function () {
+        intro.timedOut = true;
+        intro.release();
+      }, MAX_MS);
     })();
   </script>
 
@@ -161,7 +192,11 @@
         </div>
       </div>
       <div class="hero__media">
-        <img src="assets/images/hero.jpg" alt="Herbig Group development property" loading="eager" fetchpriority="high">
+        <picture>
+          <source type="image/avif" srcset="assets/images/r/hero-640.avif 640w, assets/images/r/hero-768.avif 768w, assets/images/r/hero-960.avif 960w, assets/images/r/hero-1200.avif 1200w, assets/images/r/hero-1440.avif 1440w, assets/images/r/hero-1800.avif 1800w, assets/images/r/hero-2200.avif 2200w" sizes="(max-width: 360px) 534px, (max-width: 430px) 650px, (max-width: 500px) 767px, (max-width: 600px) 934px, (max-width: 700px) 1100px, (max-width: 768px) 1214px, 1541px">
+          <source type="image/webp" srcset="assets/images/r/hero-640.webp 640w, assets/images/r/hero-768.webp 768w, assets/images/r/hero-960.webp 960w, assets/images/r/hero-1200.webp 1200w, assets/images/r/hero-1440.webp 1440w, assets/images/r/hero-1800.webp 1800w, assets/images/r/hero-2200.webp 2200w" sizes="(max-width: 360px) 534px, (max-width: 430px) 650px, (max-width: 500px) 767px, (max-width: 600px) 934px, (max-width: 700px) 1100px, (max-width: 768px) 1214px, 1541px">
+          <img src="assets/images/hero.jpg" srcset="assets/images/r/hero-640.jpg 640w, assets/images/r/hero-768.jpg 768w, assets/images/r/hero-960.jpg 960w, assets/images/r/hero-1200.jpg 1200w, assets/images/r/hero-1440.jpg 1440w, assets/images/r/hero-1800.jpg 1800w, assets/images/hero.jpg 2200w" sizes="(max-width: 360px) 534px, (max-width: 430px) 650px, (max-width: 500px) 767px, (max-width: 600px) 934px, (max-width: 700px) 1100px, (max-width: 768px) 1214px, 1541px" width="2200" height="1236" alt="Herbig Group development property" loading="eager" fetchpriority="high" decoding="async">
+        </picture>
         <div class="hero__media-veil"></div>
       </div>
     </section>
@@ -186,7 +221,11 @@
             <span class="eq-card__number">01</span>
             <h3>People</h3>
             <p class="eq-card__formula">Opportunity = People</p>
-            <div class="eq-card__image"><img src="assets/images/pillar-people.jpg" alt="" loading="lazy"></div>
+            <div class="eq-card__image"><picture>
+  <source type="image/avif" srcset="assets/images/r/pillar-people-360.avif 360w, assets/images/r/pillar-people-480.avif 480w, assets/images/r/pillar-people-600.avif 600w" sizes="(max-width: 360px) 281px, (max-width: 430px) 340px, (max-width: 500px) 410px, (max-width: 600px) 510px, (max-width: 768px) 600px, (max-width: 1440px) 310px, (max-width: 1600px) 361px, 463px">
+  <source type="image/webp" srcset="assets/images/r/pillar-people-360.webp 360w, assets/images/r/pillar-people-480.webp 480w, assets/images/r/pillar-people-600.webp 600w" sizes="(max-width: 360px) 281px, (max-width: 430px) 340px, (max-width: 500px) 410px, (max-width: 600px) 510px, (max-width: 768px) 600px, (max-width: 1440px) 310px, (max-width: 1600px) 361px, 463px">
+  <img src="assets/images/pillar-people.jpg" width="600" height="320" alt="" loading="lazy" decoding="async">
+</picture></div>
             <p class="eq-card__body">We create immediate access. By shifting from local cause-driven initiatives - like youth mentorship and regional athletic development - to structural community assets, we build permanent pathways for jobs, specialized services, and housing.</p>
           </article>
           <article class="eq-card eq-card--dark eq-reveal-mobile">
@@ -194,7 +233,11 @@
             <span class="eq-card__number eq-card__number--solid">02</span>
             <h3>Purpose</h3>
             <p class="eq-card__formula">Hard Work = Purpose</p>
-            <div class="eq-card__image eq-card__image--tall"><img src="assets/images/pillar-purpose.jpg" alt="" loading="lazy"></div>
+            <div class="eq-card__image eq-card__image--tall"><picture>
+  <source type="image/avif" srcset="assets/images/r/pillar-purpose-360.avif 360w, assets/images/r/pillar-purpose-480.avif 480w, assets/images/r/pillar-purpose-640.avif 640w, assets/images/r/pillar-purpose-768.avif 768w" sizes="(max-width: 430px) 340px, (max-width: 500px) 410px, (max-width: 600px) 510px, (max-width: 700px) 610px, (max-width: 768px) 678px, (max-width: 1600px) 411px, 527px">
+  <source type="image/webp" srcset="assets/images/r/pillar-purpose-360.webp 360w, assets/images/r/pillar-purpose-480.webp 480w, assets/images/r/pillar-purpose-640.webp 640w, assets/images/r/pillar-purpose-768.webp 768w" sizes="(max-width: 430px) 340px, (max-width: 500px) 410px, (max-width: 600px) 510px, (max-width: 700px) 610px, (max-width: 768px) 678px, (max-width: 1600px) 411px, 527px">
+  <img src="assets/images/pillar-purpose.jpg" width="768" height="464" alt="" loading="lazy" decoding="async">
+</picture></div>
             <p class="eq-card__body">We execute with elite discipline. Partnering with world-class operators and veteran performance specialists, we approach real estate and civic infrastructure with the rigorous commitment required to solve complex community challenges.</p>
           </article>
           <article class="eq-card eq-reveal-mobile">
@@ -202,7 +245,11 @@
             <span class="eq-card__number">03</span>
             <h3>Profit</h3>
             <p class="eq-card__formula">Success = Profit</p>
-            <div class="eq-card__image"><img src="assets/images/pillar-profit.jpg" alt="" loading="lazy"></div>
+            <div class="eq-card__image"><picture>
+  <source type="image/avif" srcset="assets/images/r/pillar-profit-360.avif 360w, assets/images/r/pillar-profit-480.avif 480w, assets/images/r/pillar-profit-600.avif 600w" sizes="(max-width: 360px) 281px, (max-width: 430px) 340px, (max-width: 500px) 410px, (max-width: 600px) 510px, (max-width: 768px) 600px, (max-width: 1440px) 310px, (max-width: 1600px) 361px, 463px">
+  <source type="image/webp" srcset="assets/images/r/pillar-profit-360.webp 360w, assets/images/r/pillar-profit-480.webp 480w, assets/images/r/pillar-profit-600.webp 600w" sizes="(max-width: 360px) 281px, (max-width: 430px) 340px, (max-width: 500px) 410px, (max-width: 600px) 510px, (max-width: 768px) 600px, (max-width: 1440px) 310px, (max-width: 1600px) 361px, 463px">
+  <img src="assets/images/pillar-profit.jpg" width="600" height="320" alt="" loading="lazy" decoding="async">
+</picture></div>
             <p class="eq-card__body">We anchor growth in sustainability. True community impact requires economic durability. We generate measurable commercial value to ensure our projects scale, endure market cycles, and continuously reinvest into the communities we serve.</p>
           </article>
         </div>
@@ -219,7 +266,11 @@
       <div class="holdings-grid reveal-grid">
         <a href="fortitude-arizona-case-study.html" class="holding-card">
           <div class="holding-card__media">
-            <img src="assets/images/asset-fortitude-hq.jpg" alt="Fortitude Arizona Headquarters exterior" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/asset-fortitude-hq-480.avif 480w, assets/images/r/asset-fortitude-hq-640.avif 640w, assets/images/r/asset-fortitude-hq-768.avif 768w, assets/images/r/asset-fortitude-hq-960.avif 960w" sizes="(max-width: 360px) 569px, (max-width: 430px) 693px, (max-width: 500px) 818px, (max-width: 600px) 476px, (max-width: 700px) 565px, (max-width: 768px) 625px, (max-width: 900px) 404px, (max-width: 1024px) 477px, (max-width: 1200px) 583px, (max-width: 1440px) 725px, (max-width: 1600px) 821px, 960px">
+              <source type="image/webp" srcset="assets/images/r/asset-fortitude-hq-480.webp 480w, assets/images/r/asset-fortitude-hq-640.webp 640w, assets/images/r/asset-fortitude-hq-768.webp 768w, assets/images/r/asset-fortitude-hq-960.webp 960w" sizes="(max-width: 360px) 569px, (max-width: 430px) 693px, (max-width: 500px) 818px, (max-width: 600px) 476px, (max-width: 700px) 565px, (max-width: 768px) 625px, (max-width: 900px) 404px, (max-width: 1024px) 477px, (max-width: 1200px) 583px, (max-width: 1440px) 725px, (max-width: 1600px) 821px, 960px">
+              <img src="assets/images/asset-fortitude-hq.jpg" width="960" height="547" alt="Fortitude Arizona Headquarters exterior" loading="lazy" decoding="async">
+            </picture>
           </div>
           <div class="holding-card__scrim"></div>
           <div class="holding-card__gradient"></div>
@@ -234,7 +285,11 @@
 
         <div class="holding-card holding-card--static">
           <div class="holding-card__media">
-            <img src="assets/images/asset-herbigives-center.jpg" alt="The Herbigives Center exterior" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/asset-herbigives-center-480.avif 480w, assets/images/r/asset-herbigives-center-640.avif 640w, assets/images/r/asset-herbigives-center-768.avif 768w, assets/images/r/asset-herbigives-center-960.avif 960w" sizes="(max-width: 360px) 580px, (max-width: 430px) 707px, (max-width: 500px) 835px, (max-width: 600px) 485px, (max-width: 700px) 577px, (max-width: 768px) 638px, (max-width: 900px) 412px, (max-width: 1024px) 487px, (max-width: 1200px) 595px, (max-width: 1440px) 740px, (max-width: 1600px) 838px, 960px">
+              <source type="image/webp" srcset="assets/images/r/asset-herbigives-center-480.webp 480w, assets/images/r/asset-herbigives-center-640.webp 640w, assets/images/r/asset-herbigives-center-768.webp 768w, assets/images/r/asset-herbigives-center-960.webp 960w" sizes="(max-width: 360px) 580px, (max-width: 430px) 707px, (max-width: 500px) 835px, (max-width: 600px) 485px, (max-width: 700px) 577px, (max-width: 768px) 638px, (max-width: 900px) 412px, (max-width: 1024px) 487px, (max-width: 1200px) 595px, (max-width: 1440px) 740px, (max-width: 1600px) 838px, 960px">
+              <img src="assets/images/asset-herbigives-center.jpg" width="960" height="536" alt="The Herbigives Center exterior" loading="lazy" decoding="async">
+            </picture>
           </div>
           <div class="holding-card__scrim"></div>
           <div class="holding-card__gradient"></div>
@@ -249,7 +304,11 @@
 
         <div class="holding-card holding-card--static">
           <div class="holding-card__media">
-            <img src="assets/images/asset-res-resiliency.jpg" alt="Res Resiliency Housing exterior" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/asset-res-resiliency-480.avif 480w, assets/images/r/asset-res-resiliency-640.avif 640w, assets/images/r/asset-res-resiliency-768.avif 768w, assets/images/r/asset-res-resiliency-960.avif 960w" sizes="(max-width: 360px) 580px, (max-width: 430px) 707px, (max-width: 500px) 835px, (max-width: 600px) 485px, (max-width: 700px) 577px, (max-width: 768px) 638px, (max-width: 900px) 412px, (max-width: 1024px) 487px, (max-width: 1200px) 595px, (max-width: 1440px) 740px, (max-width: 1600px) 838px, 960px">
+              <source type="image/webp" srcset="assets/images/r/asset-res-resiliency-480.webp 480w, assets/images/r/asset-res-resiliency-640.webp 640w, assets/images/r/asset-res-resiliency-768.webp 768w, assets/images/r/asset-res-resiliency-960.webp 960w" sizes="(max-width: 360px) 580px, (max-width: 430px) 707px, (max-width: 500px) 835px, (max-width: 600px) 485px, (max-width: 700px) 577px, (max-width: 768px) 638px, (max-width: 900px) 412px, (max-width: 1024px) 487px, (max-width: 1200px) 595px, (max-width: 1440px) 740px, (max-width: 1600px) 838px, 960px">
+              <img src="assets/images/asset-res-resiliency.jpg" width="960" height="536" alt="Res Resiliency Housing exterior" loading="lazy" decoding="async">
+            </picture>
           </div>
           <div class="holding-card__scrim"></div>
           <div class="holding-card__gradient"></div>
@@ -287,7 +346,11 @@
 
       <div class="about-stage">
         <div class="about-stage__image reveal-surface" data-direction="left">
-          <img src="assets/images/hero.jpg" alt="Herbig Group team members outside a completed development in the Phoenix Valley" loading="lazy">
+          <picture>
+            <source type="image/avif" srcset="assets/images/r/hero-640.avif 640w, assets/images/r/hero-768.avif 768w, assets/images/r/hero-960.avif 960w, assets/images/r/hero-1200.avif 1200w, assets/images/r/hero-1440.avif 1440w, assets/images/r/hero-1800.avif 1800w, assets/images/r/hero-2200.avif 2200w" sizes="(max-width: 360px) 534px, (max-width: 430px) 650px, (max-width: 500px) 767px, (max-width: 600px) 934px, (max-width: 700px) 1100px, (max-width: 768px) 1214px, 1541px">
+            <source type="image/webp" srcset="assets/images/r/hero-640.webp 640w, assets/images/r/hero-768.webp 768w, assets/images/r/hero-960.webp 960w, assets/images/r/hero-1200.webp 1200w, assets/images/r/hero-1440.webp 1440w, assets/images/r/hero-1800.webp 1800w, assets/images/r/hero-2200.webp 2200w" sizes="(max-width: 360px) 534px, (max-width: 430px) 650px, (max-width: 500px) 767px, (max-width: 600px) 934px, (max-width: 700px) 1100px, (max-width: 768px) 1214px, 1541px">
+            <img src="assets/images/hero.jpg" srcset="assets/images/r/hero-640.jpg 640w, assets/images/r/hero-768.jpg 768w, assets/images/r/hero-960.jpg 960w, assets/images/r/hero-1200.jpg 1200w, assets/images/r/hero-1440.jpg 1440w, assets/images/r/hero-1800.jpg 1800w, assets/images/hero.jpg 2200w" sizes="(max-width: 360px) 534px, (max-width: 430px) 650px, (max-width: 500px) 767px, (max-width: 600px) 934px, (max-width: 700px) 1100px, (max-width: 768px) 1214px, 1541px" width="2200" height="1236" alt="Herbig Group team members outside a completed development in the Phoenix Valley" loading="lazy" decoding="async">
+          </picture>
         </div>
         <div class="about-stage__card reveal">
           <h3>Building the foundations for a resilient future.</h3>
@@ -313,7 +376,11 @@
 
       <article class="pathway-card">
         <div class="pathway-card__image reveal-surface">
-          <img src="assets/images/pathway-i.jpg" alt="Human performance and wellness facility" loading="lazy">
+          <picture>
+            <source type="image/avif" srcset="assets/images/r/pathway-i-360.avif 360w, assets/images/r/pathway-i-480.avif 480w, assets/images/r/pathway-i-640.avif 640w, assets/images/r/pathway-i-780.avif 780w" sizes="(max-width: 360px) 323px, (max-width: 430px) 394px, (max-width: 500px) 465px, (max-width: 600px) 566px, (max-width: 700px) 668px, (max-width: 768px) 737px, (max-width: 1200px) 445px, (max-width: 1440px) 532px, (max-width: 1600px) 598px, 732px">
+            <source type="image/webp" srcset="assets/images/r/pathway-i-360.webp 360w, assets/images/r/pathway-i-480.webp 480w, assets/images/r/pathway-i-640.webp 640w, assets/images/r/pathway-i-780.webp 780w" sizes="(max-width: 360px) 323px, (max-width: 430px) 394px, (max-width: 500px) 465px, (max-width: 600px) 566px, (max-width: 700px) 668px, (max-width: 768px) 737px, (max-width: 1200px) 445px, (max-width: 1440px) 532px, (max-width: 1600px) 598px, 732px">
+            <img src="assets/images/pathway-i.jpg" width="780" height="660" alt="Human performance and wellness facility" loading="lazy" decoding="async">
+          </picture>
         </div>
         <div class="pathway-card__panel reveal">
           <span class="accent-bar"></span>
@@ -329,7 +396,11 @@
 
       <article class="pathway-card pathway-card--reverse">
         <div class="pathway-card__image reveal-surface">
-          <img src="assets/images/pathway-ii.jpg" alt="Community housing development" loading="lazy">
+          <picture>
+            <source type="image/avif" srcset="assets/images/r/pathway-ii-360.avif 360w, assets/images/r/pathway-ii-480.avif 480w, assets/images/r/pathway-ii-640.avif 640w, assets/images/r/pathway-ii-780.avif 780w" sizes="(max-width: 360px) 323px, (max-width: 430px) 394px, (max-width: 500px) 465px, (max-width: 600px) 566px, (max-width: 700px) 668px, (max-width: 768px) 737px, (max-width: 1200px) 445px, (max-width: 1440px) 532px, (max-width: 1600px) 598px, 732px">
+            <source type="image/webp" srcset="assets/images/r/pathway-ii-360.webp 360w, assets/images/r/pathway-ii-480.webp 480w, assets/images/r/pathway-ii-640.webp 640w, assets/images/r/pathway-ii-780.webp 780w" sizes="(max-width: 360px) 323px, (max-width: 430px) 394px, (max-width: 500px) 465px, (max-width: 600px) 566px, (max-width: 700px) 668px, (max-width: 768px) 737px, (max-width: 1200px) 445px, (max-width: 1440px) 532px, (max-width: 1600px) 598px, 732px">
+            <img src="assets/images/pathway-ii.jpg" width="780" height="660" alt="Community housing development" loading="lazy" decoding="async">
+          </picture>
         </div>
         <div class="pathway-card__panel reveal">
           <span class="accent-bar"></span>
@@ -400,7 +471,11 @@
           <div class="cinematic-track-outer">
             <div class="cinematic-track" id="cinematic-track">
           <article class="cinematic-card reveal-stagger">
-            <img src="assets/images/team-jacob.jpg" alt="Jacob Russell" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/team-jacob-480.avif 480w, assets/images/r/team-jacob-640.avif 640w, assets/images/r/team-jacob-768.avif 768w, assets/images/r/team-jacob-900.avif 900w" sizes="(max-width: 768px) 418px, 618px">
+              <source type="image/webp" srcset="assets/images/r/team-jacob-480.webp 480w, assets/images/r/team-jacob-640.webp 640w, assets/images/r/team-jacob-768.webp 768w, assets/images/r/team-jacob-900.webp 900w" sizes="(max-width: 768px) 418px, 618px">
+              <img src="assets/images/team-jacob.jpg" width="900" height="680" alt="Jacob Russell" loading="lazy" decoding="async">
+            </picture>
             <span class="cinematic-card__index">01</span>
             <div class="cinematic-card__bio">
               <h3>Jacob Russell</h3>
@@ -409,7 +484,11 @@
             </div>
           </article>
           <article class="cinematic-card reveal-stagger">
-            <img src="assets/images/team-nick.jpg" alt="Nick Crisci" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/team-nick-480.avif 480w, assets/images/r/team-nick-640.avif 640w, assets/images/r/team-nick-768.avif 768w, assets/images/r/team-nick-900.avif 900w" sizes="(max-width: 768px) 418px, 618px">
+              <source type="image/webp" srcset="assets/images/r/team-nick-480.webp 480w, assets/images/r/team-nick-640.webp 640w, assets/images/r/team-nick-768.webp 768w, assets/images/r/team-nick-900.webp 900w" sizes="(max-width: 768px) 418px, 618px">
+              <img src="assets/images/team-nick.jpg" width="900" height="649" alt="Nick Crisci" loading="lazy" decoding="async">
+            </picture>
             <span class="cinematic-card__index">02</span>
             <div class="cinematic-card__bio">
               <h3>Nick Crisci</h3>
@@ -418,7 +497,11 @@
             </div>
           </article>
           <article class="cinematic-card reveal-stagger">
-            <img src="assets/images/team-robyn.jpg" alt="Robyn Herbig" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/team-robyn-480.avif 480w, assets/images/r/team-robyn-640.avif 640w, assets/images/r/team-robyn-768.avif 768w, assets/images/r/team-robyn-900.avif 900w" sizes="(max-width: 768px) 418px, 618px">
+              <source type="image/webp" srcset="assets/images/r/team-robyn-480.webp 480w, assets/images/r/team-robyn-640.webp 640w, assets/images/r/team-robyn-768.webp 768w, assets/images/r/team-robyn-900.webp 900w" sizes="(max-width: 768px) 418px, 618px">
+              <img src="assets/images/team-robyn.jpg" width="900" height="647" alt="Robyn Herbig" loading="lazy" decoding="async">
+            </picture>
             <span class="cinematic-card__index">03</span>
             <div class="cinematic-card__bio">
               <h3>Robyn Herbig</h3>
@@ -427,7 +510,11 @@
             </div>
           </article>
           <article class="cinematic-card reveal-stagger">
-            <img src="assets/images/team-jake.jpg" alt="Jake Herbig" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/team-jake-480.avif 480w, assets/images/r/team-jake-640.avif 640w, assets/images/r/team-jake-768.avif 768w, assets/images/r/team-jake-900.avif 900w" sizes="(max-width: 768px) 418px, 618px">
+              <source type="image/webp" srcset="assets/images/r/team-jake-480.webp 480w, assets/images/r/team-jake-640.webp 640w, assets/images/r/team-jake-768.webp 768w, assets/images/r/team-jake-900.webp 900w" sizes="(max-width: 768px) 418px, 618px">
+              <img src="assets/images/team-jake.jpg" width="900" height="600" alt="Jake Herbig" loading="lazy" decoding="async">
+            </picture>
             <span class="cinematic-card__index">04</span>
             <div class="cinematic-card__bio">
               <h3>Jake Herbig</h3>
@@ -436,7 +523,11 @@
             </div>
           </article>
           <article class="cinematic-card reveal-stagger">
-            <img src="assets/images/team-michelle.jpg" alt="Michelle Day" loading="lazy">
+            <picture>
+              <source type="image/avif" srcset="assets/images/r/team-michelle-480.avif 480w, assets/images/r/team-michelle-640.avif 640w, assets/images/r/team-michelle-768.avif 768w, assets/images/r/team-michelle-900.avif 900w" sizes="(max-width: 768px) 418px, 618px">
+              <source type="image/webp" srcset="assets/images/r/team-michelle-480.webp 480w, assets/images/r/team-michelle-640.webp 640w, assets/images/r/team-michelle-768.webp 768w, assets/images/r/team-michelle-900.webp 900w" sizes="(max-width: 768px) 418px, 618px">
+              <img src="assets/images/team-michelle.jpg" srcset="assets/images/r/team-michelle-480.jpg 480w, assets/images/r/team-michelle-640.jpg 640w, assets/images/r/team-michelle-768.jpg 768w, assets/images/team-michelle.jpg 900w" sizes="(max-width: 768px) 418px, 618px" width="900" height="653" alt="Michelle Day" loading="lazy" decoding="async">
+            </picture>
             <span class="cinematic-card__index">05</span>
             <div class="cinematic-card__bio">
               <h3>Michelle Day</h3>

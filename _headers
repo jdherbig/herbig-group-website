@@ -1,0 +1,26 @@
+# Herbig Group — cache policy (HG-P4-07)
+#
+# Assets are safe to cache indefinitely because stamp.js gives every
+# reference a content hash at deploy time (see stamp.js): if a file's bytes
+# change, its URL changes with them, so a stale copy can never be served.
+# HTML stays revalidatable, so a new deploy is picked up on the next visit.
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/script.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/transitions.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Documents: always revalidated, so a deploy is visible immediately and the
+# freshly stamped asset URLs inside them are what visitors act on.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate

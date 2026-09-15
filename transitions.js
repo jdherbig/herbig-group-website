@@ -79,17 +79,65 @@
     if (storedScrollPositions) scrollPositions = JSON.parse(storedScrollPositions) || {};
   } catch (e) {}
 
+  /* HG-P4-08: the position itself is cheap to keep current - it is one
+   * number written to an object on an animation frame. Persisting it was
+   * the expensive half: serialising the whole route map and handing it to
+   * synchronous sessionStorage, on every frame of every scroll, competing
+   * with input and rendering for the main thread.
+   *
+   * So the two are separated. Memory stays exactly as current as before
+   * (restoration reads it directly, so Back/Forward is unaffected), while
+   * the store is written on a bounded debounce: at most once per
+   * PERSIST_MAX_MS during a continuous scroll, once more when scrolling
+   * settles, and a final flush when the page is hidden or unloaded - which
+   * is the only moment the stored copy is actually needed, since it exists
+   * to survive a reload. */
+  var PERSIST_IDLE_MS = 400;
+  var PERSIST_MAX_MS = 1000;
+  var persistTimer = null;
+  var lastPersistAt = 0;
+  var storeDirty = false;
+
+  function writeScrollStore() {
+    persistTimer = null;
+    if (!storeDirty) return;
+    storeDirty = false;
+    lastPersistAt = Date.now();
+    try { sessionStorage.setItem(SCROLL_STORE_KEY, JSON.stringify(scrollPositions)); } catch (e) {}
+  }
+
+  function schedulePersist() {
+    if (!storeDirty) return;
+    if (persistTimer) window.clearTimeout(persistTimer);
+    var wait = Math.min(PERSIST_IDLE_MS, Math.max(0, lastPersistAt + PERSIST_MAX_MS - Date.now()));
+    persistTimer = window.setTimeout(writeScrollStore, wait);
+  }
+
+  function flushScrollStore() {
+    if (persistTimer) {
+      window.clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    writeScrollStore();
+  }
+
   var scrollSaveTicking = false;
   function saveScrollPosition() {
     scrollSaveTicking = false;
     scrollPositions[window.location.href] = window.scrollY;
-    try { sessionStorage.setItem(SCROLL_STORE_KEY, JSON.stringify(scrollPositions)); } catch (e) {}
+    storeDirty = true;
+    schedulePersist();
   }
   window.addEventListener("scroll", function () {
     if (scrollSaveTicking) return;
     scrollSaveTicking = true;
     window.requestAnimationFrame(saveScrollPosition);
   }, { passive: true });
+
+  window.addEventListener("pagehide", flushScrollStore);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") flushScrollStore();
+  });
 
   // Keyed by normalized route key (see routeKey() below), i.e. without any
   // .html suffix - the same entry has to match whether a route is spelled
@@ -107,6 +155,14 @@
   var lottieInstance = null;
   var lottieReady = null;
 
+  // HG-P4-01: the library/JSON wait needs a deadline of its own. DOMLoaded
+  // and data_failed cover a normal load and a cleanly failed one, but
+  // neither fires while a request simply hangs - so without this the
+  // promise, and everything chained onto it, would wait forever. Kept
+  // under the inline watchdog's own deadline so the ordinary path still
+  // resolves through here rather than through the watchdog.
+  var LOTTIE_DEADLINE_MS = 1100;
+
   function ensureLottie() {
     if (prefersReducedMotion) return Promise.resolve(null);
     if (lottieReady) return lottieReady;
@@ -115,6 +171,7 @@
         resolve(null);
         return;
       }
+      window.setTimeout(function () { resolve(null); }, LOTTIE_DEADLINE_MS);
       try {
         lottieInstance = lottie.loadAnimation({
           container: logoEl,
@@ -300,12 +357,24 @@
   // ~600-900ms target for the whole perceived loader moment.
   var LOGO_SPEED = 1.8;
 
-  function runIntro() {
-    var html = document.documentElement;
+  // HG-P4-01: revealing the page is the inline watchdog's job now (see the
+  // script next to the overlay markup in every page). Everything here just
+  // asks it to release early, once the intro has actually played, so there
+  // is exactly one place that can uncover content and it cannot be
+  // bypassed, double-run, or stalled by a dependency.
+  function releaseIntro() {
+    if (window.hgIntro && typeof window.hgIntro.release === "function") {
+      window.hgIntro.release();
+      return;
+    }
+    document.documentElement.classList.remove("hg-intro-pending");
+    if (overlay) overlay.classList.remove("is-visible");
+    try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
+  }
 
+  function runIntro() {
     if (prefersReducedMotion) {
-      html.classList.remove("hg-intro-pending");
-      try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
+      releaseIntro();
       return;
     }
 
@@ -316,23 +385,25 @@
       // starts clearing the instant the content underneath is ready to
       // be seen, so this reads as one continuous arrival (brand mark →
       // surface clears → hero already there) rather than a loader
-      // finishing and then a second, separate reveal beginning.
-      html.classList.remove("hg-intro-pending");
-      if (overlay) overlay.classList.remove("is-visible");
-      try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
+      // finishing and then a second, separate reveal beginning. If the
+      // watchdog already released (a slow dependency), this is a no-op
+      // and the reader is left where they are rather than being shown a
+      // late animation over content they are already reading.
+      releaseIntro();
     });
   }
 
   var introPending = false;
   try {
     introPending = !sessionStorage.getItem("hgIntroSeen") &&
-      document.documentElement.classList.contains("hg-intro-pending");
+      document.documentElement.classList.contains("hg-intro-pending") &&
+      !(window.hgIntro && window.hgIntro.released);
   } catch (e) {}
 
   if (introPending) {
     runIntro();
   } else {
-    document.documentElement.classList.remove("hg-intro-pending");
+    releaseIntro();
   }
 
   /* ---------- Internal navigation (PJAX-style router) ---------- */
@@ -438,6 +509,27 @@
 
     var newTitle = doc.querySelector("title");
     if (newTitle) document.title = newTitle.textContent;
+
+    // HG-P4-04: <head> survives a client-side swap, so without this the
+    // page keeps the previous route's image preload - an instruction that
+    // now names the wrong resource entirely - and the incoming hero is
+    // discovered only once its markup is parsed. Swapping in the
+    // destination's own hint here, a beat before the content that needs
+    // it, starts discovery where a full document load would have started
+    // it. The hint carries the same srcset/sizes/type as the <picture>
+    // below, so both resolve to one candidate and one transfer.
+    var staleHint = document.head.querySelector("link[data-route-image]");
+    if (staleHint && staleHint.parentNode) staleHint.parentNode.removeChild(staleHint);
+    var incomingHint = doc.head ? doc.head.querySelector("link[data-route-image]") : null;
+    if (incomingHint) {
+      var hint = document.createElement("link");
+      ["rel", "as", "type", "href", "imagesrcset", "imagesizes", "fetchpriority"].forEach(function (name) {
+        var value = incomingHint.getAttribute(name);
+        if (value !== null) hint.setAttribute(name, value);
+      });
+      hint.setAttribute("data-route-image", "");
+      document.head.appendChild(hint);
+    }
 
     // Declarative navbar theme: read it straight from the fetched page's
     // own markup (the same data-navbar-theme convention every section

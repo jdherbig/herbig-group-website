@@ -8,7 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&family=Ramsina&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="assets/images/page-header-housing.jpg">
+  <link rel="preload" as="image" type="image/avif" data-route-image
+        imagesrcset="assets/images/r/page-header-housing-640.avif 640w, assets/images/r/page-header-housing-768.avif 768w, assets/images/r/page-header-housing-960.avif 960w, assets/images/r/page-header-housing-1264.avif 1264w"
+        imagesizes="(max-width: 430px) 690px, (max-width: 600px) 600px, (max-width: 768px) 768px, (max-width: 900px) 900px, (max-width: 1024px) 1024px, 1264px" fetchpriority="high">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,14 +22,43 @@
     <div id="page-transition-logo" class="page-transition-overlay__logo"></div>
   </div>
   <script>
+    /* HG-P4-01: this script both conceals route content for the branded
+       intro and bounds that concealment. Everything that would normally
+       uncover the page again - the Lottie library from a CDN, its animation
+       JSON, the transition script chained behind them - is optional
+       decoration on a critical path it has no business owning. The watchdog
+       below starts in the same breath as the concealment, before any of
+       those dependencies has even been requested, so a stalled request or a
+       promise that never settles can never hold readable content for longer
+       than MAX_MS. transitions.js calls release() itself when the intro
+       finishes normally, and skips the intro entirely if this already
+       fired. */
     (function () {
-      try {
-        if (!sessionStorage.getItem("hgIntroSeen")) {
-          var overlay = document.getElementById("page-transition-overlay");
-          if (overlay) overlay.hidden = false;
-          document.documentElement.classList.add("hg-intro-pending");
-        }
-      } catch (e) {}
+      var MAX_MS = 1300;
+      var seen = false;
+      try { seen = !!sessionStorage.getItem("hgIntroSeen"); } catch (e) {}
+      if (seen) return;
+
+      var root = document.documentElement;
+      var overlay = document.getElementById("page-transition-overlay");
+      if (overlay) overlay.hidden = false;
+      root.classList.add("hg-intro-pending");
+
+      var intro = window.hgIntro = { released: false, timedOut: false };
+      intro.release = function () {
+        if (intro.released) return;
+        intro.released = true;
+        window.clearTimeout(intro.timer);
+        root.classList.remove("hg-intro-pending");
+        // Dropping is-visible restores the overlay's own pointer-events:
+        // none and fades it out; it never intercepts input after this.
+        if (overlay) overlay.classList.remove("is-visible");
+        try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
+      };
+      intro.timer = window.setTimeout(function () {
+        intro.timedOut = true;
+        intro.release();
+      }, MAX_MS);
     })();
   </script>
 
@@ -133,7 +164,11 @@
     <!-- ============ PAGE HEADER ============ -->
     <section class="page-header page-header--tint-66" data-navbar-theme="dark">
       <div class="page-header__bg">
-        <img src="assets/images/page-header-housing.jpg" alt="">
+        <picture>
+          <source type="image/avif" srcset="assets/images/r/page-header-housing-640.avif 640w, assets/images/r/page-header-housing-768.avif 768w, assets/images/r/page-header-housing-960.avif 960w, assets/images/r/page-header-housing-1264.avif 1264w" sizes="(max-width: 430px) 690px, (max-width: 600px) 600px, (max-width: 768px) 768px, (max-width: 900px) 900px, (max-width: 1024px) 1024px, 1264px">
+          <source type="image/webp" srcset="assets/images/r/page-header-housing-640.webp 640w, assets/images/r/page-header-housing-768.webp 768w, assets/images/r/page-header-housing-960.webp 960w, assets/images/r/page-header-housing-1264.webp 1264w" sizes="(max-width: 430px) 690px, (max-width: 600px) 600px, (max-width: 768px) 768px, (max-width: 900px) 900px, (max-width: 1024px) 1024px, 1264px">
+          <img src="assets/images/page-header-housing.jpg" width="1264" height="720" alt="" loading="eager" fetchpriority="high" decoding="async">
+        </picture>
       </div>
       <div class="canvas-glow">
         <div class="blob blob--left blob--soft"></div>
@@ -150,7 +185,11 @@
     <section class="housing-highlights">
       <div class="feature-split reveal">
         <div class="feature-split__image">
-          <img src="assets/images/feature-split-housing.jpg" alt="">
+          <picture>
+            <source type="image/avif" srcset="assets/images/r/feature-split-housing-640.avif 640w, assets/images/r/feature-split-housing-768.avif 768w, assets/images/r/feature-split-housing-1000.avif 1000w" sizes="(max-width: 600px) 561px, (max-width: 700px) 660px, (max-width: 768px) 728px, (max-width: 900px) 512px, (max-width: 1024px) 604px, (max-width: 1200px) 735px, 912px">
+            <source type="image/webp" srcset="assets/images/r/feature-split-housing-640.webp 640w, assets/images/r/feature-split-housing-768.webp 768w, assets/images/r/feature-split-housing-1000.webp 1000w" sizes="(max-width: 600px) 561px, (max-width: 700px) 660px, (max-width: 768px) 728px, (max-width: 900px) 512px, (max-width: 1024px) 604px, (max-width: 1200px) 735px, 912px">
+            <img src="assets/images/feature-split-housing.jpg" width="1000" height="570" alt="" loading="eager" decoding="async">
+          </picture>
         </div>
         <div class="feature-split__content">
           <h2>Workforce Support Near Healthcare Centers</h2>

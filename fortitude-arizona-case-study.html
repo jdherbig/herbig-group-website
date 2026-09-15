@@ -8,7 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&family=Ramsina&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="assets/images/case-hero-primary.jpg">
+  <link rel="preload" as="image" type="image/avif" data-route-image
+        imagesrcset="assets/images/r/case-hero-primary-640.avif 640w, assets/images/r/case-hero-primary-768.avif 768w, assets/images/r/case-hero-primary-960.avif 960w, assets/images/r/case-hero-primary-1200.avif 1200w, assets/images/r/case-hero-primary-1376.avif 1376w"
+        imagesizes="(max-width: 360px) 749px, (max-width: 768px) 768px, (max-width: 1200px) 1200px, 1376px" fetchpriority="high">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,14 +22,43 @@
     <div id="page-transition-logo" class="page-transition-overlay__logo"></div>
   </div>
   <script>
+    /* HG-P4-01: this script both conceals route content for the branded
+       intro and bounds that concealment. Everything that would normally
+       uncover the page again - the Lottie library from a CDN, its animation
+       JSON, the transition script chained behind them - is optional
+       decoration on a critical path it has no business owning. The watchdog
+       below starts in the same breath as the concealment, before any of
+       those dependencies has even been requested, so a stalled request or a
+       promise that never settles can never hold readable content for longer
+       than MAX_MS. transitions.js calls release() itself when the intro
+       finishes normally, and skips the intro entirely if this already
+       fired. */
     (function () {
-      try {
-        if (!sessionStorage.getItem("hgIntroSeen")) {
-          var overlay = document.getElementById("page-transition-overlay");
-          if (overlay) overlay.hidden = false;
-          document.documentElement.classList.add("hg-intro-pending");
-        }
-      } catch (e) {}
+      var MAX_MS = 1300;
+      var seen = false;
+      try { seen = !!sessionStorage.getItem("hgIntroSeen"); } catch (e) {}
+      if (seen) return;
+
+      var root = document.documentElement;
+      var overlay = document.getElementById("page-transition-overlay");
+      if (overlay) overlay.hidden = false;
+      root.classList.add("hg-intro-pending");
+
+      var intro = window.hgIntro = { released: false, timedOut: false };
+      intro.release = function () {
+        if (intro.released) return;
+        intro.released = true;
+        window.clearTimeout(intro.timer);
+        root.classList.remove("hg-intro-pending");
+        // Dropping is-visible restores the overlay's own pointer-events:
+        // none and fades it out; it never intercepts input after this.
+        if (overlay) overlay.classList.remove("is-visible");
+        try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
+      };
+      intro.timer = window.setTimeout(function () {
+        intro.timedOut = true;
+        intro.release();
+      }, MAX_MS);
     })();
   </script>
 
@@ -150,7 +181,11 @@
       </div>
 
       <div class="case-hero__media">
-        <img src="assets/images/case-hero-primary.jpg" alt="">
+        <picture>
+          <source type="image/avif" srcset="assets/images/r/case-hero-primary-640.avif 640w, assets/images/r/case-hero-primary-768.avif 768w, assets/images/r/case-hero-primary-960.avif 960w, assets/images/r/case-hero-primary-1200.avif 1200w, assets/images/r/case-hero-primary-1376.avif 1376w" sizes="(max-width: 360px) 749px, (max-width: 768px) 768px, (max-width: 1200px) 1200px, 1376px">
+          <source type="image/webp" srcset="assets/images/r/case-hero-primary-640.webp 640w, assets/images/r/case-hero-primary-768.webp 768w, assets/images/r/case-hero-primary-960.webp 960w, assets/images/r/case-hero-primary-1200.webp 1200w, assets/images/r/case-hero-primary-1376.webp 1376w" sizes="(max-width: 360px) 749px, (max-width: 768px) 768px, (max-width: 1200px) 1200px, 1376px">
+          <img src="assets/images/case-hero-primary.jpg" srcset="assets/images/r/case-hero-primary-640.jpg 640w, assets/images/r/case-hero-primary-768.jpg 768w, assets/images/r/case-hero-primary-960.jpg 960w, assets/images/r/case-hero-primary-1200.jpg 1200w, assets/images/case-hero-primary.jpg 1376w" sizes="(max-width: 360px) 749px, (max-width: 768px) 768px, (max-width: 1200px) 1200px, 1376px" width="1376" height="768" alt="" loading="eager" fetchpriority="high" decoding="async">
+        </picture>
       </div>
 
       <div class="case-meta-bar reveal">
@@ -190,14 +225,22 @@
           <span class="feature-card__index">01</span>
           <h3>Advanced Cryotherapy</h3>
           <span class="feature-card__category">Recovery Lab</span>
-          <div class="feature-card__image"><img src="assets/images/case-feature-cryotherapy.jpg" alt=""></div>
+          <div class="feature-card__image"><picture>
+  <source type="image/avif" srcset="assets/images/r/case-feature-cryotherapy-480.avif 480w, assets/images/r/case-feature-cryotherapy-640.avif 640w, assets/images/r/case-feature-cryotherapy-768.avif 768w, assets/images/r/case-feature-cryotherapy-900.avif 900w" sizes="(max-width: 500px) 467px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <source type="image/webp" srcset="assets/images/r/case-feature-cryotherapy-480.webp 480w, assets/images/r/case-feature-cryotherapy-640.webp 640w, assets/images/r/case-feature-cryotherapy-768.webp 768w, assets/images/r/case-feature-cryotherapy-900.webp 900w" sizes="(max-width: 500px) 467px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <img src="assets/images/case-feature-cryotherapy.jpg" width="900" height="513" alt="" loading="lazy" decoding="async">
+</picture></div>
           <p class="feature-card__desc">Equipped with whole-body cryochambers operating at optimal cold levels to trigger deep tissue anti-inflammatory responses and accelerate neuromuscular recovery.</p>
         </article>
         <article class="feature-card">
           <span class="feature-card__index">02</span>
           <h3>Physical Rehab Labs</h3>
           <span class="feature-card__category">Diagnostic Suite</span>
-          <div class="feature-card__image"><img src="assets/images/case-feature-rehab-labs.jpg" alt=""></div>
+          <div class="feature-card__image"><picture>
+  <source type="image/avif" srcset="assets/images/r/case-feature-rehab-labs-480.avif 480w, assets/images/r/case-feature-rehab-labs-640.avif 640w, assets/images/r/case-feature-rehab-labs-768.avif 768w, assets/images/r/case-feature-rehab-labs-900.avif 900w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <source type="image/webp" srcset="assets/images/r/case-feature-rehab-labs-480.webp 480w, assets/images/r/case-feature-rehab-labs-640.webp 640w, assets/images/r/case-feature-rehab-labs-768.webp 768w, assets/images/r/case-feature-rehab-labs-900.webp 900w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <img src="assets/images/case-feature-rehab-labs.jpg" width="900" height="502" alt="" loading="lazy" decoding="async">
+</picture></div>
           <p class="feature-card__desc">Advanced assessment rooms utilizing high-speed motion capture cameras, force plate diagnostics, and real-time biomechanical data feedback loops.</p>
         </article>
       </div>
@@ -218,19 +261,43 @@
       <div class="gallery-rule" aria-hidden="true"></div>
       <div class="gallery-row photo-grid">
         <div class="gallery-main">
-          <img src="assets/images/case-gallery-main.jpg" alt="">
+          <picture>
+            <source type="image/avif" srcset="assets/images/r/case-gallery-main-480.avif 480w, assets/images/r/case-gallery-main-640.avif 640w, assets/images/r/case-gallery-main-768.avif 768w, assets/images/r/case-gallery-main-960.avif 960w, assets/images/r/case-gallery-main-1300.avif 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px">
+            <source type="image/webp" srcset="assets/images/r/case-gallery-main-480.webp 480w, assets/images/r/case-gallery-main-640.webp 640w, assets/images/r/case-gallery-main-768.webp 768w, assets/images/r/case-gallery-main-960.webp 960w, assets/images/r/case-gallery-main-1300.webp 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px">
+            <img src="assets/images/case-gallery-main.jpg" srcset="assets/images/r/case-gallery-main-480.jpg 480w, assets/images/r/case-gallery-main-640.jpg 640w, assets/images/r/case-gallery-main-768.jpg 768w, assets/images/r/case-gallery-main-960.jpg 960w, assets/images/case-gallery-main.jpg 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px" width="1300" height="726" alt="" loading="lazy" decoding="async">
+          </picture>
         </div>
         <div class="gallery-col">
-          <div class="gallery-card"><img src="assets/images/case-gallery-card1.jpg" alt=""></div>
-          <div class="gallery-card"><img src="assets/images/case-gallery-main.jpg" alt=""></div>
+          <div class="gallery-card"><picture>
+  <source type="image/avif" srcset="assets/images/r/case-feature-cryotherapy-480.avif 480w, assets/images/r/case-feature-cryotherapy-640.avif 640w, assets/images/r/case-feature-cryotherapy-768.avif 768w, assets/images/r/case-feature-cryotherapy-900.avif 900w" sizes="(max-width: 500px) 467px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <source type="image/webp" srcset="assets/images/r/case-feature-cryotherapy-480.webp 480w, assets/images/r/case-feature-cryotherapy-640.webp 640w, assets/images/r/case-feature-cryotherapy-768.webp 768w, assets/images/r/case-feature-cryotherapy-900.webp 900w" sizes="(max-width: 500px) 467px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <img src="assets/images/case-feature-cryotherapy.jpg" width="900" height="513" alt="" loading="lazy" decoding="async">
+</picture></div>
+          <div class="gallery-card"><picture>
+  <source type="image/avif" srcset="assets/images/r/case-gallery-main-480.avif 480w, assets/images/r/case-gallery-main-640.avif 640w, assets/images/r/case-gallery-main-768.avif 768w, assets/images/r/case-gallery-main-960.avif 960w, assets/images/r/case-gallery-main-1300.avif 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px">
+  <source type="image/webp" srcset="assets/images/r/case-gallery-main-480.webp 480w, assets/images/r/case-gallery-main-640.webp 640w, assets/images/r/case-gallery-main-768.webp 768w, assets/images/r/case-gallery-main-960.webp 960w, assets/images/r/case-gallery-main-1300.webp 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px">
+  <img src="assets/images/case-gallery-main.jpg" srcset="assets/images/r/case-gallery-main-480.jpg 480w, assets/images/r/case-gallery-main-640.jpg 640w, assets/images/r/case-gallery-main-768.jpg 768w, assets/images/r/case-gallery-main-960.jpg 960w, assets/images/case-gallery-main.jpg 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px" width="1300" height="726" alt="" loading="lazy" decoding="async">
+</picture></div>
         </div>
       </div>
 
       <div class="gallery-rule" aria-hidden="true"></div>
       <div class="gallery-row gallery-row--triple photo-grid">
-        <div class="gallery-card"><img src="assets/images/case-gallery-card1.jpg" alt=""></div>
-        <div class="gallery-card"><img src="assets/images/case-gallery-main.jpg" alt=""></div>
-        <div class="gallery-card"><img src="assets/images/case-gallery-card5.jpg" alt=""></div>
+        <div class="gallery-card"><picture>
+  <source type="image/avif" srcset="assets/images/r/case-feature-cryotherapy-480.avif 480w, assets/images/r/case-feature-cryotherapy-640.avif 640w, assets/images/r/case-feature-cryotherapy-768.avif 768w, assets/images/r/case-feature-cryotherapy-900.avif 900w" sizes="(max-width: 500px) 467px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <source type="image/webp" srcset="assets/images/r/case-feature-cryotherapy-480.webp 480w, assets/images/r/case-feature-cryotherapy-640.webp 640w, assets/images/r/case-feature-cryotherapy-768.webp 768w, assets/images/r/case-feature-cryotherapy-900.webp 900w" sizes="(max-width: 500px) 467px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <img src="assets/images/case-feature-cryotherapy.jpg" width="900" height="513" alt="" loading="lazy" decoding="async">
+</picture></div>
+        <div class="gallery-card"><picture>
+  <source type="image/avif" srcset="assets/images/r/case-gallery-main-480.avif 480w, assets/images/r/case-gallery-main-640.avif 640w, assets/images/r/case-gallery-main-768.avif 768w, assets/images/r/case-gallery-main-960.avif 960w, assets/images/r/case-gallery-main-1300.avif 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px">
+  <source type="image/webp" srcset="assets/images/r/case-gallery-main-480.webp 480w, assets/images/r/case-gallery-main-640.webp 640w, assets/images/r/case-gallery-main-768.webp 768w, assets/images/r/case-gallery-main-960.webp 960w, assets/images/r/case-gallery-main-1300.webp 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px">
+  <img src="assets/images/case-gallery-main.jpg" srcset="assets/images/r/case-gallery-main-480.jpg 480w, assets/images/r/case-gallery-main-640.jpg 640w, assets/images/r/case-gallery-main-768.jpg 768w, assets/images/r/case-gallery-main-960.jpg 960w, assets/images/case-gallery-main.jpg 1300w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 771px, 991px" width="1300" height="726" alt="" loading="lazy" decoding="async">
+</picture></div>
+        <div class="gallery-card"><picture>
+  <source type="image/avif" srcset="assets/images/r/case-feature-rehab-labs-480.avif 480w, assets/images/r/case-feature-rehab-labs-640.avif 640w, assets/images/r/case-feature-rehab-labs-768.avif 768w, assets/images/r/case-feature-rehab-labs-900.avif 900w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <source type="image/webp" srcset="assets/images/r/case-feature-rehab-labs-480.webp 480w, assets/images/r/case-feature-rehab-labs-640.webp 640w, assets/images/r/case-feature-rehab-labs-768.webp 768w, assets/images/r/case-feature-rehab-labs-900.webp 900w" sizes="(max-width: 500px) 473px, (max-width: 600px) 568px, (max-width: 700px) 670px, (max-width: 1600px) 814px, 900px">
+  <img src="assets/images/case-feature-rehab-labs.jpg" width="900" height="502" alt="" loading="lazy" decoding="async">
+</picture></div>
       </div>
     </section>
 

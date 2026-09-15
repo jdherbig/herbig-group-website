@@ -127,6 +127,13 @@ body {
   overflow-x: hidden;
 }
 img { display: block; max-width: 100%; }
+/* HG-P4-02: photographs are wrapped in <picture> for AVIF/WebP candidates.
+   The wrapper must not become a box of its own, or every existing
+   ".container img { width: 100%; height: 100% }" rule would resolve against
+   an auto-sized inline element instead of the real container. display:
+   contents removes the wrapper from layout entirely, so the <img> keeps
+   sizing, positioning and object-fit exactly as before. */
+picture { display: contents; }
 a { text-decoration: none; color: inherit; }
 button { font: inherit; cursor: pointer; }
 h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; }

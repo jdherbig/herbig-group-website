@@ -8,7 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&family=Ramsina&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="assets/images/page-header-jv.jpg">
+  <link rel="preload" as="image" type="image/avif" data-route-image
+        imagesrcset="assets/images/r/page-header-jv-360.avif 360w, assets/images/r/page-header-jv-480.avif 480w, assets/images/r/page-header-jv-640.avif 640w, assets/images/r/page-header-jv-768.avif 768w, assets/images/r/page-header-jv-896.avif 896w"
+        imagesizes="(max-width: 360px) 360px, (max-width: 430px) 430px, (max-width: 500px) 500px, (max-width: 600px) 600px, (max-width: 768px) 768px, 896px" fetchpriority="high">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,14 +22,43 @@
     <div id="page-transition-logo" class="page-transition-overlay__logo"></div>
   </div>
   <script>
+    /* HG-P4-01: this script both conceals route content for the branded
+       intro and bounds that concealment. Everything that would normally
+       uncover the page again - the Lottie library from a CDN, its animation
+       JSON, the transition script chained behind them - is optional
+       decoration on a critical path it has no business owning. The watchdog
+       below starts in the same breath as the concealment, before any of
+       those dependencies has even been requested, so a stalled request or a
+       promise that never settles can never hold readable content for longer
+       than MAX_MS. transitions.js calls release() itself when the intro
+       finishes normally, and skips the intro entirely if this already
+       fired. */
     (function () {
-      try {
-        if (!sessionStorage.getItem("hgIntroSeen")) {
-          var overlay = document.getElementById("page-transition-overlay");
-          if (overlay) overlay.hidden = false;
-          document.documentElement.classList.add("hg-intro-pending");
-        }
-      } catch (e) {}
+      var MAX_MS = 1300;
+      var seen = false;
+      try { seen = !!sessionStorage.getItem("hgIntroSeen"); } catch (e) {}
+      if (seen) return;
+
+      var root = document.documentElement;
+      var overlay = document.getElementById("page-transition-overlay");
+      if (overlay) overlay.hidden = false;
+      root.classList.add("hg-intro-pending");
+
+      var intro = window.hgIntro = { released: false, timedOut: false };
+      intro.release = function () {
+        if (intro.released) return;
+        intro.released = true;
+        window.clearTimeout(intro.timer);
+        root.classList.remove("hg-intro-pending");
+        // Dropping is-visible restores the overlay's own pointer-events:
+        // none and fades it out; it never intercepts input after this.
+        if (overlay) overlay.classList.remove("is-visible");
+        try { sessionStorage.setItem("hgIntroSeen", "1"); } catch (e) {}
+      };
+      intro.timer = window.setTimeout(function () {
+        intro.timedOut = true;
+        intro.release();
+      }, MAX_MS);
     })();
   </script>
 
@@ -133,7 +164,11 @@
     <!-- ============ PAGE HEADER ============ -->
     <section class="page-header" data-navbar-theme="dark">
       <div class="page-header__bg">
-        <img src="assets/images/page-header-jv.jpg" alt="">
+        <picture>
+          <source type="image/avif" srcset="assets/images/r/page-header-jv-360.avif 360w, assets/images/r/page-header-jv-480.avif 480w, assets/images/r/page-header-jv-640.avif 640w, assets/images/r/page-header-jv-768.avif 768w, assets/images/r/page-header-jv-896.avif 896w" sizes="(max-width: 360px) 360px, (max-width: 430px) 430px, (max-width: 500px) 500px, (max-width: 600px) 600px, (max-width: 768px) 768px, 896px">
+          <source type="image/webp" srcset="assets/images/r/page-header-jv-360.webp 360w, assets/images/r/page-header-jv-480.webp 480w, assets/images/r/page-header-jv-640.webp 640w, assets/images/r/page-header-jv-768.webp 768w, assets/images/r/page-header-jv-896.webp 896w" sizes="(max-width: 360px) 360px, (max-width: 430px) 430px, (max-width: 500px) 500px, (max-width: 600px) 600px, (max-width: 768px) 768px, 896px">
+          <img src="assets/images/page-header-jv.jpg" srcset="assets/images/r/page-header-jv-360.jpg 360w, assets/images/r/page-header-jv-480.jpg 480w, assets/images/r/page-header-jv-640.jpg 640w, assets/images/r/page-header-jv-768.jpg 768w, assets/images/page-header-jv.jpg 896w" sizes="(max-width: 360px) 360px, (max-width: 430px) 430px, (max-width: 500px) 500px, (max-width: 600px) 600px, (max-width: 768px) 768px, 896px" width="896" height="1152" alt="" loading="eager" fetchpriority="high" decoding="async">
+        </picture>
       </div>
       <span class="accent-bar"></span>
       <div class="page-header__copy">

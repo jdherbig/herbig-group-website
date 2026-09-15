@@ -309,13 +309,27 @@
     // opposite, and more usual, choice) - the fallback state (a solid
     // tinted panel, no blur) already looks intentional on its own, so
     // there's nothing to wait on visually, just an upgrade once ready.
+    // HG-P4-10: "loaded" is not "decoded". The bytes can have arrived while
+    // the pixels backdrop-filter needs still have not, which is precisely
+    // the moment this upgrade must not run - it would blur nothing and then
+    // pop, the exact artefact the gate exists to avoid. decode() resolves
+    // when the frame is genuinely ready to paint. It stays a non-blocking
+    // upgrade: a rejection (or a browser without decode()) just keeps the
+    // deliberate unblurred panel, and nothing else on the page waits on it.
     var img = hero.querySelector(".hero__media img");
     if (img) {
+      var markPhotoReady = function () { hero.classList.add("is-photo-ready"); };
+      var markWhenDecoded = function () {
+        if (typeof img.decode === "function") {
+          img.decode().then(markPhotoReady, markPhotoReady);
+        } else {
+          markPhotoReady();
+        }
+      };
       if (img.complete && img.naturalWidth > 0) {
-        hero.classList.add("is-photo-ready");
+        markWhenDecoded();
       } else {
-        var markPhotoReady = function () { hero.classList.add("is-photo-ready"); };
-        img.addEventListener("load", markPhotoReady, { once: true });
+        img.addEventListener("load", markWhenDecoded, { once: true });
         img.addEventListener("error", markPhotoReady, { once: true });
       }
     }
