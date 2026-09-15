@@ -11,9 +11,28 @@
   --color-ink: #21262d;
   --color-border: #e2e5e8;
   --color-border-soft: #e6eaf0;
+  /* A11Y-01/03: one brand green cannot serve as decoration, as a fill behind
+     white text, and as small text on light surfaces - those three roles need
+     different luminance to reach 4.5:1. The hue family is unchanged; only the
+     role is split. --color-green stays the decorative accent (bars, blobs,
+     icon strokes, borders, large display text) and is still what the brand
+     reads as. */
   --color-green: #3ca169;
   --color-green-rgb: 60, 161, 105;
   --color-green-tint: #e8f5ee;
+  --color-green-action: #2f7f52;        /* fill behind white action labels */
+  --color-green-action-hover: #2a6f47;  /* its hover, darker still */
+  --color-green-ink: #2b7049;           /* green text on white / pale tint */
+  --color-green-on-dark: #6ecb97;       /* small green text on dark surfaces */
+  --color-amber-ink: #8a6715;           /* badge text on its pale fill */
+
+  /* A11Y-04/05: form controls need their own boundary and placeholder
+     values. Decorative glass borders stay subtle; these do not, because the
+     edge of an editable field is information. Both reach 3:1 (border) and
+     4.5:1 (placeholder) against the composited surfaces of BOTH form cards,
+     the darker joint-venture card included. */
+  --form-control-border: rgba(255, 255, 255, 0.36);
+  --form-placeholder: rgba(255, 255, 255, 0.55);
   --color-green-dark-tint: #1a3d2a;
   --color-dark: #21262d;
   --color-dark-panel: #2e3540;
@@ -144,11 +163,52 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
 }
 
+/* A11Y-02: the ring colour is a token so it can follow the surface it lands
+   on. The brand green only reaches 2.78:1 on the soft grey page background,
+   below the 3:1 this project requires of a focus indicator, so light
+   surfaces use the darker ink green and dark surfaces the lighter one. */
 :focus-visible {
-  outline: 2px solid var(--color-green);
+  outline: 2px solid var(--focus-ring, var(--color-green-ink));
   outline-offset: 3px;
   border-radius: 4px;
 }
+
+/* A11Y-06: skip link. It is the first focusable element in the document on
+   every route and lives outside #route-content, so a client-side navigation
+   never rebuilds or loses it. Off-screen by transform rather than
+   display/visibility so it stays focusable, and it is revealed above the
+   fixed header - not behind it - when focus reaches it. */
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  z-index: 200;
+  transform: translate(-50%, calc(-100% - 24px));
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 24px;
+  border-radius: 999px;
+  background: var(--color-dark);
+  color: var(--color-white);
+  border: 1px solid var(--color-green-on-dark);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
+  transition: transform 0.22s var(--ease);
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translate(-50%, 0);
+  --focus-ring: var(--color-green-on-dark);
+}
+/* The skip destination is a programmatic focus target only; a ring drawn
+   around the entire page would be noise, and :focus-visible would not
+   paint one here anyway. */
+#main-content:focus { outline: none; }
 
 /* ============================================
    AMBIENT DECORATION — liquid-glass blobs
@@ -261,9 +321,9 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
   position: relative;
   z-index: 1;
 }
-.tag--light { background: var(--color-green-tint); border: 1px solid rgba(var(--color-green-rgb), 0.19); }
+.tag--light { background: var(--color-green-tint); border: 1px solid rgba(var(--color-green-rgb), 0.19); color: var(--color-green-ink); }
 .tag--dark { background: var(--color-green-dark-tint); }
-.tag--pillars { background: rgba(var(--color-green-rgb), 0.5); border: 1px solid var(--glass-border); color: var(--color-white); }
+.tag--pillars { background: var(--color-green-action); border: 1px solid var(--glass-border); color: var(--color-white); }
 .roots .tag { letter-spacing: 2px; }
 
 .section-heading {
@@ -325,8 +385,8 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 }
 .btn:hover::before { transform: translateX(120%); }
 
-.btn--primary { background: var(--color-green); color: var(--color-white); box-shadow: 0 8px 12px rgba(var(--color-green-rgb), 0.31); }
-.btn--primary:hover { background: #349159; transform: translateY(-2px); box-shadow: 0 10px 18px rgba(var(--color-green-rgb), 0.28); }
+.btn--primary { background: var(--color-green-action); color: var(--color-white); box-shadow: 0 8px 12px rgba(var(--color-green-rgb), 0.31); }
+.btn--primary:hover { background: var(--color-green-action-hover); transform: translateY(-2px); box-shadow: 0 10px 18px rgba(var(--color-green-rgb), 0.28); }
 .btn--primary:active { transform: translateY(0); }
 
 /* HG-P3-04: a CTA-styled placeholder for content that doesn't exist yet.
@@ -336,7 +396,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .btn--disabled { opacity: 0.55; cursor: default; pointer-events: none; }
 .btn--disabled::before { display: none; }
 
-.btn--outline { background: var(--color-white); color: var(--color-green); border: 1.5px solid var(--color-green); }
+.btn--outline { background: var(--color-white); color: var(--color-green-ink); border: 1.5px solid var(--color-green-ink); }
 .btn--outline:hover { background: var(--color-green-tint); transform: translateY(-2px); box-shadow: 0 10px 18px rgba(var(--color-green-rgb), 0.15); }
 
 .btn--ghost { background: var(--glass-fill-soft); color: var(--color-white); border: 1.5px solid var(--glass-border); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.13); }
@@ -509,15 +569,18 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .mobile-menu__list { display: flex; flex-direction: column; gap: 8px; }
 .mobile-menu__link { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--radius-lg); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); transition: background 0.2s var(--ease), border-color 0.2s var(--ease); }
 .mobile-menu__link:active { background: rgba(255, 255, 255, 0.06); }
-.mobile-menu__index { flex-shrink: 0; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); color: var(--color-green); font-family: var(--font-body); font-weight: 700; font-size: 10px; letter-spacing: 1px; }
+.mobile-menu__index { flex-shrink: 0; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); color: var(--color-green-on-dark); font-family: var(--font-body); font-weight: 700; font-size: 10px; letter-spacing: 1px; }
 .mobile-menu__label { flex: 1 1 auto; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--color-white); }
 .mobile-menu__chevron { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; }
 .mobile-menu__link.is-active { border-color: rgba(var(--color-green-rgb), 0.3); background: rgba(var(--color-green-rgb), 0.08); }
-.mobile-menu__link.is-active .mobile-menu__index { background: var(--color-green); color: var(--color-white); }
-.mobile-menu__link.is-active .mobile-menu__label { color: var(--color-green); }
+.mobile-menu__link.is-active .mobile-menu__index { background: var(--color-green-action); color: var(--color-white); }
+.mobile-menu__link.is-active .mobile-menu__label { color: var(--color-green-on-dark); }
 
 .mobile-menu__card { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius-xl); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.mobile-menu__card-title { font-family: var(--font-display); font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
+/* A11Y-03: 12px uppercase over the menu's blurred dark glass measured
+   4.31:1 with the decorative green - the on-dark green clears 4.5:1 with
+   room to spare for whatever the backdrop filter samples behind it. */
+.mobile-menu__card-title { font-family: var(--font-display); font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green-on-dark); }
 .mobile-menu__card-sub { font-size: 12px; line-height: 1.5; color: var(--color-white); opacity: 0.65; margin-top: 2px; }
 /* HG-P3-09: gap widened from 8px to 12px so the two contact rows' expanded
    hit areas below (6px top + 6px bottom each = 12px combined at the seam)
@@ -682,8 +745,8 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .eq-card { position: relative; z-index: 1; background: var(--color-white); border: 1px solid var(--color-border-soft); border-radius: var(--radius-2xl); padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; box-shadow: 0 16px 32px rgba(33, 38, 45, 0.04); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); will-change: transform; }
 .eq-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-card-hover); }
 .eq-card__stripe { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--color-green); }
-.eq-card__number { display: inline-flex; align-self: flex-start; padding: 4px 12px; border-radius: 6px; background: var(--color-green-tint); color: var(--color-green); font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: 1.5px; }
-.eq-card__number--solid { background: var(--color-green); color: var(--color-white); }
+.eq-card__number { display: inline-flex; align-self: flex-start; padding: 4px 12px; border-radius: 6px; background: var(--color-green-tint); color: var(--color-green-ink); font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: 1.5px; }
+.eq-card__number--solid { background: var(--color-green-action); color: var(--color-white); }
 .eq-card h3 { font-weight: 900; font-size: 26px; line-height: 1.15; color: var(--color-ink); }
 .eq-card__formula { font-family: var(--font-display); font-weight: 700; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-green); margin-top: -10px; }
 .eq-card__image { border-radius: var(--radius-lg); overflow: hidden; height: 150px; }
@@ -762,7 +825,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .pathway-card__panel { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px 24px 32px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 18px 48px rgba(0, 0, 0, 0.12); overflow: hidden; }
 .pathway-card__panel h3 { font-weight: 800; font-size: 24px; line-height: 1.2; color: var(--color-white); position: relative; z-index: 1; }
 .pathway-card__panel p { font-size: 15px; line-height: 1.65; color: var(--color-white); opacity: 0.75; position: relative; z-index: 1; }
-.pathway-card__chip { display: inline-flex; padding: 6px 12px; border-radius: 999px; background: var(--color-green); color: var(--color-white); font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; position: relative; z-index: 1; }
+.pathway-card__chip { display: inline-flex; padding: 6px 12px; border-radius: 999px; background: var(--color-green-action); color: var(--color-white); font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; position: relative; z-index: 1; }
 
 @media (min-width: 900px) {
   /* Panel overlaps the image edge by ~10% so the frosted glass actually
@@ -814,7 +877,7 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 .timeline-item--dark .timeline-item__head h3 { color: var(--color-white); }
 @media (min-width: 900px) { .timeline-item__head h3 { font-size: 24px; } }
 
-.pill { background: var(--color-green-tint); color: var(--color-green); font-weight: 700; font-size: 9px; padding: 4px 10px; border-radius: 100px; text-transform: uppercase; white-space: nowrap; border: 1px solid rgba(var(--color-green-rgb), 0.19); }
+.pill { background: var(--color-green-tint); color: var(--color-green-ink); font-weight: 700; font-size: 9px; padding: 4px 10px; border-radius: 100px; text-transform: uppercase; white-space: nowrap; border: 1px solid rgba(var(--color-green-rgb), 0.19); }
 @media (min-width: 900px) { .pill { font-size: 10px; padding: 5px 12px; } }
 
 .timeline-item p { font-size: 13px; line-height: 1.5; opacity: 0.8; color: var(--color-ink); }
@@ -943,9 +1006,9 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
 }
 .inquiry-form.is-visible .form-field { opacity: 1; }
 .form-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
-.form-field input, .form-field textarea { width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--glass-border-soft); border-radius: 10px; padding: 16px 18px; color: var(--color-white); font-family: var(--font-body); font-size: 15px; resize: vertical; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
+.form-field input, .form-field textarea { width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--form-control-border); border-radius: 10px; padding: 16px 18px; color: var(--color-white); font-family: var(--font-body); font-size: 15px; resize: vertical; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
 .form-field textarea { min-height: 140px; }
-.form-field input::placeholder, .form-field textarea::placeholder { color: rgba(255, 255, 255, 0.45); }
+.form-field input::placeholder, .form-field textarea::placeholder { color: var(--form-placeholder); }
 .form-field input:focus, .form-field textarea:focus { outline: none; border-color: var(--color-green); background: rgba(255, 255, 255, 0.09); }
 .form-field input:user-invalid, .form-field textarea:user-invalid { border-color: #d9695f; }
 /* HG-P3-08: JS-driven validation state (initContactForm), independent of
@@ -957,7 +1020,22 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    the same visually-hidden honeypot the joint-venture form uses, and a
    pending state for the moment between submit and confirmation. */
 .form-field--hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.form-field__optional { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.6; }
+/* A11Y-07: the optional marker is the cue that carries the "unless marked
+   optional" instruction, so it has to be readable rather than a faded
+   version of the label - an alpha fade over the dark field surface put it
+   under 4.5:1. Explicit colour, no opacity. */
+.form-field__optional { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 1; color: var(--form-placeholder); }
+
+/* A11Y-07: required/optional instruction, stated before the first field on
+   both forms. */
+.form-required-note {
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--form-placeholder);
+  position: relative;
+  z-index: 1;
+}
 .inquiry-form__note.is-pending { color: rgba(255, 255, 255, 0.72); }
 .inquiry-form .btn--full:disabled { opacity: 0.7; cursor: not-allowed; }
 
@@ -1643,8 +1721,8 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 }
 .jv-form-card.is-visible .jv-field { opacity: 1; }
 .jv-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
-.jv-field input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
-.jv-field input::placeholder { color: #cbd5e1; opacity: 0.65; }
+.jv-field input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--form-control-border); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
+.jv-field input::placeholder { color: var(--form-placeholder); opacity: 1; }
 .jv-field input:focus { outline: none; border-color: var(--color-green); background: rgba(255, 255, 255, 0.08); }
 /* HG-P3-02: per-field validation state, set/cleared by JS in initJVForm(). */
 .jv-field input.is-invalid { border-color: #d9695f; }
@@ -1660,6 +1738,23 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .jv-form-card__note.is-error { color: #ef8b83; }
 .jv-form-card__note.is-success { color: var(--color-green); }
 .jv-form-card__note.is-pending { color: #cbd5e1; }
+
+/* A11Y-02: keyboard focus must stay recognisable independently of validity.
+   The field :focus rules above set outline: none, and the invalid rules paint
+   the same red border whether or not the field is focused - so a keyboard
+   user in an error state had only an 8%-vs-5% fill change to go on. These are
+   declared last, after every one of those rules, so nothing can override
+   them, and they use the surface-aware ring token: 6.4:1 against the contact
+   field fill and 8:1 against the joint-venture one, well clear of the 3:1
+   this project requires, and a different hue from the red error border.
+   Fields sit 24-40px inside their card's padding, so the offset ring is
+   never clipped by the card's own overflow. */
+.form-field input:focus-visible,
+.form-field textarea:focus-visible,
+.jv-field input:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--color-green-on-dark));
+  outline-offset: 3px;
+}
 
 /* ============================================
    SUBPAGE: HOUSING HIGHLIGHTS (housing-projects)
@@ -1740,7 +1835,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .breadcrumbs a { color: #cfcfcf; font-weight: 600; text-decoration: none; transition: color 0.25s var(--ease); }
 .breadcrumbs a:hover { color: var(--color-white); }
 .breadcrumbs .sep { color: #cfcfcf; font-weight: 600; }
-.breadcrumbs .current { color: var(--color-green); font-weight: 700; }
+.breadcrumbs .current { color: var(--color-green-on-dark); font-weight: 700; }
 
 /* Same reasoning as .page-header above - no downward box-shadow, since
    this sits flush against the white content that follows, not above it. */
@@ -1791,7 +1886,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .case-meta-col__label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #cfcfcf; }
 .case-meta-col__value { font-size: 16px; font-weight: 800; color: var(--color-white); font-family: var(--font-body); }
 @media (min-width: 900px) { .case-meta-col__value { font-size: 18px; } }
-.status-badge { display: inline-flex; align-items: center; align-self: flex-start; padding: 4px 12px; border-radius: 100px; background: #ffffb3; color: #c1901e; font-size: 11px; font-weight: 800; }
+.status-badge { display: inline-flex; align-items: center; align-self: flex-start; padding: 4px 12px; border-radius: 100px; background: #ffffb3; color: var(--color-amber-ink); font-size: 11px; font-weight: 800; }
 @media (min-width: 900px) { .status-badge { font-size: 12px; } }
 
 .case-deep-dive { position: relative; background: var(--color-bg-soft); padding: 48px var(--container-pad); display: flex; flex-direction: column; gap: 40px; box-shadow: 0 16px 24px rgba(0, 0, 0, 0.06); }
@@ -1811,7 +1906,7 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 .case-narrative { display: flex; flex-direction: column; gap: 24px; }
 @media (min-width: 1150px) { .case-narrative { max-width: 560px; flex-shrink: 0; } }
 .case-narrative__eyebrow { display: flex; flex-direction: column; gap: 16px; }
-.case-narrative__eyebrow span { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-green); }
+.case-narrative__eyebrow span { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-green-ink); }
 .case-narrative__eyebrow h2 { font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.15; color: var(--color-ink); }
 @media (min-width: 900px) { .case-narrative__eyebrow h2 { font-size: 40px; line-height: 1.05; } }
 .case-narrative p { font-size: 15px; line-height: 1.65; color: var(--color-ink); opacity: 0.82; }
@@ -2013,6 +2108,16 @@ html.hg-intro-pending #route-content {
   transition: opacity 0.3s ease;
 }
 .page-transition-overlay.is-visible { opacity: 1; pointer-events: all; }
+
+/* Dark surfaces get the lighter ring; everything else inherits the ink one. */
+.mobile-menu,
+.footer,
+.inquiry-form,
+.jv-form-card,
+.navbar.menu-open,
+[data-navbar-theme="dark"] {
+  --focus-ring: var(--color-green-on-dark);
+}
 .page-transition-overlay__logo { width: 364px; max-width: 77vw; aspect-ratio: 1280 / 720; }
 @media (min-width: 900px) { .page-transition-overlay__logo { width: 448px; } }
 .page-transition-overlay__logo svg { display: block; width: 100%; height: 100%; }

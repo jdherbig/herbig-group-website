@@ -15,6 +15,14 @@
 </head>
 <body>
 
+  <!-- ============ SKIP LINK ============
+       A11Y-06: first focusable element on every route, off-screen
+       until focused and then revealed above the fixed header. It
+       lives outside #route-content so it survives every client-side
+       navigation; the router's same-page hash handler moves focus
+       into <main id="main-content" tabindex="-1">. -->
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
   <!-- ============ PAGE TRANSITION OVERLAY ============
        Sits above #route-content only (top: var(--nav-height)) — the
        navbar itself is never covered, animated, or otherwise touched. -->
@@ -160,7 +168,7 @@
 
   <div id="route-content">
 
-  <main>
+  <main id="main-content" tabindex="-1">
     <!-- ============ PAGE HEADER ============ -->
     <section class="page-header" data-navbar-theme="dark">
       <div class="page-header__bg">
@@ -210,13 +218,14 @@
             <h3>Discuss an opportunity</h3>
             <p>Introduce your organization, the location you are considering and the purpose of your proposed facility.</p>
           </div>
+          <p class="form-required-note" id="jv-required-note">All fields are required unless marked optional.</p>
           <label class="jv-field">
             <span class="jv-field__label">Organization</span>
             <input type="text" name="company" id="jv-company" placeholder="Your organization’s name" required autocomplete="organization" aria-describedby="jv-company-error">
             <span class="jv-field__error" id="jv-company-error" role="alert"></span>
           </label>
           <label class="jv-field">
-            <span class="jv-field__label">Location you are considering</span>
+            <span class="jv-field__label">Location you are considering <span class="form-field__optional">(optional)</span></span>
             <input type="text" name="location" id="jv-sqft" placeholder="City or region">
           </label>
           <label class="jv-field">

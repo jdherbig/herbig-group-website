@@ -15,6 +15,14 @@
 </head>
 <body>
 
+  <!-- ============ SKIP LINK ============
+       A11Y-06: first focusable element on every route, off-screen
+       until focused and then revealed above the fixed header. It
+       lives outside #route-content so it survives every client-side
+       navigation; the router's same-page hash handler moves focus
+       into <main id="main-content" tabindex="-1">. -->
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
   <!-- ============ PAGE TRANSITION OVERLAY ============
        Sits above #route-content only (top: var(--nav-height)) — the
        navbar itself is never covered, animated, or otherwise touched. -->
@@ -160,7 +168,7 @@
 
   <div id="route-content">
 
-  <main>
+  <main id="main-content" tabindex="-1">
     <!-- ============ PAGE HEADER ============ -->
     <section class="page-header" data-navbar-theme="dark">
       <div class="page-header__bg">
