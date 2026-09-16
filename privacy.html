@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy | Herbig Group</title>
-  <meta name="description" content="How Herbig Group handles the details you send through the inquiry forms on this site.">
+  <meta name="description" content="How Herbig Group handles information when you visit this website or send an inquiry about real estate, land development or a partnership.">
 
   <!-- ============ BROWSER IDENTITY (P7-03 / P7-05) ============
        Root-relative so every route resolves them identically. The mark sits
@@ -22,6 +22,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&family=Ramsina&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=3e8c40e1">
+  <!-- ============ NO-SCRIPT REVEAL GUARD (HG-P10-04) ============
+       .reveal and its siblings start at opacity 0 and are only cleared by
+       script.js?v=71ef366c. With JavaScript unavailable that hides the entire page -
+       including, on the legal routes, the whole policy. A visitor reading a
+       privacy policy is often doing so precisely because they browse with
+       scripts off, so the text must not depend on them. This neutralises the
+       entrance state only when scripting is disabled; it is inert otherwise. -->
+  <noscript>
+    <style>
+      .reveal, .reveal-stagger, .reveal-surface, .reveal-grid {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style>
+  </noscript>
 </head>
 <body>
 
@@ -185,36 +200,44 @@
     <section class="policy" data-navbar-theme="dark">
       <div class="policy__inner">
         <span class="accent-bar"></span>
-        <p class="policy__eyebrow reveal">Herbig Group</p>
-        <h1 class="policy__title reveal">Privacy Policy</h1>
-        <p class="policy__updated reveal">Last updated 16 September 2026</p>
+        <p class="policy__eyebrow">Herbig Group</p>
+        <h1 class="policy__title">Privacy Policy</h1>
+        <p class="policy__updated">Effective 16 September 2026</p>
 
-        <div class="policy__body reveal-surface">
-          <h2>What this covers</h2>
-          <p>This policy explains what happens to the details you send us through this website. It covers the two inquiry forms on this site: the contact form on the home page and the partnership form on the Partnerships page.</p>
+        <div class="policy__body">
+          <h2>About this policy</h2>
+          <p>This policy explains how information is handled when you visit the Herbig Group website or contact us about real estate, land development or a potential partnership. It covers this website and its inquiry forms. Separate notices or agreements may apply to a later transaction.</p>
 
-          <h2>What we collect</h2>
-          <p>Only what you type into a form. The contact form asks for your name, email address and message, and optionally your organization. The partnership form asks for your organization, email address and the purpose of your proposed facility, and optionally a location.</p>
-          <p>We do not ask for payment details, and we do not run advertising or analytics trackers on this site.</p>
+          <h2>Information you provide</h2>
+          <p>Our contact form collects your name, email address, message and, if you choose to provide it, your organization. Our partnership form collects your organization, email address, the proposed facility purpose and, optionally, a location.</p>
+          <p>Each submission carries a reference we generate so that a resent inquiry can be recognised as the same one rather than recorded twice. We also receive information you send by email and in follow-up correspondence.</p>
+          <p>Please do not send Social Security numbers, payment information, medical records or confidential transaction documents through these forms.</p>
 
-          <h2>Why we collect it</h2>
-          <p>To read your inquiry and reply to it. That is the only purpose. We do not sell your details, and we do not add you to a mailing list.</p>
+          <h2>Website and service data</h2>
+          <p>Our hosting and delivery providers receive technical information needed to serve the website, such as your IP address, browser information, requested pages or files, request time and referring page when supplied by your browser. They may retain service logs for operation and security.</p>
 
-          <h2>How it is handled</h2>
-          <p>This site is hosted on Netlify, and the forms use Netlify Forms. When you submit an inquiry it is stored in our Netlify account and a copy is emailed to us so we see it promptly. That means Netlify, Inc. processes and stores your submission on our behalf as our hosting provider.</p>
-          <p>Our email is handled by Google Workspace, so a copy of your inquiry and any reply we send also sits in that mailbox.</p>
+          <h2>How information is used and handled</h2>
+          <p>We use inquiry information to review and respond to your request, discuss a potential project or partnership, and keep a record of the conversation. Technical information supports website delivery, troubleshooting and protection against abuse.</p>
+          <p>We do not sell your inquiry information or use it for targeted advertising. Submitting an inquiry does not subscribe you to a mailing list.</p>
+          <p>Netlify hosts this website and stores form submissions. A submission first passes through a small program of ours running on Netlify, which checks the fields are complete and within length limits and applies a limit on how many inquiries one network may send in an hour. It briefly keeps the submission reference and a one-way digest of the content, so a resent inquiry can be matched without that record holding your details in readable form. Netlify Forms screens submissions for spam. Form notifications are configured to go to our published email address. Our domain uses Google for email delivery, so notifications and correspondence are handled there as well.</p>
+          <p>These providers process information to deliver their services. Information may also need to be disclosed in response to a valid legal requirement or to address fraud, abuse or a security incident.</p>
 
-          <h2>How long we keep it</h2>
-          <p>We keep inquiries for as long as we need them to respond and to keep a record of the conversation. If you would like your inquiry deleted, ask us and we will remove it from both the form store and our mailbox.</p>
+          <h2>Fonts, animation and browser storage</h2>
+          <p>The website loads fonts from Google Fonts and an animation library from jsDelivr. Your browser connects directly to those services and sends technical request information, including your IP address. See <a href="https://policies.google.com/privacy" rel="noopener noreferrer" target="_blank">Google&rsquo;s Privacy Policy</a> and the <a href="https://github.com/jsdelivr/jsdelivr/blob/master/Privacy%20Policy.md" rel="noopener noreferrer" target="_blank">jsDelivr Privacy Policy</a> for how they handle it.</p>
+          <p>The site uses session storage to remember whether the introductory animation has played and to restore your position when you return to a page. These settings support navigation and are not used by this site to identify you for advertising.</p>
+          <p>This website does not use advertising pixels, analytics tags or cookies for behavioural advertising. It does not track your activity across other websites. Its code does not change behaviour in response to browser Do Not Track signals. Third-party delivery services receive the technical requests described above; their own practices are governed by their notices.</p>
 
-          <h2>Your choices</h2>
-          <p>You can ask us what we hold about you, ask for it to be corrected, or ask for it to be deleted. Email us and we will do it. You are also free not to use the forms at all and to email us directly instead.</p>
+          <h2>Retention and your choices</h2>
+          <p>We retain inquiry records as needed to respond, maintain relevant business correspondence and meet applicable legal obligations. Retention may differ between form records, email and service logs.</p>
+          <p>You may ask to review, correct or delete information you have provided by emailing <a href="mailto:info@herbiggroup.com">info@herbiggroup.com</a>. We may need to verify that a request relates to your information. Some records may need to be retained for legal obligations or an ongoing matter. Any rights and response requirements under applicable law remain in effect.</p>
+          <p>Providing inquiry information is voluntary. If you do not provide a way to reach you, we may be unable to respond. You may email us directly instead of using a form; email still involves processing by email providers.</p>
 
-          <h2>Getting in touch</h2>
-          <p>For anything in this policy, including a deletion request, email <a href="mailto:info@herbiggroup.com">info@herbiggroup.com</a>.</p>
+          <h2>Children and sensitive information</h2>
+          <p>This website is intended for business and development inquiries, not for children under 13. If you believe a child has provided personal information, contact us so we can review the matter. The forms are not intended for patient care, housing applications or financial transactions.</p>
 
-          <h2>Changes</h2>
-          <p>If we change how inquiries are handled, we will update this page and the date at the top of it.</p>
+          <h2>Changes and contact</h2>
+          <p>We will post revisions on this page and update the effective date. If a change requires additional notice or consent under applicable law, that requirement will apply.</p>
+          <p>For privacy questions or requests, contact Herbig Group at <a href="mailto:info@herbiggroup.com">info@herbiggroup.com</a>.</p>
         </div>
       </div>
     </section>
@@ -242,10 +265,10 @@
     </div>
     <div class="footer__bottom">
       <p>Copyright &copy; 2026 Herbig Group. All rights reserved.</p>
-      <div class="footer__links">
+      <nav class="footer__links" aria-label="Legal">
         <a href="privacy.html">Privacy Policy</a>
-        <span class="footer__link-disabled" title="Coming soon">Terms of Engagement</span>
-      </div>
+        <a href="terms.html">Terms of Use</a>
+      </nav>
     </div>
   </footer>
 

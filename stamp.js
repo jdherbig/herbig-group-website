@@ -82,12 +82,25 @@ for (const profile of configuredProfiles) {
   }
 }
 
-const FOOTER_LINKS_OPEN = '<div class="footer__links">';
+// HG-P10-02: the legal links became a labelled <nav> so the footer exposes
+// real navigation rather than a bare div. This anchor must track that markup;
+// if it silently stopped matching, social links would quietly vanish from the
+// footer with a successful-looking build, so a miss is now loud.
+const FOOTER_LINKS_OPEN = '<nav class="footer__links" aria-label="Legal">';
 
 function stampSocial(file) {
   if (!configuredProfiles.length) return 0;
   let html = fs.readFileSync(file, "utf8");
-  if (!html.includes(FOOTER_LINKS_OPEN)) return 0;
+  if (!html.includes(FOOTER_LINKS_OPEN)) {
+    // A page with a footer but no matching anchor means the markup and this
+    // constant have drifted apart. Fail the build rather than shipping a
+    // footer that silently lost its social links.
+    if (html.includes("<footer")) {
+      console.error(`footer anchor not found in ${path.basename(file)} - FOOTER_LINKS_OPEN is out of date`);
+      process.exitCode = 1;
+    }
+    return 0;
+  }
   // Idempotent: clear anything a previous run put here before writing again.
   html = html.replace(/\s*<a class="footer__social"[^>]*>[\s\S]*?<\/a>/g, "");
   const markup = configuredProfiles
@@ -151,6 +164,10 @@ const ROUTES = {
   // beside each form points at it, so it needs a canonical of its own and a
   // place in the sitemap like any other page.
   "privacy.html": "/privacy",
+  // HG-P10-01: Terms of Use is a linkable route for the same reason - the
+  // footer of every page points at it, so it needs a canonical and a sitemap
+  // entry or it is a page search engines are told to ignore.
+  "terms.html": "/terms",
 };
 
 /* ---------------------------------------------------------------------------
@@ -181,6 +198,7 @@ const SOCIAL = {
   "joint-ventures.html": DEFAULT_SOCIAL,
   "housing-projects.html": DEFAULT_SOCIAL,
   "privacy.html": DEFAULT_SOCIAL,
+  "terms.html": DEFAULT_SOCIAL,
   "active-holdings.html": {
     image: "assets/social/og-fortitude-arizona.jpg",
     alt: "The Herbig Group mark over a rendering of the Fortitude Arizona headquarters, the company's first project, currently under construction",

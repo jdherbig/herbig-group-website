@@ -25,6 +25,21 @@
         imagesrcset="assets/images/r/page-header-housing-640.avif?v=94c2571d 640w, assets/images/r/page-header-housing-768.avif?v=5e79423c 768w, assets/images/r/page-header-housing-960.avif?v=d57cc973 960w, assets/images/r/page-header-housing-1264.avif?v=73f252b6 1264w"
         imagesizes="(max-width: 430px) 690px, (max-width: 600px) 600px, (max-width: 768px) 768px, (max-width: 900px) 900px, (max-width: 1024px) 1024px, 1264px" fetchpriority="high">
   <link rel="stylesheet" href="styles.css?v=3e8c40e1">
+  <!-- ============ NO-SCRIPT REVEAL GUARD (HG-P10-04) ============
+       .reveal and its siblings start at opacity 0 and are only cleared by
+       script.js?v=71ef366c. With JavaScript unavailable that hides the entire page -
+       including, on the legal routes, the whole policy. A visitor reading a
+       privacy policy is often doing so precisely because they browse with
+       scripts off, so the text must not depend on them. This neutralises the
+       entrance state only when scripting is disabled; it is inert otherwise. -->
+  <noscript>
+    <style>
+      .reveal, .reveal-stagger, .reveal-surface, .reveal-grid {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style>
+  </noscript>
 </head>
 <body>
 
@@ -258,10 +273,10 @@
     </div>
     <div class="footer__bottom">
       <p>Copyright &copy; 2026 Herbig Group. All rights reserved.</p>
-      <div class="footer__links">
+      <nav class="footer__links" aria-label="Legal">
         <a href="privacy.html">Privacy Policy</a>
-        <span class="footer__link-disabled" title="Coming soon">Terms of Engagement</span>
-      </div>
+        <a href="terms.html">Terms of Use</a>
+      </nav>
     </div>
   </footer>
 
