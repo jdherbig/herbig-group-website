@@ -973,8 +973,44 @@
   var INQUIRY_MESSAGES = {
     pending: "Sending your inquiry\u2026",
     success: "Thank you. Your inquiry has been received.",
-    failure: "Your inquiry could not be sent. Please try again."
+    failure: "Your inquiry could not be sent. Please try again.",
+    // P9-04: a timeout is genuinely ambiguous - the submission may have
+    // been stored before the response was lost. Say exactly that rather
+    // than claiming failure (which invites a duplicate) or success
+    // (which would be a lie the visitor acts on).
+    timeout: "We couldn\u2019t confirm receipt. Your details are still here. Please try again."
   };
+
+  // P9-04: bounded pending state. Without this a stalled request leaves the
+  // submit button disabled and the visitor with no way forward.
+  var INQUIRY_TIMEOUT_MS = 20000;
+
+  /* P9-05: the validation contract, keyed by the field's submitted name so
+   * both forms share one table. Limits are counted AFTER trimming, and are
+   * enforced on optional fields too - "optional" means "may be empty", not
+   * "may be unbounded". Nothing is ever silently truncated: an over-length
+   * value is refused with its own limit stated in the error. */
+  var INQUIRY_LIMITS = {
+    name: 100,
+    organization: 200,
+    company: 200,
+    location: 200,
+    email: 254,
+    message: 5000
+  };
+
+  /* P9-05: one submission ID per inquiry, stable across retries of the same
+   * content. Netlify Forms has no idempotency key of its own, so this cannot
+   * make the server atomically de-duplicate - what it does give is a durable
+   * marker that makes a duplicate identifiable rather than invisible, and it
+   * changes the moment the visitor edits the payload, so a genuinely new
+   * inquiry is never mistaken for a retry of the old one. */
+  function newSubmissionId() {
+    try {
+      if (window.crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    } catch (e) {}
+    return "hg-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  }
 
   function initInquiryForm(options) {
     var form = document.getElementById(options.formId);
@@ -982,14 +1018,44 @@
     if (!form || !note) return;
 
     var submitBtn = form.querySelector("button[type='submit']");
-    var isSubmitting = false;
+    var submitLabel = submitBtn ? submitBtn.querySelector("span") : null;
+    var submitIdleText = submitLabel ? submitLabel.textContent : "";
 
-    function requiredFields() {
-      return Array.prototype.slice.call(form.querySelectorAll("[required]"));
+    var isSubmitting = false;
+    var controller = null;
+    var timeoutTimer = null;
+    var attemptToken = 0;       // invalidates a late response from an abandoned attempt
+    var submissionId = null;    // stable across unchanged retries
+    var lastSignature = null;   // payload the current submissionId belongs to
+    var lastOutcome = null;     // "success" once a send has been accepted
+
+    var honeypotField = form.querySelector("[name='" + options.honeypot + "']");
+    var idField = form.querySelector("input[name='submission-id']");
+
+    /* ---------- field helpers ---------- */
+
+    // Every control that carries a value, honeypot and bookkeeping excluded.
+    function valueFields() {
+      return Array.prototype.slice.call(form.querySelectorAll("input, textarea")).filter(function (el) {
+        if (el.type === "hidden" || el.type === "submit" || el.type === "button") return false;
+        if (honeypotField && el === honeypotField) return false;
+        return true;
+      });
     }
 
     function errorElFor(field) {
       return document.getElementById(field.id + "-error");
+    }
+
+    function limitFor(field) {
+      return INQUIRY_LIMITS[field.name] || 0;
+    }
+
+    function labelTextFor(field) {
+      var label = form.querySelector("label[for='" + field.id + "']");
+      if (!label) return "This field";
+      // strip the "(optional)" marker so errors read as prose
+      return label.textContent.replace(/\(optional\)/i, "").trim() || "This field";
     }
 
     function clearFieldError(field) {
@@ -1006,29 +1072,123 @@
       if (errorEl) errorEl.textContent = message;
     }
 
+    /* ---------- P9-05: the validation contract ---------- */
+
+    // Values that end up in email headers (everything except the message
+    // body) must not carry line breaks - that is the header-injection
+    // vector, and no legitimate single-line answer contains one.
+    function hasLineBreak(value) {
+      return /[\r\n]/.test(value);
+    }
+
+    // Control characters have no place in any submitted value.
+    function hasControlChars(value) {
+      return /[ --]/.test(value);
+    }
+
+    function emailProblem(field, value) {
+      if (/\s/.test(value)) return "Enter a single email address without spaces.";
+      if (hasControlChars(value)) return "Enter a valid email address.";
+      if (!field.checkValidity()) return "Enter a valid email address.";
+      // Documented public-domain rule: a public inquiry form should not
+      // accept a dotless domain (a@example), which is valid per the HTML
+      // standard but not reachable on the public internet. Deliberately
+      // NOT a TLD allow-list and NOT a corporate-domain requirement.
+      var at = value.lastIndexOf("@");
+      var domain = at === -1 ? "" : value.slice(at + 1);
+      if (domain.indexOf(".") === -1) return "Enter a full email domain, for example name@example.com.";
+      if (domain.indexOf("..") !== -1) return "Enter a valid email address.";
+      return null;
+    }
+
+    function validateField(field) {
+      clearFieldError(field);
+      var value = field.value.trim();
+      var required = field.hasAttribute("required");
+      var limit = limitFor(field);
+
+      if (!value) {
+        if (required) {
+          setFieldError(field, "This field is required.");
+          return false;
+        }
+        return true; // an empty optional field is fine
+      }
+
+      if (limit && value.length > limit) {
+        setFieldError(field, labelTextFor(field) + " must be " + limit +
+          " characters or fewer (currently " + value.length + ").");
+        return false;
+      }
+
+      if (field.tagName !== "TEXTAREA" && hasLineBreak(value)) {
+        setFieldError(field, "Remove the line break from this field.");
+        return false;
+      }
+
+      if (hasControlChars(value)) {
+        setFieldError(field, "Remove unsupported characters from this field.");
+        return false;
+      }
+
+      if (field.type === "email") {
+        var problem = emailProblem(field, value);
+        if (problem) {
+          setFieldError(field, problem);
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     function validate() {
       var firstInvalid = null;
-      requiredFields().forEach(function (field) {
-        clearFieldError(field);
-        var value = field.value.trim();
-        if (!value) {
-          setFieldError(field, "This field is required.");
-          firstInvalid = firstInvalid || field;
-          return;
-        }
-        if (field.type === "email" && !field.checkValidity()) {
-          setFieldError(field, "Enter a valid email address.");
-          firstInvalid = firstInvalid || field;
-        }
+      valueFields().forEach(function (field) {
+        if (!validateField(field) && !firstInvalid) firstInvalid = field;
       });
       return firstInvalid;
     }
 
-    requiredFields().forEach(function (field) {
+    valueFields().forEach(function (field) {
       field.addEventListener("input", function () {
-        if (field.classList.contains("is-invalid")) clearFieldError(field);
+        // Re-validating the field as it is corrected clears its error the
+        // moment it becomes valid, rather than only on the next submit.
+        if (field.classList.contains("is-invalid")) validateField(field);
+        // Typing after a completed send is how a visitor starts another
+        // inquiry: drop the stale confirmation and take a fresh ID.
+        if (lastOutcome === "success") {
+          lastOutcome = null;
+          submissionId = null;
+          lastSignature = null;
+          setNote("", null);
+        }
       });
     });
+
+    /* ---------- P9-05: message character counter ---------- */
+    var messageField = form.querySelector("textarea");
+    if (messageField && limitFor(messageField)) {
+      var counterLimit = limitFor(messageField);
+      var counter = document.createElement("span");
+      counter.className = "form-field__counter";
+      counter.id = messageField.id + "-counter";
+      // Not a live region: it would otherwise announce on every keystroke.
+      counter.setAttribute("aria-hidden", "true");
+      var describedBy = messageField.getAttribute("aria-describedby");
+      messageField.setAttribute("aria-describedby",
+        (describedBy ? describedBy + " " : "") + counter.id);
+      var updateCounter = function () {
+        var used = messageField.value.trim().length;
+        counter.textContent = used + " / " + counterLimit;
+        counter.classList.toggle("is-over", used > counterLimit);
+      };
+      messageField.addEventListener("input", updateCounter);
+      updateCounter();
+      if (messageField.parentNode) messageField.parentNode.appendChild(counter);
+    }
+
+    /* ---------- state ---------- */
 
     function setNote(text, state) {
       note.classList.remove("is-error", "is-success", "is-pending");
@@ -1039,10 +1199,40 @@
     function setPending(pending) {
       isSubmitting = pending;
       if (submitBtn) submitBtn.disabled = pending;
+      // P9-09: the form itself reports busy, so assistive tech knows the
+      // whole region is mid-operation rather than only the button changing.
+      if (pending) form.setAttribute("aria-busy", "true");
+      else form.removeAttribute("aria-busy");
+      if (submitLabel) submitLabel.textContent = pending ? "Sending…" : submitIdleText;
     }
+
+    function clearTimers() {
+      if (timeoutTimer) {
+        window.clearTimeout(timeoutTimer);
+        timeoutTimer = null;
+      }
+      controller = null;
+    }
+
+    // P9-04: abandon anything in flight when the page goes away, so a late
+    // response can never resolve against a detached form.
+    window.addEventListener("pagehide", function () {
+      attemptToken++;
+      if (controller) {
+        try { controller.abort(); } catch (e) {}
+      }
+      clearTimers();
+    });
+
+    function payloadSignature(values) {
+      return values.map(function (pair) { return pair[0] + "=" + pair[1]; }).join("");
+    }
+
+    /* ---------- submit ---------- */
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
+      // Synchronous lock, set before anything async can start.
       if (isSubmitting) return;
 
       var firstInvalid = validate();
@@ -1053,50 +1243,113 @@
         return;
       }
 
-      // Honeypot: a real person never sees this field. If it has a value,
-      // report success and send nothing at all.
-      var honeypot = form.querySelector("[name='" + options.honeypot + "']");
-      if (honeypot && honeypot.value) {
-        setNote(INQUIRY_MESSAGES.success, "is-success");
-        form.reset();
-        return;
+      /* P9-08: the honeypot no longer short-circuits into a fabricated
+       * success. Reporting "received" and clearing the form locally meant a
+       * password manager that filled the hidden field would silently destroy
+       * a real person's inquiry while telling them it had been sent. The
+       * field is declared to Netlify via netlify-honeypot, so the server
+       * remains authoritative and a false positive lands in a reviewable
+       * place instead of nowhere. */
+
+      // Trimmed values are what gets validated AND what gets sent, so the
+      // stored lead matches what was checked.
+      var values = [];
+      valueFields().forEach(function (field) {
+        values.push([field.name, field.value.trim()]);
+      });
+
+      var signature = payloadSignature(values);
+      if (!submissionId || signature !== lastSignature) {
+        // Either the first attempt, or the content changed - a new inquiry.
+        submissionId = newSubmissionId();
+        lastSignature = signature;
       }
+      if (idField) idField.value = submissionId;
+
+      var params = [];
+      // form-name and the honeypot still have to travel for Netlify to route
+      // and filter the submission correctly.
+      params.push(encodeURIComponent("form-name") + "=" + encodeURIComponent(options.formName));
+      params.push(encodeURIComponent("submission-id") + "=" + encodeURIComponent(submissionId));
+      if (honeypotField) {
+        params.push(encodeURIComponent(honeypotField.name) + "=" + encodeURIComponent(honeypotField.value));
+      }
+      values.forEach(function (pair) {
+        params.push(encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]));
+      });
+
+      var token = ++attemptToken;
+      var timedOut = false;
 
       setPending(true);
       setNote(INQUIRY_MESSAGES.pending, "is-pending");
 
-      var params = [];
-      new FormData(form).forEach(function (value, key) {
-        params.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
-      });
+      controller = typeof AbortController === "function" ? new AbortController() : null;
+      timeoutTimer = window.setTimeout(function () {
+        timedOut = true;
+        if (controller) {
+          try { controller.abort(); } catch (e) {}
+        }
+      }, INQUIRY_TIMEOUT_MS);
 
-      fetch("/", {
+      var request = {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.join("&"),
-      })
+        body: params.join("&")
+      };
+      if (controller) request.signal = controller.signal;
+
+      fetch("/", request)
         .then(function (response) {
+          if (token !== attemptToken || !form.isConnected) return;
+          clearTimers();
           setPending(false);
           if (response.ok) {
+            lastOutcome = "success";
             setNote(INQUIRY_MESSAGES.success, "is-success");
-            form.reset();
+            // Clear the fields once, and clear any stale field errors with
+            // them, so the emptied form cannot look invalid.
+            valueFields().forEach(function (field) {
+              field.value = "";
+              clearFieldError(field);
+            });
+            if (messageField && typeof updateCounter === "function") updateCounter();
+            // P9-09: move focus to the confirmation so a keyboard or screen
+            // reader user lands on the outcome rather than being left on a
+            // button whose meaning has changed.
+            note.setAttribute("tabindex", "-1");
+            note.focus({ preventScroll: false });
           } else {
+            // Never claim receipt for a non-OK response.
             setNote(INQUIRY_MESSAGES.failure, "is-error");
           }
         })
         .catch(function () {
+          if (token !== attemptToken || !form.isConnected) return;
+          clearTimers();
           setPending(false);
-          setNote(INQUIRY_MESSAGES.failure, "is-error");
+          // A timeout is ambiguous; an outright network error is not.
+          setNote(timedOut ? INQUIRY_MESSAGES.timeout : INQUIRY_MESSAGES.failure, "is-error");
         });
     });
   }
 
   function initContactForm() {
-    initInquiryForm({ formId: "inquiry-form", noteId: "form-note", honeypot: "contact-bot-field" });
+    initInquiryForm({
+      formId: "inquiry-form",
+      noteId: "form-note",
+      honeypot: "contact-bot-field",
+      formName: "contact"
+    });
   }
 
   function initJVForm() {
-    initInquiryForm({ formId: "jv-form", noteId: "jv-form-note", honeypot: "jv-bot-field" });
+    initInquiryForm({
+      formId: "jv-form",
+      noteId: "jv-form-note",
+      honeypot: "jv-bot-field",
+      formName: "joint-venture"
+    });
   }
 
   function initContent() {

@@ -162,9 +162,9 @@
           <p class="mobile-menu__card-sub">Connect with Herbig Group about a development idea or potential partnership.</p>
         </div>
         <div class="mobile-menu__card-contacts">
-          <a class="mobile-menu__contact" href="mailto:hello@herbiggroup.com">
+          <a class="mobile-menu__contact" href="mailto:info@herbiggroup.com">
             <span class="mobile-menu__contact-icon"><img src="assets/icons/mail.svg" alt="" width="16" height="16"></span>
-            <span>hello@herbiggroup.com</span>
+            <span>info@herbiggroup.com</span>
           </a>
           <a class="mobile-menu__contact" href="tel:+14805550148">
             <span class="mobile-menu__contact-icon"><img src="assets/icons/phone.svg" alt="" width="16" height="16"></span>
@@ -223,6 +223,10 @@
 
         <form class="jv-form-card reveal-surface reveal-surface--delayed" id="jv-form" aria-labelledby="jv-form-heading" aria-describedby="jv-required-note" data-direction="right" name="joint-venture" method="POST" data-netlify="true" netlify-honeypot="jv-bot-field" novalidate>
           <input type="hidden" name="form-name" value="joint-venture">
+          <!-- P9-04: stable per-inquiry identifier, set by the submit handler
+               and reused across retries of unchanged content so a duplicate
+               is identifiable in the dashboard. -->
+          <input type="hidden" name="submission-id" value="">
           <p class="jv-field jv-field--hidden" aria-hidden="true">
             <label>Leave this field blank<input type="text" name="jv-bot-field" tabindex="-1" autocomplete="off"></label>
           </p>
@@ -239,16 +243,30 @@
           </div>
           <div class="jv-field">
             <label class="jv-field__label" for="jv-sqft">Location you are considering <span class="form-field__optional">(optional)</span></label>
-            <input type="text" name="location" id="jv-sqft" placeholder="City or region">
+            <input type="text" name="location" id="jv-sqft" placeholder="City or region" aria-describedby="jv-sqft-error">
+            <!-- P9-05: optional still means bounded. Without somewhere to put
+                 the message, an over-length value was refused silently. -->
+            <span class="jv-field__error" id="jv-sqft-error" role="alert"></span>
           </div>
           <div class="jv-field">
             <label class="jv-field__label" for="jv-email">Email</label>
-            <input type="email" name="email" id="jv-email" placeholder="you@organization.com" required autocomplete="email" aria-describedby="jv-email-error">
+            <input type="email" name="email" id="jv-email" placeholder="you@organization.com" required autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" aria-describedby="jv-email-error">
             <span class="jv-field__error" id="jv-email-error" role="alert"></span>
+          </div>
+          <!-- P9-06: the panel above asks for the purpose of the proposed
+               facility, but the form had nowhere to put it. Same field and
+               error styling as the rest of the card. -->
+          <div class="jv-field">
+            <label class="jv-field__label" for="jv-message">Purpose of the proposed facility</label>
+            <textarea name="message" id="jv-message" rows="4" placeholder="What the space is for, who it serves and where you are in planning." required aria-describedby="jv-message-error"></textarea>
+            <span class="jv-field__error" id="jv-message-error" role="alert"></span>
           </div>
           <button type="submit" class="btn btn--primary" id="jv-submit">
             <span>Send Inquiry</span>
           </button>
+          <!-- P9-07: disclosure at the point of collection, so the visitor
+               knows what happens to their details before they send them. -->
+          <p class="form-privacy-note">We&rsquo;ll use your details to respond to your inquiry. See our <a href="privacy.html">Privacy Policy</a>.</p>
           <p class="jv-form-card__note" id="jv-form-note" role="status" aria-live="polite"></p>
         </form>
       </div>
@@ -277,7 +295,7 @@
     <div class="footer__bottom">
       <p>Copyright &copy; 2026 Herbig Group. All rights reserved.</p>
       <div class="footer__links">
-        <span class="footer__link-disabled" title="Coming soon">Privacy Policy</span>
+        <a href="privacy.html">Privacy Policy</a>
         <span class="footer__link-disabled" title="Coming soon">Terms of Engagement</span>
       </div>
     </div>

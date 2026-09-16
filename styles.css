@@ -1026,6 +1026,98 @@ a, button, .btn, .nav-link { touch-action: manipulation; }
    under 4.5:1. Explicit colour, no opacity. */
 .form-field__optional { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 1; color: var(--form-placeholder); }
 
+/* P9-05: message length counter. Same muted treatment as the optional
+   marker and the required note, sitting under the field it describes -
+   quiet until the limit is passed, where it borrows the error colour that
+   is already the form's language for "this needs attention". It is
+   aria-hidden: the limit is stated in the field's error text when it
+   matters, and a live counter would announce on every keystroke. */
+.form-field__counter,
+.jv-field .form-field__counter {
+  display: block;
+  margin-top: 4px;
+  text-align: right;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--form-placeholder);
+}
+.form-field__counter.is-over { color: #ef8b83; }
+
+/* P9-07: disclosure at the point of collection. Deliberately quiet - it
+   sits under the submit control in the same muted register as the required
+   note, so it informs without competing with the form's own hierarchy. */
+.form-privacy-note {
+  margin-top: 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--form-placeholder);
+  position: relative;
+  z-index: 1;
+}
+.form-privacy-note a { color: var(--color-green-on-dark); text-decoration: underline; text-underline-offset: 2px; }
+.form-privacy-note a:hover { color: var(--color-white); }
+
+/* P9-07: the policy page. A reading page, not a designed one. It is written
+   self-contained rather than leaning on section helpers, because this site
+   styles each section bespokely and has no generic .section/.container to
+   inherit from - an assumed helper is how the heading first came out as dark
+   ink on the dark surface. Measure is capped for readability. */
+.policy {
+  position: relative;
+  background: var(--color-dark);
+  padding: calc(var(--nav-height) + 64px) 24px 96px;
+}
+/* The accent bar is absolutely positioned at the inner container's left
+   edge, so the text needs a gutter to sit clear of it rather than
+   running underneath. */
+.policy__inner { position: relative; max-width: 784px; margin: 0 auto; padding-left: 24px; }
+.policy__eyebrow {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-green-on-dark);
+  margin-bottom: 12px;
+}
+.policy__title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.15;
+  color: var(--color-white);
+}
+.policy__updated {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--form-placeholder);
+  margin-top: 12px;
+}
+.policy__body { margin-top: 40px; }
+.policy__body h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 2.4vw, 22px);
+  color: var(--color-white);
+  margin-top: 36px;
+  margin-bottom: 10px;
+}
+.policy__body h2:first-child { margin-top: 0; }
+.policy__body p {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 14px;
+}
+.policy__body a { color: var(--color-green-on-dark); text-decoration: underline; text-underline-offset: 2px; }
+.policy__body a:hover { color: var(--color-white); }
+
 /* A11Y-07: required/optional instruction, stated before the first field on
    both forms. */
 .form-required-note {
@@ -1731,12 +1823,15 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
 }
 .jv-form-card.is-visible .jv-field { opacity: 1; }
 .jv-field__label { font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-green); }
-.jv-field input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--form-control-border); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
-.jv-field input::placeholder { color: var(--form-placeholder); opacity: 1; }
-.jv-field input:focus { outline: none; border-color: var(--color-green); background: rgba(255, 255, 255, 0.08); }
+.jv-field input, .jv-field textarea { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--form-control-border); border-radius: 10px; padding: 16px; color: #f8fafc; font-family: var(--font-body); font-size: 14px; transition: border-color 0.25s var(--ease), background 0.25s var(--ease); }
+.jv-field input::placeholder, .jv-field textarea::placeholder { color: var(--form-placeholder); opacity: 1; }
+.jv-field input:focus, .jv-field textarea:focus { outline: none; border-color: var(--color-green); background: rgba(255, 255, 255, 0.08); }
 /* HG-P3-02: per-field validation state, set/cleared by JS in initJVForm(). */
-.jv-field input.is-invalid { border-color: #d9695f; }
+.jv-field input.is-invalid, .jv-field textarea.is-invalid { border-color: #d9695f; }
 .jv-field__error { font-size: 12px; font-weight: 600; color: #ef8b83; min-height: 15px; }
+/* P9-06: the purpose textarea is a jv-field like any other - it only needs
+   the things a multi-line control adds on top of the shared input rule. */
+.jv-field textarea { min-height: 120px; resize: vertical; line-height: 1.6; display: block; }
 /* Honeypot field: present for bots/scripts to fill in, hidden from sighted
    and assistive-tech users via the standard visually-hidden pattern (not
    display:none/visibility:hidden, which some bots skip filling in). */
@@ -1761,7 +1856,8 @@ a.holding-card, .holding-card[tabindex] { cursor: pointer; }
    never clipped by the card's own overflow. */
 .form-field input:focus-visible,
 .form-field textarea:focus-visible,
-.jv-field input:focus-visible {
+.jv-field input:focus-visible,
+.jv-field textarea:focus-visible {
   outline: 2px solid var(--focus-ring, var(--color-green-on-dark));
   outline-offset: 3px;
 }

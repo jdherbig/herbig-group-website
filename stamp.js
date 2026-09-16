@@ -147,6 +147,10 @@ const ROUTES = {
   "joint-ventures.html": "/joint-ventures",
   "housing-projects.html": "/housing-projects",
   "fortitude-arizona-case-study.html": "/fortitude-arizona-case-study",
+  // P9-07: the privacy policy is a real, linkable route - the disclosure
+  // beside each form points at it, so it needs a canonical of its own and a
+  // place in the sitemap like any other page.
+  "privacy.html": "/privacy",
 };
 
 /* ---------------------------------------------------------------------------
@@ -176,6 +180,7 @@ const SOCIAL = {
   "our-blueprint.html": DEFAULT_SOCIAL,
   "joint-ventures.html": DEFAULT_SOCIAL,
   "housing-projects.html": DEFAULT_SOCIAL,
+  "privacy.html": DEFAULT_SOCIAL,
   "active-holdings.html": {
     image: "assets/social/og-fortitude-arizona.jpg",
     alt: "The Herbig Group mark over a rendering of the Fortitude Arizona headquarters, the company's first project, currently under construction",
