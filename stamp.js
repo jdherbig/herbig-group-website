@@ -82,7 +82,7 @@ for (const profile of configuredProfiles) {
   }
 }
 
-const FOOTER_LINKS_OPEN = '<nav class="footer__links" aria-label="Footer">';
+const FOOTER_LINKS_OPEN = '<div class="footer__links">';
 
 function stampSocial(file) {
   if (!configuredProfiles.length) return 0;
@@ -151,7 +151,6 @@ const ROUTES = {
   // beside each form points at it, so it needs a canonical of its own and a
   // place in the sitemap like any other page.
   "privacy.html": "/privacy",
-  "terms.html": "/terms",
 };
 
 /* ---------------------------------------------------------------------------
@@ -182,7 +181,6 @@ const SOCIAL = {
   "joint-ventures.html": DEFAULT_SOCIAL,
   "housing-projects.html": DEFAULT_SOCIAL,
   "privacy.html": DEFAULT_SOCIAL,
-  "terms.html": DEFAULT_SOCIAL,
   "active-holdings.html": {
     image: "assets/social/og-fortitude-arizona.jpg",
     alt: "The Herbig Group mark over a rendering of the Fortitude Arizona headquarters, the company's first project, currently under construction",
