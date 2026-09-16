@@ -1,0 +1,13 @@
+{
+  "name": "herbig-group-website",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Herbig Group website. Plain static HTML/CSS/JS; stamp.js is the only build step. The inquiry function has NO dependencies and the build runs no npm install - a failed install would take the live site down, and this environment cannot reach the npm registry to verify one. Note: there is deliberately no \"type\": \"module\" here. stamp.js is CommonJS and has been the build command since Phase 4; declaring the package as ESM made `node stamp.js` fail with \"require is not defined\", which would have broken every deploy. The function and contract files are .mjs, so they are ESM regardless of this setting.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node stamp.js",
+    "test:contract": "node netlify/lib/inquiry-contract.test.mjs"
+  }
+}

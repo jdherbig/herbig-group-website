@@ -978,12 +978,35 @@
     // been stored before the response was lost. Say exactly that rather
     // than claiming failure (which invites a duplicate) or success
     // (which would be a lie the visitor acts on).
-    timeout: "We couldn\u2019t confirm receipt. Your details are still here. Please try again."
+    timeout: "We couldn\u2019t confirm receipt. Your details are still here. Please try again.",
+    // 200 with duplicate:true - the server recognised this exact inquiry as
+    // one it already stored. That is a success, not an error, and saying so
+    // plainly stops a visitor retrying a third time.
+    duplicate: "This inquiry has already been received. There\u2019s no need to send it again.",
+    // 409 - the id we sent is claimed by different content. Recoverable, and
+    // the next attempt mints a fresh id, so the instruction is simply to retry.
+    conflict: "Something went out of step with that submission. Please send it again.",
+    // 429 - rate limited. Always offer the address as a way through.
+    rateLimited: "Too many inquiries have been sent from this network recently. Please try again shortly, or email info@herbiggroup.com."
   };
 
   // P9-04: bounded pending state. Without this a stalled request leaves the
   // submit button disabled and the visitor with no way forward.
   var INQUIRY_TIMEOUT_MS = 20000;
+
+  /* P9-04 / P9-05: submissions go to our own endpoint rather than straight to
+   * the form store. That endpoint is where server-side validation and
+   * de-duplication actually live; it forwards what it accepts to Netlify
+   * Forms, so the dashboard, spam quarantine and notifications are unchanged.
+   *
+   * INQUIRY_FALLBACK_ENDPOINT exists for one specific failure: if the function
+   * is ever missing from a deploy, the endpoint answers 404/405 and every
+   * inquiry would be lost. In that case only, the browser posts to the native
+   * form path instead. That path has weaker guarantees - which is the whole
+   * reason the function exists - but a weakly-validated lead that arrives beats
+   * a well-validated one that does not. */
+  var INQUIRY_ENDPOINT = "/api/inquiry";
+  var INQUIRY_FALLBACK_ENDPOINT = "/";
 
   /* P9-05: the validation contract, keyed by the field's submitted name so
    * both forms share one table. Limits are counted AFTER trimming, and are
@@ -1286,6 +1309,7 @@
 
       var token = ++attemptToken;
       var timedOut = false;
+      var usedFallback = false;
 
       setPending(true);
       setNote(INQUIRY_MESSAGES.pending, "is-pending");
@@ -1305,31 +1329,122 @@
       };
       if (controller) request.signal = controller.signal;
 
-      fetch("/", request)
-        .then(function (response) {
+      // Read the JSON body if there is one. A body that is missing or
+      // unparseable must not turn into an exception that the catch below
+      // would then report as a network failure.
+      function readBody(response) {
+        return response.text().then(
+          function (text) {
+            if (!text) return null;
+            try { return JSON.parse(text); } catch (err) { return null; }
+          },
+          function () { return null; }
+        );
+      }
+
+      function succeed(message) {
+        lastOutcome = "success";
+        setNote(message, "is-success");
+        // Clear the fields once, and clear any stale field errors with
+        // them, so the emptied form cannot look invalid.
+        valueFields().forEach(function (field) {
+          field.value = "";
+          clearFieldError(field);
+        });
+        if (messageField && typeof updateCounter === "function") updateCounter();
+        // A cleared form must not be re-sendable under the id just consumed.
+        submissionId = null;
+        lastSignature = null;
+        if (idField) idField.value = "";
+        // P9-09: move focus to the confirmation so a keyboard or screen
+        // reader user lands on the outcome rather than being left on a
+        // button whose meaning has changed.
+        note.setAttribute("tabindex", "-1");
+        note.focus({ preventScroll: false });
+      }
+
+      /* P9-05: the server is the authority on validity, so when it rejects a
+       * field we surface ITS message on THAT field rather than a general
+       * "something was wrong". If the server names a field we cannot find in
+       * the DOM, its message still has to reach the visitor - it goes into
+       * the general note instead of being swallowed. */
+      function applyServerErrors(errors) {
+        var firstField = null;
+        var orphaned = [];
+        Object.keys(errors || {}).forEach(function (name) {
+          var field = form.querySelector("[name='" + name + "']");
+          if (field && field.type !== "hidden") {
+            setFieldError(field, String(errors[name]));
+            if (!firstField) firstField = field;
+          } else {
+            orphaned.push(String(errors[name]));
+          }
+        });
+        if (firstField) {
+          var count = form.querySelectorAll(".is-invalid").length;
+          setNote("Please correct the highlighted field" + (count > 1 ? "s" : "") + " before sending.", "is-error");
+          firstField.focus();
+        } else {
+          setNote(orphaned.length ? orphaned.join(" ") : INQUIRY_MESSAGES.failure, "is-error");
+        }
+      }
+
+      function handle(response) {
+        if (token !== attemptToken || !form.isConnected) return null;
+
+        // The function is missing from this deploy. Retry once against the
+        // native form path rather than losing the inquiry outright.
+        if ((response.status === 404 || response.status === 405) && !usedFallback) {
+          usedFallback = true;
+          return fetch(INQUIRY_FALLBACK_ENDPOINT, request).then(handle);
+        }
+
+        return readBody(response).then(function (body) {
           if (token !== attemptToken || !form.isConnected) return;
           clearTimers();
           setPending(false);
+
           if (response.ok) {
-            lastOutcome = "success";
-            setNote(INQUIRY_MESSAGES.success, "is-success");
-            // Clear the fields once, and clear any stale field errors with
-            // them, so the emptied form cannot look invalid.
-            valueFields().forEach(function (field) {
-              field.value = "";
-              clearFieldError(field);
-            });
-            if (messageField && typeof updateCounter === "function") updateCounter();
-            // P9-09: move focus to the confirmation so a keyboard or screen
-            // reader user lands on the outcome rather than being left on a
-            // button whose meaning has changed.
-            note.setAttribute("tabindex", "-1");
-            note.focus({ preventScroll: false });
-          } else {
-            // Never claim receipt for a non-OK response.
-            setNote(INQUIRY_MESSAGES.failure, "is-error");
+            succeed(body && body.duplicate ? INQUIRY_MESSAGES.duplicate : INQUIRY_MESSAGES.success);
+            return;
           }
-        })
+
+          if (response.status === 400 && body && body.errors) {
+            applyServerErrors(body.errors);
+            return;
+          }
+
+          /* The server could not tell whether the inquiry was stored. Do NOT
+           * mint a new id here: re-sending under a fresh id is exactly how a
+           * second lead gets created for one inquiry. Say what is true and
+           * point at the address, which always works. */
+          if (body && body.error === "unconfirmed") {
+            setNote(body.message || INQUIRY_MESSAGES.timeout, "is-error");
+            return;
+          }
+
+          if (response.status === 409) {
+            // The id is spent. Drop it so the next attempt mints a new one
+            // and cannot collide again; the visitor's values are untouched.
+            submissionId = null;
+            lastSignature = null;
+            if (idField) idField.value = "";
+            setNote(INQUIRY_MESSAGES.conflict, "is-error");
+            return;
+          }
+
+          if (response.status === 429) {
+            setNote((body && body.message) || INQUIRY_MESSAGES.rateLimited, "is-error");
+            return;
+          }
+
+          // Never claim receipt for a non-OK response.
+          setNote(INQUIRY_MESSAGES.failure, "is-error");
+        });
+      }
+
+      fetch(INQUIRY_ENDPOINT, request)
+        .then(handle)
         .catch(function () {
           if (token !== attemptToken || !form.isConnected) return;
           clearTimers();
