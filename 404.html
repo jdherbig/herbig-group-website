@@ -5,26 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Page Not Found — Herbig Group</title>
   <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#21262D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;0,800;0,900;1,300&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* HG-P3-07: a deliberately lightweight, standalone error page - it
-       reuses the site's shared design tokens/typography from styles.css
-       but skips the full navbar/mobile-menu/PJAX shell, since this is a
-       terminal page reached only when normal navigation has already
-       failed, not a page the router needs to swap into. Netlify serves
-       this file (with a real 404 status) for any unmatched route when it
-       sits at the publish root, so no redirect rule is needed and
-       refresh/Back behave exactly as the browser normally would. */
+    /* HG-P3-07 / HG-P8-01: a standalone error page - it reuses the site's
+       shared design tokens and typography from styles.css, and now carries
+       the real site navigation (Phase 8 §6: an invalid URL must still offer
+       every route, not just a way home), but deliberately skips the PJAX
+       shell: there is no #route-content here, so transitions.js is not
+       loaded and every link is an ordinary full page load. That keeps a
+       terminal page reached only after navigation has already failed as
+       simple as it can be, while still letting the visitor go anywhere.
+       Netlify serves this file with a real 404 status for any unmatched
+       route when it sits at the publish root, so no redirect rule is
+       needed and refresh/Back behave exactly as the browser normally
+       would. */
     body {
       background: var(--color-dark);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 32px 24px;
+      padding: calc(var(--nav-height) + 48px) 24px 56px;
     }
     .not-found {
       max-width: 560px;
@@ -73,7 +83,104 @@
 </head>
 <body>
 
-  <main class="not-found">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="navbar" id="navbar">
+    <div class="navbar__inner">
+      <a href="index.html" class="brand" aria-label="Herbig Group home">
+        <span class="brand__icon-wrap">
+          <img src="assets/icons/nav-logo.svg" alt="" class="brand__icon brand__icon--color" width="62" height="62">
+          <img src="assets/icons/footer-logo.svg" alt="" class="brand__icon brand__icon--white" width="62" height="62">
+        </span>
+        <span class="brand__text">
+          <span class="brand__name">Herbig Group</span>
+          <span class="brand__tagline">Building up others</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" id="nav-links" aria-label="Primary">
+        <a href="our-blueprint.html" class="nav-link">Our Approach</a>
+        <a href="active-holdings.html" class="nav-link">Our First Project</a>
+        <a href="joint-ventures.html" class="nav-link">Partnerships</a>
+        <a href="housing-projects.html" class="nav-link">Housing Vision</a>
+        <a href="index.html#contact" class="btn btn--primary btn--nav">
+          <span>Contact</span>
+          <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.3328 8H12.6672M8 12.6672L12.6672 8L8 3.3328" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </a>
+      </nav>
+
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ MOBILE MENU (full-screen, < 900px) ============ -->
+  <div class="mobile-menu" id="mobile-menu" aria-hidden="true">
+    <div class="mobile-menu__glow" aria-hidden="true">
+      <div class="mobile-menu__blob mobile-menu__blob--left"></div>
+      <div class="mobile-menu__blob mobile-menu__blob--right"></div>
+      <div class="mobile-menu__specular"></div>
+    </div>
+
+    <div class="mobile-menu__content">
+      <nav class="mobile-menu__list" id="mobile-menu-list" aria-label="Primary">
+          <a href="our-blueprint.html" class="mobile-menu__link">
+            <span class="mobile-menu__index">01</span>
+            <span class="mobile-menu__label">Our Approach</span>
+            <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
+          </a>
+          <a href="active-holdings.html" class="mobile-menu__link">
+            <span class="mobile-menu__index">02</span>
+            <span class="mobile-menu__label">Our First Project</span>
+            <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
+          </a>
+          <a href="joint-ventures.html" class="mobile-menu__link">
+            <span class="mobile-menu__index">03</span>
+            <span class="mobile-menu__label">Partnerships</span>
+            <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
+          </a>
+          <a href="housing-projects.html" class="mobile-menu__link">
+            <span class="mobile-menu__index">04</span>
+            <span class="mobile-menu__label">Housing Vision</span>
+            <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
+          </a>
+          <a href="index.html#team" class="mobile-menu__link">
+            <span class="mobile-menu__index">05</span>
+            <span class="mobile-menu__label">Our Team</span>
+            <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
+          </a>
+          <a href="index.html#core" class="mobile-menu__link">
+            <span class="mobile-menu__index">06</span>
+            <span class="mobile-menu__label">Our Purpose</span>
+            <span class="mobile-menu__chevron"><img src="assets/icons/chevron-right.svg" alt="" width="8" height="14"></span>
+          </a>
+      </nav>
+
+      <div class="mobile-menu__card">
+        <div>
+          <p class="mobile-menu__card-title">Start a conversation</p>
+          <p class="mobile-menu__card-sub">Connect with Herbig Group about a development idea or potential partnership.</p>
+        </div>
+        <div class="mobile-menu__card-contacts">
+          <a class="mobile-menu__contact" href="mailto:hello@herbiggroup.com">
+            <span class="mobile-menu__contact-icon"><img src="assets/icons/mail.svg" alt="" width="16" height="16"></span>
+            <span>hello@herbiggroup.com</span>
+          </a>
+          <a class="mobile-menu__contact" href="tel:+14805550148">
+            <span class="mobile-menu__contact-icon"><img src="assets/icons/phone.svg" alt="" width="16" height="16"></span>
+            <span>(480) 555-0148</span>
+          </a>
+        </div>
+        <a href="index.html#contact" class="btn btn--primary mobile-menu__cta">
+          <span>Contact Us</span>
+          <svg class="btn__arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.3328 8H12.6672M8 12.6672L12.6672 8L8 3.3328" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <main class="not-found" id="main-content" tabindex="-1" data-navbar-theme="dark">
     <span class="not-found__eyebrow">Herbig Group</span>
     <span class="not-found__code" aria-hidden="true">404</span>
     <h1>We couldn&rsquo;t find that page</h1>
@@ -83,6 +190,8 @@
       <a href="active-holdings.html" class="btn btn--outline"><span>View Active Holdings</span></a>
     </div>
   </main>
+
+  <script src="script.js"></script>
 
 </body>
 </html>

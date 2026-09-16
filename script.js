@@ -429,6 +429,25 @@
         { threshold: 0.05, rootMargin: "0px 0px " + marginPct + "% 0px" }
       );
       els.forEach(function (el) {
+        var rect = el.getBoundingClientRect();
+
+        // HG-P8-02: content sitting ENTIRELY ABOVE the viewport at setup
+        // time has already been scrolled past, so it must start in its
+        // final state for every tier - never mid-reveal. This matters
+        // whenever a page is initialised at a scroll position rather than
+        // at the top: Back/Forward between routes (applySwap restores the
+        // remembered position before calling initContent), and a reload
+        // that restores the reader's position (see MOT-07 in
+        // transitions.js). The observer alone cannot cover this case -
+        // an element above the viewport is not intersecting, so it is
+        // never revealed, and it would then animate in as if new the
+        // moment the reader scrolled back up to something they had
+        // already read.
+        if (rect.bottom <= 0) {
+          el.classList.add("is-visible");
+          return;
+        }
+
         // HG-VR-06: the small-detail tier's trigger line sits at ~70-74%
         // down the viewport, meant for content scrolling INTO view. On
         // shorter pages that content can instead land just below that
@@ -440,7 +459,6 @@
         // trigger line and reveal immediately if any part of the element
         // is already within the real (unshrunk) viewport at load.
         if (tier.revealIfOnscreenAtLoad) {
-          var rect = el.getBoundingClientRect();
           if (rect.top < window.innerHeight && rect.bottom > 0) {
             el.classList.add("is-visible");
             return;
@@ -493,7 +511,17 @@
       },
       { threshold: 0.05, rootMargin: "0px 0px " + marginPct + "% 0px" }
     );
-    grids.forEach(function (g) { observer.observe(g); });
+    grids.forEach(function (g) {
+      // HG-P8-02: same contract as the reveal tiers above - a row already
+      // scrolled past when this initialises (Back/Forward restore, or a
+      // reload that restores the reading position) starts assembled, not
+      // waiting on an intersection that can never come.
+      if (g.getBoundingClientRect().bottom <= 0) {
+        reveal(g);
+        return;
+      }
+      observer.observe(g);
+    });
   }
 
   function initDragScroll(outer) {
