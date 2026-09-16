@@ -221,15 +221,12 @@
           </div>
         </div>
 
-        <form class="jv-form-card reveal-surface reveal-surface--delayed" id="jv-form" aria-labelledby="jv-form-heading" aria-describedby="jv-required-note" data-direction="right" name="joint-venture" method="POST" data-netlify="true" netlify-honeypot="jv-bot-field" novalidate>
+        <form class="jv-form-card reveal-surface reveal-surface--delayed" id="jv-form" aria-labelledby="jv-form-heading" aria-describedby="jv-required-note" data-direction="right" name="joint-venture" method="POST" data-netlify="true" novalidate>
           <input type="hidden" name="form-name" value="joint-venture">
           <!-- P9-04: stable per-inquiry identifier, set by the submit handler
                and reused across retries of unchanged content so a duplicate
                is identifiable in the dashboard. -->
           <input type="hidden" name="submission-id" value="">
-          <p class="jv-field jv-field--hidden" aria-hidden="true">
-            <label>Leave this field blank<input type="text" name="jv-bot-field" tabindex="-1" autocomplete="off"></label>
-          </p>
           <span class="accent-bar"></span>
           <div class="jv-form-card__heading">
             <h3 id="jv-form-heading">Discuss an opportunity</h3>

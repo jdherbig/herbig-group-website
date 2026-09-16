@@ -477,15 +477,12 @@
           </div>
         </div>
 
-        <form class="inquiry-form reveal-surface reveal-surface--delayed" id="inquiry-form" aria-labelledby="contact-form-heading" aria-describedby="contact-required-note" data-direction="right" name="contact" method="POST" data-netlify="true" netlify-honeypot="contact-bot-field" novalidate>
+        <form class="inquiry-form reveal-surface reveal-surface--delayed" id="inquiry-form" aria-labelledby="contact-form-heading" aria-describedby="contact-required-note" data-direction="right" name="contact" method="POST" data-netlify="true" novalidate>
           <input type="hidden" name="form-name" value="contact">
           <!-- P9-04: stable per-inquiry identifier, set by the submit handler
                and reused across retries of unchanged content so a duplicate
                is identifiable in the dashboard. -->
           <input type="hidden" name="submission-id" value="">
-          <p class="form-field form-field--hidden" aria-hidden="true">
-            <label>Leave this field blank<input type="text" name="contact-bot-field" tabindex="-1" autocomplete="off"></label>
-          </p>
           <div class="inquiry-form__stripe"></div>
           <h3 id="contact-form-heading">Send an inquiry</h3>
           <p class="inquiry-form__sub">Tell us about your idea, location and goals.</p>

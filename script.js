@@ -1029,16 +1029,14 @@
     var lastSignature = null;   // payload the current submissionId belongs to
     var lastOutcome = null;     // "success" once a send has been accepted
 
-    var honeypotField = form.querySelector("[name='" + options.honeypot + "']");
     var idField = form.querySelector("input[name='submission-id']");
 
     /* ---------- field helpers ---------- */
 
-    // Every control that carries a value, honeypot and bookkeeping excluded.
+    // Every control that carries a value; bookkeeping fields excluded.
     function valueFields() {
       return Array.prototype.slice.call(form.querySelectorAll("input, textarea")).filter(function (el) {
         if (el.type === "hidden" || el.type === "submit" || el.type === "button") return false;
-        if (honeypotField && el === honeypotField) return false;
         return true;
       });
     }
@@ -1243,13 +1241,24 @@
         return;
       }
 
-      /* P9-08: the honeypot no longer short-circuits into a fabricated
-       * success. Reporting "received" and clearing the form locally meant a
-       * password manager that filled the hidden field would silently destroy
-       * a real person's inquiry while telling them it had been sent. The
-       * field is declared to Netlify via netlify-honeypot, so the server
-       * remains authoritative and a false positive lands in a reviewable
-       * place instead of nowhere. */
+      /* P9-08: there is deliberately no honeypot here any more.
+       *
+       * It was removed rather than fixed, because its failure mode cannot be
+       * fixed from this side. Netlify's own documentation states that a
+       * submission caught by a honeypot field "won't even be included in your
+       * form's spam submissions" - it is discarded outright, and the POST
+       * still answers 200. Verified against production: a honeypot-filled
+       * submission returned 200 and left no record anywhere in the dashboard.
+       *
+       * So any honeypot, however well hidden, is one password-manager
+       * autofill away from destroying a real inquiry while telling the person
+       * it was received - and moving that decision to the server does not
+       * change the outcome, it only moves where the lie is told.
+       *
+       * Spam is handled by Netlify's own filtering instead, which quarantines
+       * into a reviewable Spam submissions list. That fails toward a lead the
+       * owner can still find and recover, which is the behaviour the phase
+       * actually requires. */
 
       // Trimmed values are what gets validated AND what gets sent, so the
       // stored lead matches what was checked.
@@ -1267,13 +1276,10 @@
       if (idField) idField.value = submissionId;
 
       var params = [];
-      // form-name and the honeypot still have to travel for Netlify to route
-      // and filter the submission correctly.
+      // form-name still has to travel for Netlify to route the submission
+      // to the right form.
       params.push(encodeURIComponent("form-name") + "=" + encodeURIComponent(options.formName));
       params.push(encodeURIComponent("submission-id") + "=" + encodeURIComponent(submissionId));
-      if (honeypotField) {
-        params.push(encodeURIComponent(honeypotField.name) + "=" + encodeURIComponent(honeypotField.value));
-      }
       values.forEach(function (pair) {
         params.push(encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]));
       });
@@ -1338,7 +1344,6 @@
     initInquiryForm({
       formId: "inquiry-form",
       noteId: "form-note",
-      honeypot: "contact-bot-field",
       formName: "contact"
     });
   }
@@ -1347,7 +1352,6 @@
     initInquiryForm({
       formId: "jv-form",
       noteId: "jv-form-note",
-      honeypot: "jv-bot-field",
       formName: "joint-venture"
     });
   }
